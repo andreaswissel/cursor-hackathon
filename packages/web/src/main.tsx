@@ -7,6 +7,7 @@ import { ProtectedRoute } from "./components/protected-route";
 import { HomePage } from "./pages/home";
 import { SessionPage } from "./pages/session";
 import { LoginPage } from "./pages/login";
+import { SettingsPage } from "./pages/settings";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -27,6 +28,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             element={
               <ProtectedRoute>
                 <SessionPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
               </ProtectedRoute>
             }
           />

@@ -1,12 +1,22 @@
 import { Request, Response, NextFunction } from "express";
 import { eq, and } from "drizzle-orm";
 import { db } from "../db";
-import { sessions } from "../db/schema";
+import { sessions, users } from "../db/schema";
 
 const MAX_SESSIONS_PER_USER = 1;
 const MAX_PROMPTS_PER_SESSION = 5;
 
-// Check if user can create a new session (max 1, unlimited for admins)
+// Check if user has their own API key (bypass limits)
+async function userHasApiKey(userId: string): Promise<boolean> {
+  const [user] = await db
+    .select({ apiKey: users.anthropicApiKey })
+    .from(users)
+    .where(eq(users.id, userId));
+
+  return !!user?.apiKey;
+}
+
+// Check if user can create a new session (max 1, unlimited for admins or BYOK users)
 export async function checkSessionLimit(req: Request, res: Response, next: NextFunction): Promise<void> {
   const userId = req.user?.id;
 
@@ -17,6 +27,12 @@ export async function checkSessionLimit(req: Request, res: Response, next: NextF
 
   // Admin users have unlimited sessions
   if (req.user?.isAdmin) {
+    next();
+    return;
+  }
+
+  // Users with their own API key have unlimited sessions
+  if (await userHasApiKey(userId)) {
     next();
     return;
   }
@@ -39,10 +55,18 @@ export async function checkSessionLimit(req: Request, res: Response, next: NextF
   next();
 }
 
-// Check if session has prompts remaining (max 5, unlimited for admins)
+// Check if session has prompts remaining (max 5, unlimited for admins or BYOK users)
 export async function checkPromptLimit(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const userId = req.user?.id;
+
   // Admin users have unlimited prompts
   if (req.user?.isAdmin) {
+    next();
+    return;
+  }
+
+  // Users with their own API key have unlimited prompts
+  if (userId && await userHasApiKey(userId)) {
     next();
     return;
   }
@@ -116,20 +140,26 @@ export async function incrementPromptCount(sessionId: string): Promise<void> {
 }
 
 // Get user's usage stats
-export async function getUserUsageStats(userId: string): Promise<{
+export async function getUserUsageStats(userId: string, isAdmin?: boolean): Promise<{
   sessionCount: number;
   maxSessions: number;
   canCreateSession: boolean;
+  hasApiKey: boolean;
+  unlimited: boolean;
 }> {
-  const userSessions = await db
-    .select({ id: sessions.id })
-    .from(sessions)
-    .where(eq(sessions.userId, userId));
+  const [userSessions, hasKey] = await Promise.all([
+    db.select({ id: sessions.id }).from(sessions).where(eq(sessions.userId, userId)),
+    userHasApiKey(userId),
+  ]);
+
+  const unlimited = isAdmin || hasKey;
 
   return {
     sessionCount: userSessions.length,
-    maxSessions: MAX_SESSIONS_PER_USER,
-    canCreateSession: userSessions.length < MAX_SESSIONS_PER_USER,
+    maxSessions: unlimited ? Infinity : MAX_SESSIONS_PER_USER,
+    canCreateSession: unlimited || userSessions.length < MAX_SESSIONS_PER_USER,
+    hasApiKey: hasKey,
+    unlimited,
   };
 }
 

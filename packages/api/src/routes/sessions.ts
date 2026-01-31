@@ -21,7 +21,8 @@ router.use(requireAuth);
 // Get user's usage stats
 router.get("/usage", async (req: Request, res: Response) => {
   const userId = req.user!.id;
-  const stats = await getUserUsageStats(userId);
+  const isAdmin = req.user!.isAdmin;
+  const stats = await getUserUsageStats(userId, isAdmin);
   res.json(stats);
 });
 
