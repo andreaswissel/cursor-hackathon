@@ -11,7 +11,7 @@ const router = Router();
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
 const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3000";
-const GOOGLE_AUTH_REDIRECT_URI = process.env.GOOGLE_AUTH_REDIRECT_URI || `${API_BASE_URL}/auth/google/callback`;
+const GOOGLE_AUTH_REDIRECT_URI = process.env.GOOGLE_AUTH_REDIRECT_URI || `${API_BASE_URL}/api/auth/google/callback`;
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 // Login - email only for demo users, email+password for admin users
