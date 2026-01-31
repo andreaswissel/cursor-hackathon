@@ -65,6 +65,12 @@ export function SettingsPage() {
     gemini: false,
   });
 
+  const refreshSessions = () => {
+    getAllSessions()
+      .then(({ sessions }) => setSessions(sessions))
+      .catch(console.error);
+  };
+
   useEffect(() => {
     Promise.all([
       getAllSessions(),
@@ -179,7 +185,7 @@ export function SettingsPage() {
 
   return (
     <div className="flex h-screen">
-      <Sidebar sessions={sessions} />
+      <Sidebar sessions={sessions} onSessionDeleted={refreshSessions} />
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-4 md:px-8 py-8 md:py-16 pt-20 md:pt-16">

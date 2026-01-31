@@ -77,6 +77,18 @@ export async function getSession(
   return res.json();
 }
 
+export async function deleteSession(sessionId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to delete session" }));
+    throw new Error(error.message || error.error || "Failed to delete session");
+  }
+}
+
 export async function answerQuestion(
   sessionId: string,
   agentType: string,

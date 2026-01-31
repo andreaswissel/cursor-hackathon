@@ -1,6 +1,7 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
+import { deleteSession } from "@/lib/api";
 import {
   Zap,
   Plus,
@@ -14,6 +15,7 @@ import {
   Menu,
   X,
   Settings,
+  Trash2,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -24,6 +26,7 @@ interface SidebarProps {
     status: string;
     createdAt: string;
   }>;
+  onSessionDeleted?: () => void;
 }
 
 const STATUS_CONFIG = {
@@ -59,10 +62,34 @@ const STATUS_CONFIG = {
   },
 };
 
-export function Sidebar({ sessions = [] }: SidebarProps) {
+export function Sidebar({ sessions = [], onSessionDeleted }: SidebarProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (e: React.MouseEvent, sessionId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!confirm("Delete this session? This cannot be undone.")) return;
+
+    setDeletingId(sessionId);
+    try {
+      await deleteSession(sessionId);
+      onSessionDeleted?.();
+      // If we're on the deleted session's page, navigate home
+      if (location.pathname === `/session/${sessionId}`) {
+        navigate("/");
+      }
+    } catch (error) {
+      console.error("Failed to delete session:", error);
+      alert("Failed to delete session");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   // Group sessions by status
   const groupedSessions = sessions.reduce(
@@ -164,28 +191,46 @@ export function Sidebar({ sessions = [] }: SidebarProps) {
                 </span>
               </div>
               {sessionsInStatus.map((session) => (
-                <Link
-                  key={session.id}
-                  to={`/session/${session.id}`}
-                  onClick={() => setIsOpen(false)}
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-2 text-sm hover:bg-secondary transition-colors",
-                    location.pathname === `/session/${session.id}` &&
-                      "bg-secondary"
-                  )}
-                >
-                  <Icon
+                <div key={session.id} className="group relative">
+                  <Link
+                    to={`/session/${session.id}`}
+                    onClick={() => setIsOpen(false)}
                     className={cn(
-                      "w-4 h-4 flex-shrink-0",
-                      config.color,
-                      status === "running" && "animate-spin-slow"
+                      "flex items-center gap-2 px-4 py-2 text-sm hover:bg-secondary transition-colors pr-10",
+                      location.pathname === `/session/${session.id}` &&
+                        "bg-secondary"
                     )}
-                  />
-                  <span className="truncate text-muted-foreground">
-                    {session.idea.slice(0, 30)}
-                    {session.idea.length > 30 && "..."}
-                  </span>
-                </Link>
+                  >
+                    <Icon
+                      className={cn(
+                        "w-4 h-4 flex-shrink-0",
+                        config.color,
+                        status === "running" && "animate-spin-slow"
+                      )}
+                    />
+                    <span className="truncate text-muted-foreground">
+                      {session.idea.slice(0, 30)}
+                      {session.idea.length > 30 && "..."}
+                    </span>
+                  </Link>
+                  <button
+                    onClick={(e) => handleDelete(e, session.id)}
+                    disabled={deletingId === session.id}
+                    className={cn(
+                      "absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded",
+                      "text-muted-foreground hover:text-red-500 hover:bg-red-500/10",
+                      "opacity-0 group-hover:opacity-100 transition-opacity",
+                      deletingId === session.id && "opacity-100"
+                    )}
+                    title="Delete session"
+                  >
+                    {deletingId === session.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
               ))}
             </div>
           );

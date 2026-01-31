@@ -77,6 +77,19 @@ router.get("/:sessionId", checkSessionOwnership, async (req: Request, res: Respo
   res.json({ ...state, usage: usageStats });
 });
 
+// Delete a session
+router.delete("/:sessionId", checkSessionOwnership, async (req: Request, res: Response) => {
+  const { sessionId } = req.params;
+
+  try {
+    await sessionStore.delete(sessionId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting session:", error);
+    res.status(500).json({ error: "Failed to delete session" });
+  }
+});
+
 // SSE endpoint for real-time updates
 router.get("/:sessionId/stream", checkSessionOwnership, async (req: Request, res: Response) => {
   const { sessionId } = req.params;

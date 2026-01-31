@@ -36,10 +36,14 @@ export function SessionPage() {
   const [allSessions, setAllSessions] = useState<SessionSummary[]>([]);
   const [showOutputMobile, setShowOutputMobile] = useState(false);
 
-  useEffect(() => {
+  const refreshSessions = () => {
     getAllSessions()
       .then(({ sessions }) => setAllSessions(sessions))
       .catch(console.error);
+  };
+
+  useEffect(() => {
+    refreshSessions();
   }, []);
 
   const handleCopySpec = () => {
@@ -93,7 +97,7 @@ export function SessionPage() {
 
   return (
     <div className="flex h-screen">
-      <Sidebar sessions={allSessions} />
+      <Sidebar sessions={allSessions} onSessionDeleted={refreshSessions} />
 
       <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Agent panels */}

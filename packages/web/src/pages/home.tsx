@@ -15,8 +15,7 @@ export function HomePage() {
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Fetch independently so one failure doesn't block the other
+  const refreshSessions = () => {
     getAllSessions()
       .then(({ sessions }) => setSessions(sessions))
       .catch(console.error);
@@ -24,6 +23,10 @@ export function HomePage() {
     getUsageStats()
       .then((stats) => setUsageStats(stats))
       .catch(console.error);
+  };
+
+  useEffect(() => {
+    refreshSessions();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,7 +51,7 @@ export function HomePage() {
 
   return (
     <div className="flex h-screen">
-      <Sidebar sessions={sessions} />
+      <Sidebar sessions={sessions} onSessionDeleted={refreshSessions} />
 
       <main className="flex-1 overflow-y-auto">
         {/* Add top padding on mobile for fixed header */}

@@ -377,6 +377,20 @@ class SessionStore {
     };
   }
 
+  // Delete a session and all related data
+  async delete(sessionId: string): Promise<boolean> {
+    // Delete from database (cascade will handle related tables if set up, otherwise delete manually)
+    await db.delete(messages).where(eq(messages.sessionId, sessionId));
+    await db.delete(outputs).where(eq(outputs.sessionId, sessionId));
+    await db.delete(agentRuns).where(eq(agentRuns.sessionId, sessionId));
+    await db.delete(sessions).where(eq(sessions.id, sessionId));
+
+    // Remove from cache
+    this.cache.delete(sessionId);
+
+    return true;
+  }
+
   // Legacy sync methods for backwards compatibility during migration
   // These will be removed once all callers are updated to use async versions
 
