@@ -335,7 +335,7 @@ export function SessionPage() {
                         <Sparkles className="w-5 h-5 text-violet-500" />
                         <span className="text-sm font-semibold text-violet-600">Ready to Build</span>
                       </div>
-                      <CursorHandoff spec={session.outputs.spec} ideaTitle={session.idea} />
+                      <CursorHandoff spec={session.outputs.spec!} ideaTitle={session.idea} />
                     </div>
                   </div>
 
