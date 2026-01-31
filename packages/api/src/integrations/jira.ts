@@ -123,7 +123,7 @@ export const jiraAdapter: IntegrationAdapter = {
     console.log("Jira: Listing projects for workspace:", workspaceId);
 
     const res = await fetch(
-      `https://api.atlassian.com/ex/jira/${metadata.workspaceId}/rest/api/3/project/search`,
+      `https://api.atlassian.com/ex/jira/${workspaceId}/rest/api/3/project/search`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
 
@@ -146,14 +146,31 @@ export const jiraAdapter: IntegrationAdapter = {
   },
 
   async syncData(accessToken: string, metadata: IntegrationMetadata): Promise<SyncedDataItem[]> {
-    if (!metadata.workspaceId) {
-      console.error("Jira sync: No workspace ID");
+    let workspaceId = metadata.workspaceId;
+
+    // If no workspaceId in metadata, try to fetch it
+    if (!workspaceId) {
+      console.log("Jira sync: No workspace ID in metadata, fetching...");
+      try {
+        const accountInfo = await this.getAccountInfo(accessToken);
+        workspaceId = accountInfo.workspaceId;
+      } catch (err) {
+        console.error("Jira sync: Failed to fetch workspace ID:", err);
+        return [];
+      }
+    }
+
+    if (!workspaceId) {
+      console.error("Jira sync: No workspace ID available");
       return [];
     }
 
     const items: SyncedDataItem[] = [];
     const selectedSources = (metadata.selectedSources as string[]) || [];
-    const allProjects = await this.listSources(accessToken, metadata);
+
+    // Pass workspaceId in metadata for listSources
+    const metadataWithWorkspace = { ...metadata, workspaceId };
+    const allProjects = await this.listSources(accessToken, metadataWithWorkspace);
 
     // Filter to selected projects, or use all (up to 5) if none selected
     const projectsToSync = selectedSources.length > 0
@@ -167,7 +184,7 @@ export const jiraAdapter: IntegrationAdapter = {
         // Get issues from project
         const jql = encodeURIComponent(`project = ${project.id} ORDER BY updated DESC`);
         const res = await fetch(
-          `https://api.atlassian.com/ex/jira/${metadata.workspaceId}/rest/api/3/search?jql=${jql}&maxResults=50`,
+          `https://api.atlassian.com/ex/jira/${workspaceId}/rest/api/3/search?jql=${jql}&maxResults=50`,
           { headers: { Authorization: `Bearer ${accessToken}` } }
         );
 

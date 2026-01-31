@@ -39,8 +39,19 @@ export const slackAdapter: IntegrationAdapter = {
       throw new Error(`Slack error: ${data.error}`);
     }
 
+    console.log("Slack OAuth response keys:", Object.keys(data));
+
+    // Use the user token (authed_user.access_token) for reading channel history
+    // The bot token requires the bot to be a member of channels to read history
+    const userToken = data.authed_user?.access_token;
+    const botToken = data.access_token;
+
+    console.log("Slack tokens - bot:", !!botToken, "user:", !!userToken);
+
     return {
-      accessToken: data.access_token,
+      accessToken: userToken || botToken,
+      // Store bot token in refreshToken field so we have both
+      refreshToken: botToken,
       // Slack tokens don't expire by default
     };
   },
@@ -100,9 +111,15 @@ export const slackAdapter: IntegrationAdapter = {
   },
 
   async syncData(accessToken: string, metadata: IntegrationMetadata): Promise<SyncedDataItem[]> {
+    console.log("Slack sync: Starting sync");
+    console.log("Slack sync: Metadata:", JSON.stringify(metadata));
+
     const items: SyncedDataItem[] = [];
     const selectedSources = (metadata.selectedSources as string[]) || [];
     const allChannels = await this.listSources(accessToken, metadata);
+
+    console.log("Slack sync: Found", allChannels.length, "channels");
+    console.log("Slack sync: Selected sources:", selectedSources);
 
     let channelsToSync: Array<{ id: string; name: string; type: string }>;
 
@@ -125,10 +142,14 @@ export const slackAdapter: IntegrationAdapter = {
       channelsToSync = feedbackChannels.length > 0 ? feedbackChannels.slice(0, 5) : allChannels.slice(0, 5);
     }
 
+    console.log("Slack sync: Syncing", channelsToSync.length, "channels:", channelsToSync.map(c => c.name));
+
     for (const channel of channelsToSync) {
       try {
         // Get recent messages (last 7 days)
         const oldest = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000);
+        console.log(`Slack sync: Fetching history for ${channel.name} (${channel.id})`);
+
         const res = await fetch(
           `https://slack.com/api/conversations.history?channel=${channel.id}&oldest=${oldest}&limit=200`,
           { headers: { Authorization: `Bearer ${accessToken}` } }
@@ -140,16 +161,22 @@ export const slackAdapter: IntegrationAdapter = {
         }
 
         const data = await res.json();
+        console.log(`Slack sync: ${channel.name} response ok:`, data.ok, "messages:", data.messages?.length || 0);
+
         if (!data.ok) {
           console.error(`Slack channel ${channel.name} API error:`, data.error);
           continue;
         }
 
-        if (!data.messages?.length) continue;
+        if (!data.messages?.length) {
+          console.log(`Slack sync: ${channel.name} has no messages in last 7 days`);
+          continue;
+        }
 
         // Filter out system messages and extract meaningful content
         // Note: We allow bot messages since internal feedback is often posted by integrations
-        const messages = data.messages
+        const rawMessages = data.messages;
+        const messages = rawMessages
           .filter((m: { bot_id?: string; subtype?: string; text: string }) =>
             !m.subtype && m.text && m.text.length > 10
           )
@@ -159,7 +186,12 @@ export const slackAdapter: IntegrationAdapter = {
             user: m.user,
           }));
 
-        if (messages.length === 0) continue;
+        console.log(`Slack sync: ${channel.name} - ${rawMessages.length} total messages, ${messages.length} after filtering`);
+
+        if (messages.length === 0) {
+          console.log(`Slack sync: ${channel.name} - all messages filtered out`);
+          continue;
+        }
 
         items.push({
           dataType: "feedback",
@@ -175,6 +207,7 @@ export const slackAdapter: IntegrationAdapter = {
       }
     }
 
+    console.log(`Slack sync: Completed with ${items.length} items`);
     return items;
   },
 };
