@@ -191,3 +191,28 @@ export async function getChatHistory(
 export function getAuthToken(): string | null {
   return localStorage.getItem("auth_token");
 }
+
+// Integration data types
+export interface IntegrationDataItem {
+  id: string;
+  integrationId: string;
+  dataType: "okrs" | "feedback" | "tickets" | "docs" | "messages";
+  sourceId: string;
+  sourceName: string | null;
+  title: string | null;
+  summary: string | null;
+  content: unknown;
+  provider: string;
+}
+
+export async function getIntegrationData(): Promise<{ data: IntegrationDataItem[] }> {
+  const res = await fetch(`${API_BASE}/integrations/data/all`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch integration data");
+  }
+
+  return res.json();
+}

@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { createSession, getAllSessions, getUsageStats, type SessionSummary, type UsageStats } from "@/lib/api";
 import { MOCK_OKRS, MOCK_CUSTOMER_FEEDBACK } from "@product-os/shared";
 import { Sidebar } from "@/components/sidebar";
-import { Zap, ArrowRight, Target, MessageSquare, AlertCircle } from "lucide-react";
+import { DataSourceSelector } from "@/components/data-source-selector";
+import { Zap, ArrowRight, AlertCircle } from "lucide-react";
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -14,6 +15,17 @@ export function HomePage() {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [context, setContext] = useState<{
+    okrs: Array<{ objective: string; keyResults: string[] }>;
+    customerFeedback: string[];
+  }>({
+    okrs: MOCK_OKRS,
+    customerFeedback: MOCK_CUSTOMER_FEEDBACK,
+  });
+
+  const handleContextChange = useCallback((newContext: typeof context) => {
+    setContext(newContext);
+  }, []);
 
   const refreshSessions = () => {
     getAllSessions()
@@ -37,10 +49,7 @@ export function HomePage() {
     setIsLoading(true);
     setError(null);
     try {
-      const { sessionId } = await createSession(idea, {
-        okrs: MOCK_OKRS,
-        customerFeedback: MOCK_CUSTOMER_FEEDBACK,
-      });
+      const { sessionId } = await createSession(idea, context);
       navigate(`/session/${sessionId}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create session";
@@ -124,63 +133,8 @@ export function HomePage() {
             </div>
           </form>
 
-          {/* Context cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* OKRs Card */}
-            <div className="rounded-xl border bg-card p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                  <Target className="w-4 h-4 text-blue-500" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-sm">OKRs</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Demo context loaded
-                  </p>
-                </div>
-              </div>
-              <ul className="space-y-3">
-                {MOCK_OKRS.map((okr, i) => (
-                  <li key={i}>
-                    <p className="text-sm font-medium">{okr.objective}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {okr.keyResults.join(" · ")}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Customer Feedback Card */}
-            <div className="rounded-xl border bg-card p-5">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                  <MessageSquare className="w-4 h-4 text-emerald-500" />
-                </div>
-                <div>
-                  <h3 className="font-medium text-sm">Customer Feedback</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {MOCK_CUSTOMER_FEEDBACK.length} entries
-                  </p>
-                </div>
-              </div>
-              <ul className="space-y-2">
-                {MOCK_CUSTOMER_FEEDBACK.slice(0, 4).map((feedback, i) => (
-                  <li
-                    key={i}
-                    className="text-sm text-muted-foreground line-clamp-1"
-                  >
-                    "{feedback}"
-                  </li>
-                ))}
-                {MOCK_CUSTOMER_FEEDBACK.length > 4 && (
-                  <li className="text-xs text-muted-foreground/60">
-                    +{MOCK_CUSTOMER_FEEDBACK.length - 4} more entries
-                  </li>
-                )}
-              </ul>
-            </div>
-          </div>
+          {/* Data Source Selector */}
+          <DataSourceSelector onContextChange={handleContextChange} />
         </div>
       </main>
     </div>
