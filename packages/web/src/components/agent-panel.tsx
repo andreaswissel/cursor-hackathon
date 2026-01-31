@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import type { AgentState, AgentType } from "@product-os/shared";
 import { cn } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
 import {
   Loader2,
   CheckCircle2,
@@ -110,6 +111,37 @@ export function AgentPanel({ agent, type, expanded = true, onClick }: AgentPanel
 
   const logContent = agent?.logs.map((l) => l.content).join("") ?? "";
 
+  // Get formatted output from agent.output (same logic as agent-detail-modal)
+  const formattedOutput = useMemo(() => {
+    if (!agent?.output) return null;
+
+    if (typeof agent.output === "string") {
+      return agent.output;
+    }
+
+    // Spec agent returns { markdown: string }
+    if (typeof agent.output === "object" && "markdown" in (agent.output as object)) {
+      return (agent.output as { markdown: string }).markdown;
+    }
+
+    // Other agents might have reasoning
+    if (typeof agent.output === "object" && "reasoning" in (agent.output as object)) {
+      return (agent.output as { reasoning: string }).reasoning;
+    }
+
+    // Check for problemValidation (discovery agent)
+    if (typeof agent.output === "object" && "problemValidation" in (agent.output as object)) {
+      const pv = (agent.output as { problemValidation: { reasoning?: string } }).problemValidation;
+      if (pv?.reasoning) return pv.reasoning;
+    }
+
+    return null;
+  }, [agent?.output]);
+
+  // Show formatted output if available, otherwise show logs
+  const displayContent = formattedOutput || logContent;
+  const isMarkdown = !!formattedOutput;
+
   const isClickable = status === "completed" && onClick;
 
   return (
@@ -188,9 +220,18 @@ export function AgentPanel({ agent, type, expanded = true, onClick }: AgentPanel
       {expanded && (
         <div
           ref={logRef}
-          className="agent-log p-4 overflow-y-auto h-48 bg-secondary/20 text-foreground/80"
+          className={cn(
+            "p-4 overflow-y-auto h-48 bg-secondary/20",
+            isMarkdown ? "prose prose-sm max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-h1:text-base prose-h2:text-sm prose-h3:text-sm prose-p:text-muted-foreground prose-p:text-sm prose-p:leading-relaxed prose-li:text-muted-foreground prose-li:text-sm prose-strong:text-foreground prose-code:text-xs prose-code:bg-secondary prose-code:px-1 prose-code:py-0.5 prose-code:rounded" : "agent-log text-foreground/80"
+          )}
         >
-          {logContent || (
+          {displayContent ? (
+            isMarkdown ? (
+              <ReactMarkdown>{displayContent}</ReactMarkdown>
+            ) : (
+              displayContent
+            )
+          ) : (
             <span className="text-muted-foreground/50 italic">
               Waiting to start...
             </span>
