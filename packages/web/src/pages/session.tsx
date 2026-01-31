@@ -15,9 +15,11 @@ import {
   Copy,
   Check,
   MessageSquare,
-  ChevronUp,
-  ChevronDown,
   Share2,
+  Cpu,
+  Package,
+  Presentation,
+  Sparkles,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getAllSessions, type SessionSummary } from "@/lib/api";
@@ -63,14 +65,16 @@ const AGENT_PROGRESS_INFO: Record<AgentType, { title: string; description: strin
   },
 };
 
+type TabType = "agents" | "outputs";
+
 export function SessionPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const { session, isConnected, error } = useSessionStream(sessionId ?? "");
   const [copied, setCopied] = useState(false);
   const [copiedUpdate, setCopiedUpdate] = useState(false);
   const [allSessions, setAllSessions] = useState<SessionSummary[]>([]);
-  const [showOutputMobile, setShowOutputMobile] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState<AgentType | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>("agents");
 
   const refreshSessions = () => {
     getAllSessions()
@@ -81,6 +85,13 @@ export function SessionPage() {
   useEffect(() => {
     refreshSessions();
   }, []);
+
+  // Auto-switch to outputs tab when session completes
+  useEffect(() => {
+    if (session?.status === "completed" && session?.outputs.spec) {
+      setActiveTab("outputs");
+    }
+  }, [session?.status, session?.outputs.spec]);
 
   const handleCopySpec = () => {
     if (session?.outputs.spec) {
@@ -139,15 +150,22 @@ export function SessionPage() {
     (type) => session.agents[type]?.status === "completed"
   ).length;
 
+  const hasOutputs = !!session.outputs.spec;
+  const outputCount = [
+    session.outputs.spec,
+    session.outputs.productUpdate,
+    session.outputs.slidesUrl,
+  ].filter(Boolean).length;
+
   return (
     <div className="flex h-screen">
       <Sidebar sessions={allSessions} onSessionDeleted={refreshSessions} />
 
-      <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Agent panels */}
-        <div className="flex-1 overflow-y-auto">
-          {/* Header */}
-          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-4 md:px-6 py-4 mt-14 md:mt-0">
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {/* Header with tabs */}
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b mt-14 md:mt-0">
+          {/* Title bar */}
+          <div className="px-4 md:px-6 py-4 border-b border-border/50">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
               <div className="min-w-0">
                 <h1 className="font-semibold truncate text-sm md:text-base">{session.idea}</h1>
@@ -198,64 +216,254 @@ export function SessionPage() {
             </div>
           </div>
 
-          {/* Progress Indicator */}
-          {session.status === "running" && (() => {
-            // Find the currently running worker agent (not orchestrator)
-            const runningAgentIndex = PROGRESS_AGENTS.findIndex(
-              (type) => session.agents[type]?.status === "running"
-            );
-            const runningAgent = runningAgentIndex >= 0 ? PROGRESS_AGENTS[runningAgentIndex] : null;
-            // Count completed worker agents
-            const completedWorkerAgents = PROGRESS_AGENTS.filter(
-              (type) => session.agents[type]?.status === "completed"
-            ).length;
-            // Progress: each worker agent is 25% (1/4). Running agent fills its portion.
-            const progressPercent = runningAgentIndex >= 0
-              ? ((runningAgentIndex + 1) / PROGRESS_AGENTS.length) * 100
-              : (completedWorkerAgents / PROGRESS_AGENTS.length) * 100;
-            const info = runningAgent ? AGENT_PROGRESS_INFO[runningAgent] : null;
-
-            return (
-              <div className="mx-4 md:mx-6 mt-4 p-4 rounded-xl border bg-card">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-                    <Loader2 className="w-4 h-4 text-foreground/70 animate-spin" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-foreground">
-                      {info?.title || "Processing..."}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {info?.description || "Working on your product idea..."}
-                    </p>
-                  </div>
-                  <span className="text-xs font-medium text-muted-foreground tabular-nums">
-                    {Math.round(progressPercent)}%
+          {/* Tabs */}
+          <div className="px-4 md:px-6">
+            <div className="flex gap-1 py-2">
+              <button
+                onClick={() => setActiveTab("agents")}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
+                  activeTab === "agents"
+                    ? "bg-foreground text-background shadow-lg"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                )}
+              >
+                <Cpu className="w-4 h-4" />
+                <span>Agents</span>
+                <span className={cn(
+                  "ml-1 px-1.5 py-0.5 rounded text-xs",
+                  activeTab === "agents" ? "bg-background/20" : "bg-secondary"
+                )}>
+                  {completedAgents}/{AGENT_ORDER.length}
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveTab("outputs")}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
+                  activeTab === "outputs"
+                    ? "bg-foreground text-background shadow-lg"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary",
+                  hasOutputs && activeTab !== "outputs" && "ring-2 ring-emerald-500/50"
+                )}
+              >
+                <Package className="w-4 h-4" />
+                <span>Outputs</span>
+                {hasOutputs && (
+                  <span className={cn(
+                    "ml-1 px-1.5 py-0.5 rounded text-xs",
+                    activeTab === "outputs" ? "bg-background/20" : "bg-emerald-500/20 text-emerald-600"
+                  )}>
+                    {outputCount}
                   </span>
-                </div>
-                <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-foreground/80 transition-all duration-500 ease-out rounded-full"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* Agents Grid */}
-          <div className="p-4 md:p-6">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-              {AGENT_ORDER.map((type) => (
-                <AgentPanel
-                  key={type}
-                  type={type}
-                  agent={session.agents[type]}
-                  onClick={() => setSelectedAgent(type)}
-                />
-              ))}
+                )}
+              </button>
             </div>
           </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="flex-1 overflow-y-auto">
+          {activeTab === "agents" ? (
+            <>
+              {/* Progress Indicator */}
+              {session.status === "running" && (() => {
+                const runningAgentIndex = PROGRESS_AGENTS.findIndex(
+                  (type) => session.agents[type]?.status === "running"
+                );
+                const runningAgent = runningAgentIndex >= 0 ? PROGRESS_AGENTS[runningAgentIndex] : null;
+                const completedWorkerAgents = PROGRESS_AGENTS.filter(
+                  (type) => session.agents[type]?.status === "completed"
+                ).length;
+                const progressPercent = runningAgentIndex >= 0
+                  ? ((runningAgentIndex + 1) / PROGRESS_AGENTS.length) * 100
+                  : (completedWorkerAgents / PROGRESS_AGENTS.length) * 100;
+                const info = runningAgent ? AGENT_PROGRESS_INFO[runningAgent] : null;
+
+                return (
+                  <div className="mx-4 md:mx-6 mt-4 p-4 rounded-xl border bg-card">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+                        <Loader2 className="w-4 h-4 text-foreground/70 animate-spin" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm text-foreground">
+                          {info?.title || "Processing..."}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {info?.description || "Working on your product idea..."}
+                        </p>
+                      </div>
+                      <span className="text-xs font-medium text-muted-foreground tabular-nums">
+                        {Math.round(progressPercent)}%
+                      </span>
+                    </div>
+                    <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-foreground/80 transition-all duration-500 ease-out rounded-full"
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Agents Grid */}
+              <div className="p-4 md:p-6">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  {AGENT_ORDER.map((type) => (
+                    <AgentPanel
+                      key={type}
+                      type={type}
+                      agent={session.agents[type]}
+                      onClick={() => setSelectedAgent(type)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Outputs View */
+            <div className="p-4 md:p-8 max-w-6xl mx-auto">
+              {hasOutputs ? (
+                <div className="space-y-8">
+                  {/* Hero: Cursor Handoff */}
+                  <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-violet-500/10 via-background to-indigo-500/10 p-6 md:p-8">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-violet-500/20 to-transparent rounded-full blur-3xl" />
+                    <div className="relative">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Sparkles className="w-5 h-5 text-violet-500" />
+                        <span className="text-sm font-semibold text-violet-600">Ready to Build</span>
+                      </div>
+                      <CursorHandoff spec={session.outputs.spec} ideaTitle={session.idea} />
+                    </div>
+                  </div>
+
+                  {/* Output Cards Grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Feature Spec Card */}
+                    <div className="rounded-2xl border bg-card overflow-hidden">
+                      <div className="flex items-center justify-between px-5 py-4 border-b bg-emerald-500/5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                            <FileText className="w-5 h-5 text-emerald-500" />
+                          </div>
+                          <div>
+                            <p className="font-semibold">Feature Specification</p>
+                            <p className="text-xs text-muted-foreground">
+                              Technical requirements & acceptance criteria
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={handleCopySpec}
+                          className="p-2.5 hover:bg-secondary rounded-lg transition-colors"
+                          title="Copy to clipboard"
+                        >
+                          {copied ? (
+                            <Check className="w-4 h-4 text-emerald-500" />
+                          ) : (
+                            <Copy className="w-4 h-4 text-muted-foreground" />
+                          )}
+                        </button>
+                      </div>
+                      <div className="p-5 max-h-[500px] overflow-y-auto">
+                        <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-h1:text-lg prose-h2:text-base prose-h3:text-sm prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground">
+                          <ReactMarkdown>{session.outputs.spec}</ReactMarkdown>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Product Update Card */}
+                    {session.outputs.productUpdate && (
+                      <div className="rounded-2xl border bg-card overflow-hidden">
+                        <div className="flex items-center justify-between px-5 py-4 border-b bg-blue-500/5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                              <Share2 className="w-5 h-5 text-blue-500" />
+                            </div>
+                            <div>
+                              <p className="font-semibold">Product Update</p>
+                              <p className="text-xs text-muted-foreground">
+                                Ready for Teams / Slack
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={handleCopyProductUpdate}
+                            className="p-2.5 hover:bg-secondary rounded-lg transition-colors"
+                            title="Copy to clipboard"
+                          >
+                            {copiedUpdate ? (
+                              <Check className="w-4 h-4 text-emerald-500" />
+                            ) : (
+                              <Copy className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </button>
+                        </div>
+                        <div className="p-5 max-h-[500px] overflow-y-auto">
+                          <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-h1:text-lg prose-h2:text-base prose-h3:text-sm prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground">
+                            <ReactMarkdown>{session.outputs.productUpdate}</ReactMarkdown>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Slides Card */}
+                    {session.outputs.slidesUrl && (
+                      <div className="rounded-2xl border bg-card overflow-hidden lg:col-span-2">
+                        <div className="flex items-center justify-between px-5 py-4 border-b bg-orange-500/5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
+                              <Presentation className="w-5 h-5 text-orange-500" />
+                            </div>
+                            <div>
+                              <p className="font-semibold">Presentation Slides</p>
+                              <p className="text-xs text-muted-foreground">
+                                Google Slides deck ready to present
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                            <span className="text-xs text-emerald-600 font-medium">Generated</span>
+                          </div>
+                        </div>
+                        <div className="p-5">
+                          <a
+                            href={session.outputs.slidesUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-500 px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity shadow-lg"
+                          >
+                            <Presentation className="w-5 h-5" />
+                            Open in Google Slides
+                            <ExternalLink className="w-4 h-4" />
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-20">
+                  <div className="w-20 h-20 rounded-2xl bg-secondary/50 flex items-center justify-center mb-6">
+                    <Package className="w-9 h-9 text-muted-foreground/30" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">No outputs yet</h3>
+                  <p className="text-muted-foreground text-center max-w-md">
+                    Outputs will appear here once the agents have finished processing your product idea.
+                  </p>
+                  <button
+                    onClick={() => setActiveTab("agents")}
+                    className="mt-6 px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors text-sm font-medium"
+                  >
+                    View Agent Progress
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Agent Detail Modal */}
@@ -269,137 +477,6 @@ export function SessionPage() {
             onMessageSent={refreshSessions}
           />
         )}
-
-        {/* Output sidebar - collapsible on mobile */}
-        <div className={cn(
-          "bg-secondary/20 overflow-y-auto border-t lg:border-t-0 lg:border-l",
-          "w-full lg:w-[420px]",
-          "transition-all duration-200",
-          showOutputMobile ? "h-[60vh]" : "h-auto",
-          "lg:h-auto"
-        )}>
-          {/* Mobile toggle header */}
-          <button
-            onClick={() => setShowOutputMobile(!showOutputMobile)}
-            className="lg:hidden w-full sticky top-0 z-10 bg-secondary/80 backdrop-blur border-b px-5 py-3 flex items-center justify-between"
-          >
-            <div className="flex items-center gap-2">
-              <h2 className="font-semibold text-sm">Outputs</h2>
-              {session.outputs.spec && (
-                <span className="text-xs bg-emerald-500/20 text-emerald-600 px-2 py-0.5 rounded-full">Ready</span>
-              )}
-            </div>
-            {showOutputMobile ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-          </button>
-
-          {/* Desktop header */}
-          <div className="hidden lg:block sticky top-0 z-10 bg-secondary/80 backdrop-blur border-b px-5 py-4">
-            <h2 className="font-semibold text-sm">Outputs</h2>
-          </div>
-
-          <div className={cn(
-            "p-5 space-y-6",
-            !showOutputMobile && "hidden lg:block"
-          )}>
-            {session.outputs.spec ? (
-              <div className="space-y-6">
-                {/* Cursor Handoff - Primary CTA */}
-                <CursorHandoff spec={session.outputs.spec} ideaTitle={session.idea} />
-
-                {/* Spec Preview */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                        <FileText className="w-4 h-4 text-emerald-500" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">Feature Spec</p>
-                        <p className="text-xs text-muted-foreground">
-                          Generated specification
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={handleCopySpec}
-                      className="p-2 hover:bg-secondary rounded-lg transition-colors"
-                      title="Copy to clipboard"
-                    >
-                      {copied ? (
-                        <Check className="w-4 h-4 text-emerald-500" />
-                      ) : (
-                        <Copy className="w-4 h-4 text-muted-foreground" />
-                      )}
-                    </button>
-                  </div>
-                  <div className="rounded-xl border bg-card p-4 prose prose-sm max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-h1:text-lg prose-h2:text-base prose-h3:text-sm prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground max-h-[400px] overflow-y-auto">
-                    <ReactMarkdown>{session.outputs.spec}</ReactMarkdown>
-                  </div>
-                </div>
-
-                {/* Product Update for Teams/Slack */}
-                {session.outputs.productUpdate && (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                          <Share2 className="w-4 h-4 text-blue-500" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Product Update</p>
-                          <p className="text-xs text-muted-foreground">
-                            Ready for Teams/Slack
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={handleCopyProductUpdate}
-                        className="p-2 hover:bg-secondary rounded-lg transition-colors"
-                        title="Copy to clipboard"
-                      >
-                        {copiedUpdate ? (
-                          <Check className="w-4 h-4 text-emerald-500" />
-                        ) : (
-                          <Copy className="w-4 h-4 text-muted-foreground" />
-                        )}
-                      </button>
-                    </div>
-                    <div className="rounded-xl border bg-card p-4 prose prose-sm max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-h1:text-lg prose-h2:text-base prose-h3:text-sm prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground max-h-[300px] overflow-y-auto">
-                      <ReactMarkdown>{session.outputs.productUpdate}</ReactMarkdown>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mx-auto mb-3">
-                  <FileText className="w-5 h-5 text-muted-foreground/50" />
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Waiting for agents to complete...
-                </p>
-              </div>
-            )}
-
-            {session.outputs.slidesUrl && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  <span className="text-sm font-medium">Slides Created</span>
-                </div>
-                <a
-                  href={session.outputs.slidesUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-lg border bg-card px-4 py-2.5 text-sm font-medium hover:bg-secondary transition-colors"
-                >
-                  Open Google Slides
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              </div>
-            )}
-          </div>
-        </div>
       </main>
     </div>
   );
