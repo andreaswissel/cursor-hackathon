@@ -1,5 +1,7 @@
-import { useEffect, useState, useCallback, useRef } from "react";
-import type { Session, AgentType, AgentLog, AgentStatus, SSEEvent } from "@product-os/shared";
+import { useEffect, useState, useRef } from "react";
+import type { Session, AgentType, AgentLog, AgentStatus, AgentState, SSEEvent } from "@product-os/shared";
+
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
 interface UseSessionStreamResult {
   session: Session | null;
@@ -16,7 +18,7 @@ export function useSessionStream(sessionId: string): UseSessionStreamResult {
   useEffect(() => {
     if (!sessionId) return;
 
-    const eventSource = new EventSource(`/api/sessions/${sessionId}/stream`);
+    const eventSource = new EventSource(`${API_BASE}/sessions/${sessionId}/stream`);
     eventSourceRef.current = eventSource;
 
     eventSource.onopen = () => {
@@ -32,6 +34,24 @@ export function useSessionStream(sessionId: string): UseSessionStreamResult {
           case "init": {
             const payload = data.payload as { session: Session };
             setSession(payload.session);
+            break;
+          }
+
+          case "agent:init": {
+            const payload = data.payload as {
+              sessionId: string;
+              agent: AgentState;
+            };
+            setSession((prev) => {
+              if (!prev) return prev;
+              return {
+                ...prev,
+                agents: {
+                  ...prev.agents,
+                  [payload.agent.type]: payload.agent,
+                },
+              };
+            });
             break;
           }
 

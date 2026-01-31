@@ -27,8 +27,8 @@ export abstract class BaseAgent {
   protected sessionId: string = "";
   protected messages: Anthropic.MessageParam[] = [];
 
-  protected log(content: string): void {
-    sessionStore.appendLog(this.sessionId, this.type, content);
+  protected async log(content: string): Promise<void> {
+    await sessionStore.appendLog(this.sessionId, this.type, content);
   }
 
   protected async askQuestion(question: string): Promise<string> {
@@ -37,13 +37,12 @@ export abstract class BaseAgent {
 
     // This will be resolved when the user answers
     return new Promise((resolve) => {
-      const checkAnswer = setInterval(() => {
-        const state = sessionStore.getState(this.sessionId);
+      const checkAnswer = setInterval(async () => {
+        const state = await sessionStore.getState(this.sessionId);
         const agent = state?.session.agents[this.type];
         if (!agent?.currentQuestion) {
           clearInterval(checkAnswer);
-          // Answer was provided and question cleared
-          resolve(""); // Will need to get the actual answer from somewhere
+          resolve("");
         }
       }, 500);
     });
@@ -55,10 +54,10 @@ export abstract class BaseAgent {
 
   async run(input: AgentInput): Promise<AgentResult> {
     this.sessionId = input.sessionId;
-    sessionStore.initAgent(this.sessionId, this.type, this.id);
-    sessionStore.setAgentStatus(this.sessionId, this.type, "running");
+    await sessionStore.initAgent(this.sessionId, this.type, this.id);
+    await sessionStore.setAgentStatus(this.sessionId, this.type, "running");
 
-    this.log(`Starting ${this.type} agent...`);
+    await this.log(`Starting ${this.type} agent...`);
 
     try {
       const messages = this.buildMessages(input);
@@ -74,13 +73,13 @@ export abstract class BaseAgent {
       );
 
       const output = this.parseOutput(rawOutput);
-      sessionStore.setAgentOutput(this.sessionId, this.type, output);
-      sessionStore.setAgentStatus(this.sessionId, this.type, "completed");
+      await sessionStore.setAgentOutput(this.sessionId, this.type, output);
+      await sessionStore.setAgentStatus(this.sessionId, this.type, "completed");
 
       return { success: true, output };
     } catch (error) {
-      sessionStore.setAgentStatus(this.sessionId, this.type, "failed");
-      this.log(`\n\n✗ Agent failed: ${(error as Error).message}`);
+      await sessionStore.setAgentStatus(this.sessionId, this.type, "failed");
+      await this.log(`\n\n✗ Agent failed: ${(error as Error).message}`);
       return { success: false, output: null };
     }
   }

@@ -43,6 +43,7 @@ export interface Session {
 export interface SSEEvent {
   type:
     | "init"
+    | "agent:init"
     | "agent:log"
     | "agent:status"
     | "agent:question"

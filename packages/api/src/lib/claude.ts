@@ -4,7 +4,7 @@ export const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
 
-export const MODEL = "claude-opus-4-5-20250514";
+export const MODEL = "claude-opus-4-5-20251101";
 
 export interface StreamCallbacks {
   onText: (text: string) => void;
