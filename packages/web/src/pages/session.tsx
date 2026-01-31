@@ -29,6 +29,30 @@ const AGENT_ORDER: AgentType[] = [
   "gtm",
 ];
 
+// Human-friendly descriptions for each agent phase
+const AGENT_PROGRESS_INFO: Record<AgentType, { title: string; description: string }> = {
+  orchestrator: {
+    title: "Coordinating Workflow",
+    description: "Setting up the product analysis pipeline and coordinating agents...",
+  },
+  discovery: {
+    title: "Discovering Insights",
+    description: "Analyzing customer feedback and filtering relevant insights for your idea...",
+  },
+  strategy: {
+    title: "Crafting Strategy",
+    description: "Developing product positioning and identifying market opportunities...",
+  },
+  spec: {
+    title: "Writing Specification",
+    description: "Creating detailed technical requirements and acceptance criteria...",
+  },
+  gtm: {
+    title: "Planning Go-to-Market",
+    description: "Building launch strategy and defining success metrics...",
+  },
+};
+
 export function SessionPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const { session, isConnected, error } = useSessionStream(sessionId ?? "");
@@ -153,6 +177,42 @@ export function SessionPage() {
               </div>
             </div>
           </div>
+
+          {/* Progress Indicator */}
+          {session.status === "running" && (() => {
+            const runningAgent = AGENT_ORDER.find(
+              (type) => session.agents[type]?.status === "running"
+            );
+            const progressPercent = (completedAgents / AGENT_ORDER.length) * 100;
+            const info = runningAgent ? AGENT_PROGRESS_INFO[runningAgent] : null;
+
+            return (
+              <div className="mx-4 md:mx-6 mt-4 p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="relative">
+                    <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm text-foreground">
+                      {info?.title || "Processing..."}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {info?.description || "Working on your product idea..."}
+                    </p>
+                  </div>
+                  <span className="text-xs font-medium text-blue-600 bg-blue-500/10 px-2 py-1 rounded-full">
+                    {Math.round(progressPercent)}%
+                  </span>
+                </div>
+                <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500 ease-out rounded-full"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Agents Grid */}
           <div className="p-4 md:p-6">
