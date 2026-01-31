@@ -11,7 +11,10 @@ import {
   LogOut,
   FileText,
   User,
+  Menu,
+  X,
 } from "lucide-react";
+import { useState } from "react";
 
 interface SidebarProps {
   sessions?: Array<{
@@ -58,6 +61,7 @@ const STATUS_CONFIG = {
 export function Sidebar({ sessions = [] }: SidebarProps) {
   const location = useLocation();
   const { user, logout } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
 
   // Group sessions by status
   const groupedSessions = sessions.reduce(
@@ -73,21 +77,55 @@ export function Sidebar({ sessions = [] }: SidebarProps) {
   const statusOrder = ["running", "pending", "waiting_input", "completed", "failed"];
 
   return (
-    <aside className="w-64 h-screen border-r bg-card flex flex-col">
-      {/* Logo */}
-      <div className="p-4 border-b">
+    <>
+      {/* Mobile header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-card border-b px-4 py-3 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center">
             <Zap className="w-4 h-4 text-background" />
           </div>
-          <div>
-            <span className="font-semibold text-sm">Product OS</span>
-            <span className="text-[10px] text-muted-foreground block -mt-0.5">
-              Agentic PM
-            </span>
-          </div>
+          <span className="font-semibold text-sm">Product OS</span>
         </Link>
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="p-2 hover:bg-secondary rounded-lg transition-colors"
+        >
+          {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
       </div>
+
+      {/* Mobile overlay */}
+      {isOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={cn(
+        "w-64 h-screen border-r bg-card flex flex-col",
+        "fixed md:relative z-40",
+        "transition-transform duration-200 ease-in-out",
+        isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+      )}>
+        {/* Logo - hidden on mobile since we have the header */}
+        <div className="p-4 border-b hidden md:block">
+          <Link to="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center">
+              <Zap className="w-4 h-4 text-background" />
+            </div>
+            <div>
+              <span className="font-semibold text-sm">Product OS</span>
+              <span className="text-[10px] text-muted-foreground block -mt-0.5">
+                Agentic PM
+              </span>
+            </div>
+          </Link>
+        </div>
+
+        {/* Spacer for mobile header */}
+        <div className="h-14 md:hidden" />
 
       {/* New Session Button */}
       <div className="p-3">
@@ -128,6 +166,7 @@ export function Sidebar({ sessions = [] }: SidebarProps) {
                 <Link
                   key={session.id}
                   to={`/session/${session.id}`}
+                  onClick={() => setIsOpen(false)}
                   className={cn(
                     "flex items-center gap-2 px-4 py-2 text-sm hover:bg-secondary transition-colors",
                     location.pathname === `/session/${session.id}` &&
@@ -176,5 +215,6 @@ export function Sidebar({ sessions = [] }: SidebarProps) {
         </button>
       </div>
     </aside>
+    </>
   );
 }

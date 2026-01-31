@@ -49,14 +49,15 @@ export function HomePage() {
       <Sidebar sessions={sessions} />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-8 py-16">
+        {/* Add top padding on mobile for fixed header */}
+        <div className="max-w-3xl mx-auto px-4 md:px-8 py-8 md:py-16 pt-20 md:pt-16">
           {/* Header */}
           <div className="mb-12">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary text-sm text-muted-foreground mb-4">
               <Zap className="w-3.5 h-3.5" />
               Agentic Product Management
             </div>
-            <h1 className="text-4xl font-semibold tracking-tight mb-3">
+            <h1 className="text-2xl md:text-4xl font-semibold tracking-tight mb-3">
               From idea to spec in minutes
             </h1>
             <p className="text-lg text-muted-foreground">
@@ -119,7 +120,7 @@ export function HomePage() {
           </form>
 
           {/* Context cards */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* OKRs Card */}
             <div className="rounded-xl border bg-card p-5">
               <div className="flex items-center gap-2 mb-4">

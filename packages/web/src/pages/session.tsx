@@ -14,6 +14,8 @@ import {
   Copy,
   Check,
   MessageSquare,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getAllSessions, type SessionSummary } from "@/lib/api";
@@ -31,6 +33,7 @@ export function SessionPage() {
   const { session, isConnected, error } = useSessionStream(sessionId ?? "");
   const [copied, setCopied] = useState(false);
   const [allSessions, setAllSessions] = useState<SessionSummary[]>([]);
+  const [showOutputMobile, setShowOutputMobile] = useState(false);
 
   useEffect(() => {
     getAllSessions()
@@ -50,7 +53,7 @@ export function SessionPage() {
     return (
       <div className="flex h-screen">
         <Sidebar />
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex-1 flex items-center justify-center pt-14 md:pt-0">
           <p className="text-muted-foreground">Invalid session</p>
         </div>
       </div>
@@ -61,7 +64,7 @@ export function SessionPage() {
     return (
       <div className="flex h-screen">
         <Sidebar />
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex-1 flex items-center justify-center pt-14 md:pt-0">
           <div className="text-center space-y-2">
             <XCircle className="h-10 w-10 text-red-500 mx-auto" />
             <p className="font-medium">Connection Error</p>
@@ -76,7 +79,7 @@ export function SessionPage() {
     return (
       <div className="flex h-screen">
         <Sidebar />
-        <div className="flex-1 flex items-center justify-center">
+        <div className="flex-1 flex items-center justify-center pt-14 md:pt-0">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       </div>
@@ -91,15 +94,15 @@ export function SessionPage() {
     <div className="flex h-screen">
       <Sidebar sessions={allSessions} />
 
-      <main className="flex-1 flex overflow-hidden">
+      <main className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Agent panels */}
         <div className="flex-1 overflow-y-auto">
           {/* Header */}
-          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-6 py-4">
-            <div className="flex items-center justify-between">
+          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-4 md:px-6 py-4 mt-14 md:mt-0">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
               <div className="min-w-0">
-                <h1 className="font-semibold truncate">{session.idea}</h1>
-                <div className="flex items-center gap-3 mt-1">
+                <h1 className="font-semibold truncate text-sm md:text-base">{session.idea}</h1>
+                <div className="flex items-center gap-2 md:gap-3 mt-1 flex-wrap">
                   <div className="flex items-center gap-1.5">
                     <div
                       className={cn(
@@ -147,7 +150,7 @@ export function SessionPage() {
           </div>
 
           {/* Agents Grid */}
-          <div className="p-6">
+          <div className="p-4 md:p-6">
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               {AGENT_ORDER.map((type) => (
                 <AgentPanel
@@ -160,13 +163,37 @@ export function SessionPage() {
           </div>
         </div>
 
-        {/* Output sidebar */}
-        <div className="w-[420px] border-l bg-secondary/20 overflow-y-auto">
-          <div className="sticky top-0 z-10 bg-secondary/80 backdrop-blur border-b px-5 py-4">
+        {/* Output sidebar - collapsible on mobile */}
+        <div className={cn(
+          "bg-secondary/20 overflow-y-auto border-t lg:border-t-0 lg:border-l",
+          "w-full lg:w-[420px]",
+          "transition-all duration-200",
+          showOutputMobile ? "h-[60vh]" : "h-auto",
+          "lg:h-auto"
+        )}>
+          {/* Mobile toggle header */}
+          <button
+            onClick={() => setShowOutputMobile(!showOutputMobile)}
+            className="lg:hidden w-full sticky top-0 z-10 bg-secondary/80 backdrop-blur border-b px-5 py-3 flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2">
+              <h2 className="font-semibold text-sm">Outputs</h2>
+              {session.outputs.spec && (
+                <span className="text-xs bg-emerald-500/20 text-emerald-600 px-2 py-0.5 rounded-full">Ready</span>
+              )}
+            </div>
+            {showOutputMobile ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+          </button>
+
+          {/* Desktop header */}
+          <div className="hidden lg:block sticky top-0 z-10 bg-secondary/80 backdrop-blur border-b px-5 py-4">
             <h2 className="font-semibold text-sm">Outputs</h2>
           </div>
 
-          <div className="p-5 space-y-6">
+          <div className={cn(
+            "p-5 space-y-6",
+            !showOutputMobile && "hidden lg:block"
+          )}>
             {session.outputs.spec ? (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
