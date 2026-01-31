@@ -3,13 +3,14 @@
  * for Devils Advocate PDF Export demo
  */
 
-const JIRA_EMAIL = process.env.JIRA_EMAIL || "manu.derra@gmail.com";
+const JIRA_EMAIL = process.env.JIRA_EMAIL || "";
 const JIRA_TOKEN = process.env.JIRA_TOKEN || "";
 const JIRA_BASE = "https://andreaswissel.atlassian.net";
 const PROJECT_KEY = "KAN";
 
-if (!JIRA_TOKEN) {
-  console.error("Error: JIRA_TOKEN environment variable required");
+if (!JIRA_EMAIL || !JIRA_TOKEN) {
+  console.error("Error: JIRA_EMAIL and JIRA_TOKEN environment variables required");
+  console.log("\nUsage: JIRA_EMAIL=you@example.com JIRA_TOKEN=... bun run packages/api/scripts/seed-jira.ts");
   process.exit(1);
 }
 
