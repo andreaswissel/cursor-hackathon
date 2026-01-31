@@ -12,7 +12,6 @@ const allowedOrigins = [
   "http://localhost:3000",
   "https://product-os.ai",
   "https://www.product-os.ai",
-  "https://api.product-os.ai",
 ];
 
 // Add any origin from CORS_ORIGIN env var
@@ -25,6 +24,7 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
+    // Allow listed origins
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
@@ -34,7 +34,8 @@ app.use(cors({
       return callback(null, true);
     }
 
-    callback(new Error("Not allowed by CORS"));
+    // For hackathon demo, allow all origins
+    return callback(null, true);
   },
   credentials: true,
 }));
