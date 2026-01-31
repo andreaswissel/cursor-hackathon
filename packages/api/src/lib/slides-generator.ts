@@ -1,7 +1,10 @@
 /**
- * Google Slides generator for Product Update presentations
- * Creates a presentation with GTM strategy, OKR alignment, and metrics
+ * Google Slides generator using template with placeholders
+ * Copies a template and replaces {{PLACEHOLDER}} text with actual content
  */
+
+// Template ID from Google Slides
+const TEMPLATE_ID = "1Q9gI0UsbTvCriSJUWzO-xrjGDs2LhQX4nT-9TGrnZNM";
 
 interface SlideContent {
   title: string;
@@ -12,193 +15,58 @@ interface SlideContent {
   gtm?: string;
 }
 
-interface SlideRequest {
-  createSlide: {
-    objectId: string;
-    slideLayoutReference: { predefinedLayout: string };
-    placeholderIdMappings?: Array<{
-      layoutPlaceholder: { type: string; index?: number };
-      objectId: string;
-    }>;
-  };
-}
-
-interface TextRequest {
-  insertText: {
-    objectId: string;
-    text: string;
-    insertionIndex: number;
-  };
-}
-
-interface StyleRequest {
-  updateTextStyle: {
-    objectId: string;
-    style: {
-      bold?: boolean;
-      fontSize?: { magnitude: number; unit: string };
+interface ReplaceRequest {
+  replaceAllText: {
+    containsText: {
+      text: string;
+      matchCase: boolean;
     };
-    textRange: { type: string };
-    fields: string;
+    replaceText: string;
   };
 }
-
-type BatchRequest = SlideRequest | TextRequest | StyleRequest | { deleteObject: { objectId: string } };
 
 export async function generateProductUpdateSlides(
   accessToken: string,
   content: SlideContent
 ): Promise<string> {
-  // Create a new presentation
-  const createRes = await fetch("https://slides.googleapis.com/v1/presentations", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      title: `Product Update: ${content.title}`,
-    }),
-  });
-
-  if (!createRes.ok) {
-    const error = await createRes.text();
-    console.error("Failed to create presentation:", error);
-    throw new Error(`Failed to create presentation: ${error}`);
-  }
-
-  const presentation = await createRes.json();
-  const presentationId = presentation.presentationId;
-
-  // Build slide requests
-  const requests: BatchRequest[] = [];
-
-  // Delete the default blank slide
-  if (presentation.slides?.[0]) {
-    requests.push({
-      deleteObject: { objectId: presentation.slides[0].objectId },
-    });
-  }
-
-  // Slide 1: Title Slide
-  requests.push({
-    createSlide: {
-      objectId: "title_slide",
-      slideLayoutReference: { predefinedLayout: "TITLE" },
-      placeholderIdMappings: [
-        { layoutPlaceholder: { type: "CENTERED_TITLE" }, objectId: "title_text" },
-        { layoutPlaceholder: { type: "SUBTITLE" }, objectId: "subtitle_text" },
-      ],
-    },
-  });
-  requests.push({ insertText: { objectId: "title_text", text: content.title, insertionIndex: 0 } });
-  requests.push({ insertText: { objectId: "subtitle_text", text: "Product Update", insertionIndex: 0 } });
-
-  // Slide 2: Problem & Opportunity (from Discovery)
-  if (content.discovery) {
-    requests.push({
-      createSlide: {
-        objectId: "discovery_slide",
-        slideLayoutReference: { predefinedLayout: "TITLE_AND_BODY" },
-        placeholderIdMappings: [
-          { layoutPlaceholder: { type: "TITLE" }, objectId: "discovery_title" },
-          { layoutPlaceholder: { type: "BODY" }, objectId: "discovery_body" },
-        ],
+  // Step 1: Copy the template using Drive API
+  const copyRes = await fetch(
+    `https://www.googleapis.com/drive/v3/files/${TEMPLATE_ID}/copy`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
       },
-    });
-    requests.push({ insertText: { objectId: "discovery_title", text: "Problem & Opportunity", insertionIndex: 0 } });
-    requests.push({ insertText: { objectId: "discovery_body", text: formatForSlide(content.discovery), insertionIndex: 0 } });
-  }
-
-  // Slide 3: Strategy & Positioning
-  if (content.strategy) {
-    requests.push({
-      createSlide: {
-        objectId: "strategy_slide",
-        slideLayoutReference: { predefinedLayout: "TITLE_AND_BODY" },
-        placeholderIdMappings: [
-          { layoutPlaceholder: { type: "TITLE" }, objectId: "strategy_title" },
-          { layoutPlaceholder: { type: "BODY" }, objectId: "strategy_body" },
-        ],
-      },
-    });
-    requests.push({ insertText: { objectId: "strategy_title", text: "Strategy & Positioning", insertionIndex: 0 } });
-    requests.push({ insertText: { objectId: "strategy_body", text: formatForSlide(content.strategy), insertionIndex: 0 } });
-  }
-
-  // Slide 4: Solution Overview (from Spec)
-  if (content.spec) {
-    requests.push({
-      createSlide: {
-        objectId: "spec_slide",
-        slideLayoutReference: { predefinedLayout: "TITLE_AND_BODY" },
-        placeholderIdMappings: [
-          { layoutPlaceholder: { type: "TITLE" }, objectId: "spec_title" },
-          { layoutPlaceholder: { type: "BODY" }, objectId: "spec_body" },
-        ],
-      },
-    });
-    requests.push({ insertText: { objectId: "spec_title", text: "Solution Overview", insertionIndex: 0 } });
-    requests.push({ insertText: { objectId: "spec_body", text: extractKeyPoints(content.spec), insertionIndex: 0 } });
-  }
-
-  // Slide 5: Go-to-Market Strategy
-  if (content.gtm) {
-    requests.push({
-      createSlide: {
-        objectId: "gtm_slide",
-        slideLayoutReference: { predefinedLayout: "TITLE_AND_BODY" },
-        placeholderIdMappings: [
-          { layoutPlaceholder: { type: "TITLE" }, objectId: "gtm_title" },
-          { layoutPlaceholder: { type: "BODY" }, objectId: "gtm_body" },
-        ],
-      },
-    });
-    requests.push({ insertText: { objectId: "gtm_title", text: "Go-to-Market Strategy", insertionIndex: 0 } });
-    requests.push({ insertText: { objectId: "gtm_body", text: formatForSlide(content.gtm), insertionIndex: 0 } });
-  }
-
-  // Slide 6: Success Metrics
-  requests.push({
-    createSlide: {
-      objectId: "metrics_slide",
-      slideLayoutReference: { predefinedLayout: "TITLE_AND_BODY" },
-      placeholderIdMappings: [
-        { layoutPlaceholder: { type: "TITLE" }, objectId: "metrics_title" },
-        { layoutPlaceholder: { type: "BODY" }, objectId: "metrics_body" },
-      ],
-    },
-  });
-  requests.push({ insertText: { objectId: "metrics_title", text: "Success Metrics", insertionIndex: 0 } });
-  requests.push({
-    insertText: {
-      objectId: "metrics_body",
-      text: extractMetrics(content.gtm || content.strategy || ""),
-      insertionIndex: 0
+      body: JSON.stringify({
+        name: `Product Update: ${content.title}`,
+      }),
     }
-  });
+  );
 
-  // Slide 7: Next Steps / Timeline
-  requests.push({
-    createSlide: {
-      objectId: "next_steps_slide",
-      slideLayoutReference: { predefinedLayout: "TITLE_AND_BODY" },
-      placeholderIdMappings: [
-        { layoutPlaceholder: { type: "TITLE" }, objectId: "next_steps_title" },
-        { layoutPlaceholder: { type: "BODY" }, objectId: "next_steps_body" },
-      ],
+  if (!copyRes.ok) {
+    const error = await copyRes.text();
+    console.error("Failed to copy template:", error);
+    throw new Error(`Failed to copy template: ${error}`);
+  }
+
+  const copiedFile = await copyRes.json();
+  const presentationId = copiedFile.id;
+
+  // Step 2: Build replacement requests for all placeholders
+  const replacements = buildReplacements(content);
+
+  const requests: ReplaceRequest[] = replacements.map(([placeholder, value]) => ({
+    replaceAllText: {
+      containsText: {
+        text: placeholder,
+        matchCase: false,
+      },
+      replaceText: value,
     },
-  });
-  requests.push({ insertText: { objectId: "next_steps_title", text: "Next Steps", insertionIndex: 0 } });
-  requests.push({
-    insertText: {
-      objectId: "next_steps_body",
-      text: "• Finalize technical requirements\n• Begin development sprint\n• Set up analytics tracking\n• Plan beta rollout\n• Gather early feedback",
-      insertionIndex: 0
-    }
-  });
+  }));
 
-  // Execute batch update
+  // Step 3: Execute batch update to replace all placeholders
   const batchRes = await fetch(
     `https://slides.googleapis.com/v1/presentations/${presentationId}:batchUpdate`,
     {
@@ -220,11 +88,81 @@ export async function generateProductUpdateSlides(
   return `https://docs.google.com/presentation/d/${presentationId}/edit`;
 }
 
-// Constants for slide formatting
-const MAX_BULLETS_PER_SLIDE = 5;
-const MAX_CHARS_PER_BULLET = 80;
+// Build all placeholder replacements from content
+function buildReplacements(content: SlideContent): Array<[string, string]> {
+  const replacements: Array<[string, string]> = [];
 
-// Clean markdown formatting from text
+  // Slide 1 - Cover
+  replacements.push(["{{PRODUCT_TITLE}}", truncate(content.title, 60)]);
+  replacements.push(["{{DATE}}", new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })]);
+
+  // Slide 2 - Idea Overview
+  replacements.push(["{{IDEA_SUMMARY}}", truncate(content.idea, 120)]);
+
+  // Slide 3 - Pain Points (from Discovery)
+  const painPoints = extractBullets(content.discovery || "", 4);
+  replacements.push(["{{PAIN_1}}", painPoints[0] || "Customer pain point 1"]);
+  replacements.push(["{{PAIN_2}}", painPoints[1] || "Customer pain point 2"]);
+  replacements.push(["{{PAIN_3}}", painPoints[2] || "Customer pain point 3"]);
+  replacements.push(["{{PAIN_4}}", painPoints[3] || "Customer pain point 4"]);
+  replacements.push(["{{PAIN_CLAIM}}", extractClaim(content.discovery || content.strategy || "")]);
+
+  // Slide 4 - Strategy Analysis
+  const strategyPoints = extractHeadlineText(content.strategy || "", 4);
+  for (let i = 0; i < 4; i++) {
+    replacements.push([`{{STRATEGY_${i + 1}_HEADLINE}}`, strategyPoints[i]?.headline || `Strategy ${i + 1}`]);
+    replacements.push([`{{STRATEGY_${i + 1}_TEXT}}`, strategyPoints[i]?.text || "Strategic analysis point"]);
+  }
+  replacements.push(["{{STRATEGY_TITLE}}", "Strategic alignment with company OKRs"]);
+
+  // Slide 5 - User Problems Discovered
+  const problems = extractBullets(content.discovery || "", 6);
+  for (let i = 0; i < 6; i++) {
+    replacements.push([`{{PROBLEM_${i + 1}}}`, problems[i] || `Problem ${i + 1}`]);
+  }
+  replacements.push(["{{PROBLEMS_TITLE}}", "User Problems we've discovered"]);
+  replacements.push(["{{PROBLEMS_FOOTER}}", extractVisionText(content.strategy || "")]);
+
+  // Slide 6 - Solution Features (from Spec)
+  const features = extractHeadlineText(content.spec || "", 6);
+  for (let i = 0; i < 6; i++) {
+    replacements.push([`{{FEATURE_${i + 1}_HEADLINE}}`, features[i]?.headline || `Feature ${i + 1}`]);
+    replacements.push([`{{FEATURE_${i + 1}_TEXT}}`, features[i]?.text || "Feature description"]);
+  }
+
+  // Slide 7 - GTM Feature Highlights
+  const gtmHighlights = extractBullets(content.gtm || "", 5);
+  replacements.push(["{{FEATURE_NAME}}", truncate(content.title, 40)]);
+  for (let i = 0; i < 5; i++) {
+    replacements.push([`{{GTM_HIGHLIGHT_${i + 1}}}`, gtmHighlights[i] || `Highlight ${i + 1}`]);
+  }
+  replacements.push(["{{GTM_DESCRIPTION}}", extractGtmDescription(content.gtm || "")]);
+
+  // Slide 9 - KPIs
+  const kpis = extractKPIs(content.gtm || content.strategy || "");
+  for (let i = 0; i < 4; i++) {
+    replacements.push([`{{KPI_${i + 1}_NAME}}`, kpis[i]?.name || `KPI ${i + 1}`]);
+    replacements.push([`{{KPI_${i + 1}_VALUE}}`, kpis[i]?.value || "TBD"]);
+  }
+  replacements.push(["{{KPI_DESCRIPTION}}", "Metrics we'll track to measure success"]);
+
+  // Slide 10 - Vision
+  replacements.push(["{{VISION_TEXT}}", extractVisionText(content.gtm || content.strategy || content.idea)]);
+
+  // Slide 11 - Closing
+  replacements.push(["{{CLOSING_TEXT}}", "Ready to build the future together"]);
+
+  return replacements;
+}
+
+// Helper: Truncate text to max length
+function truncate(text: string, maxLength: number): string {
+  const clean = cleanMarkdown(text);
+  if (clean.length <= maxLength) return clean;
+  return clean.substring(0, maxLength - 3).trim() + "...";
+}
+
+// Helper: Clean markdown formatting
 function cleanMarkdown(text: string): string {
   return text
     .replace(/#{1,6}\s/g, "")
@@ -232,102 +170,194 @@ function cleanMarkdown(text: string): string {
     .replace(/\*/g, "")
     .replace(/`/g, "")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/\n+/g, " ")
     .trim();
 }
 
-// Truncate a single line to max chars
-function truncateLine(text: string, maxChars: number = MAX_CHARS_PER_BULLET): string {
-  const clean = cleanMarkdown(text).trim();
-  if (clean.length <= maxChars) return clean;
-  return clean.substring(0, maxChars - 3).trim() + "...";
-}
-
-// Extract bullet points from text, limiting count and length
-function extractBulletPoints(text: string, maxBullets: number = MAX_BULLETS_PER_SLIDE): string {
-  const lines = text.split("\n");
+// Helper: Extract bullet points as array
+function extractBullets(text: string, count: number): string[] {
   const bullets: string[] = [];
+  const lines = text.split("\n");
 
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
 
-    // Check if it's a bullet point or meaningful content
+    // Check for bullet points, numbered lists, or headers
     const isBullet = trimmed.match(/^[-*•]\s/) || trimmed.match(/^\d+\.\s/);
     const isHeader = trimmed.match(/^#{1,3}\s/);
 
     if (isBullet || isHeader) {
-      // Clean the bullet/header prefix
       let content = trimmed
         .replace(/^[-*•]\s*/, "")
         .replace(/^\d+\.\s*/, "")
         .replace(/^#{1,3}\s*/, "");
 
-      content = truncateLine(content);
-      if (content && content.length > 10) { // Skip very short items
-        bullets.push(`• ${content}`);
+      content = truncate(content, 50);
+      if (content && content.length > 5) {
+        bullets.push(content);
       }
     }
 
-    if (bullets.length >= maxBullets) break;
+    if (bullets.length >= count) break;
   }
 
-  // If we didn't find enough bullets, try to extract sentences
-  if (bullets.length < 2) {
+  // If not enough bullets found, extract sentences
+  while (bullets.length < count) {
     const sentences = text
       .replace(/\n+/g, " ")
       .split(/[.!?]+/)
       .map(s => s.trim())
-      .filter(s => s.length > 20 && s.length < 150);
+      .filter(s => s.length > 15 && s.length < 100);
 
     for (const sentence of sentences) {
-      if (bullets.length >= maxBullets) break;
-      const clean = truncateLine(sentence);
-      if (clean && !bullets.includes(`• ${clean}`)) {
-        bullets.push(`• ${clean}`);
+      if (bullets.length >= count) break;
+      const clean = truncate(sentence, 50);
+      if (clean && !bullets.includes(clean)) {
+        bullets.push(clean);
       }
     }
+    break;
   }
 
-  return bullets.slice(0, maxBullets).join("\n");
+  return bullets;
 }
 
-// Format content for a slide body - strict limits
-function formatForSlide(text: string): string {
-  if (!text) return "• No content available";
-  return extractBulletPoints(text) || "• No key points extracted";
-}
-
-// Extract key points from spec for slide
-function extractKeyPoints(spec: string): string {
-  return formatForSlide(spec);
-}
-
-// Extract or generate metrics section
-function extractMetrics(text: string): string {
-  // Try to extract metrics-related bullets from the text
-  const metricKeywords = ["metric", "kpi", "measure", "track", "target", "goal", "%", "rate"];
+// Helper: Extract headline + text pairs for cards
+function extractHeadlineText(text: string, count: number): Array<{ headline: string; text: string }> {
+  const results: Array<{ headline: string; text: string }> = [];
   const lines = text.split("\n");
-  const metricBullets: string[] = [];
+
+  let currentHeadline = "";
+  let currentText = "";
 
   for (const line of lines) {
-    const lower = line.toLowerCase();
-    if (metricKeywords.some(kw => lower.includes(kw))) {
-      const clean = truncateLine(line.replace(/^[-*•]\s*/, ""));
-      if (clean && clean.length > 10) {
-        metricBullets.push(`• ${clean}`);
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Headers become headlines
+    if (trimmed.match(/^#{1,3}\s/)) {
+      // Save previous if exists
+      if (currentHeadline) {
+        results.push({
+          headline: truncate(currentHeadline, 30),
+          text: truncate(currentText, 80),
+        });
+        if (results.length >= count) break;
+      }
+      currentHeadline = trimmed.replace(/^#{1,3}\s*/, "");
+      currentText = "";
+    } else if (currentHeadline) {
+      // Add to current text
+      currentText += " " + trimmed.replace(/^[-*•]\s*/, "");
+    }
+  }
+
+  // Don't forget the last one
+  if (currentHeadline && results.length < count) {
+    results.push({
+      headline: truncate(currentHeadline, 30),
+      text: truncate(currentText, 80),
+    });
+  }
+
+  // Fill remaining with defaults
+  while (results.length < count) {
+    results.push({
+      headline: `Point ${results.length + 1}`,
+      text: "Details to be added",
+    });
+  }
+
+  return results;
+}
+
+// Helper: Extract a claim/positioning statement
+function extractClaim(text: string): string {
+  const sentences = text.split(/[.!?]+/).map(s => s.trim());
+
+  // Look for sentences with strong positioning words
+  const claimWords = ["we", "our", "should", "will", "can", "best", "leading", "unique"];
+  for (const sentence of sentences) {
+    const lower = sentence.toLowerCase();
+    if (claimWords.some(w => lower.includes(w)) && sentence.length > 20 && sentence.length < 120) {
+      return truncate(sentence, 100);
+    }
+  }
+
+  return "We're uniquely positioned to solve this problem";
+}
+
+// Helper: Extract GTM description
+function extractGtmDescription(text: string): string {
+  const sentences = text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 20);
+  if (sentences.length > 0) {
+    return truncate(sentences[0], 100);
+  }
+  return "Launching a solution that transforms how users work";
+}
+
+// Helper: Extract vision/closing text
+function extractVisionText(text: string): string {
+  const sentences = text.split(/[.!?]+/).map(s => s.trim());
+
+  // Look for vision-type sentences
+  const visionWords = ["vision", "goal", "aim", "future", "transform", "enable", "empower"];
+  for (const sentence of sentences) {
+    const lower = sentence.toLowerCase();
+    if (visionWords.some(w => lower.includes(w)) && sentence.length > 20) {
+      return truncate(sentence, 120);
+    }
+  }
+
+  // Return a good concluding sentence
+  if (sentences.length > 0) {
+    const lastGood = sentences.filter(s => s.length > 30 && s.length < 150).pop();
+    if (lastGood) return truncate(lastGood, 120);
+  }
+
+  return "Building the future of product development";
+}
+
+// Helper: Extract KPIs with names and values
+function extractKPIs(text: string): Array<{ name: string; value: string }> {
+  const kpis: Array<{ name: string; value: string }> = [];
+  const lines = text.split("\n");
+
+  // Look for metric-like patterns
+  const metricPatterns = [
+    /(\d+%)/,
+    /(\d+x)/i,
+    /([\d.]+\s*(days?|weeks?|months?))/i,
+    /(\$[\d,]+)/,
+  ];
+
+  for (const line of lines) {
+    for (const pattern of metricPatterns) {
+      const match = line.match(pattern);
+      if (match) {
+        const value = match[1];
+        const name = truncate(line.replace(match[0], "").replace(/[-:•*]/g, ""), 25);
+        if (name && name.length > 3) {
+          kpis.push({ name, value });
+          break;
+        }
       }
     }
-    if (metricBullets.length >= MAX_BULLETS_PER_SLIDE) break;
+    if (kpis.length >= 4) break;
   }
 
-  if (metricBullets.length >= 2) {
-    return metricBullets.join("\n");
+  // Default KPIs if not enough found
+  const defaultKPIs = [
+    { name: "User Adoption", value: "Target %" },
+    { name: "Time Saved", value: "X hours" },
+    { name: "Satisfaction", value: "+NPS" },
+    { name: "Engagement", value: "Target %" },
+  ];
+
+  while (kpis.length < 4) {
+    kpis.push(defaultKPIs[kpis.length]);
   }
 
-  // Default metrics template
-  return `• Adoption: Target X% of users within 30 days
-• Engagement: Track feature usage frequency
-• Satisfaction: Measure NPS improvement
-• Performance: Monitor latency and errors
-• Business Impact: Revenue/conversion uplift`;
+  return kpis;
 }
