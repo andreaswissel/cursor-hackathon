@@ -5,7 +5,6 @@ import { chatWithAgent, getChatHistory } from "@/lib/api";
 import ReactMarkdown from "react-markdown";
 import {
   X,
-  Send,
   Loader2,
   Sparkles,
   Target,
@@ -15,6 +14,7 @@ import {
   Share2,
   MessageSquare,
   ArrowRight,
+  Zap,
 } from "lucide-react";
 
 interface AgentDetailModalProps {
@@ -35,43 +35,49 @@ interface ChatMessage {
 
 const AGENT_CONFIG: Record<
   AgentType,
-  { name: string; description: string; icon: typeof Sparkles; color: string }
+  { name: string; description: string; icon: typeof Sparkles; color: string; gradient: string }
 > = {
   orchestrator: {
     name: "Orchestrator",
     description: "Coordinates the overall workflow",
     icon: Compass,
     color: "text-slate-500",
+    gradient: "from-slate-500/20 to-slate-600/5",
   },
   discovery: {
     name: "Discovery Agent",
     description: "Validates problems against customer feedback",
     icon: Sparkles,
     color: "text-amber-500",
+    gradient: "from-amber-500/20 to-orange-600/5",
   },
   strategy: {
     name: "Strategy Agent",
     description: "Analyzes OKR alignment and prioritization",
     icon: Target,
     color: "text-blue-500",
+    gradient: "from-blue-500/20 to-indigo-600/5",
   },
   spec: {
     name: "Spec Writer",
     description: "Creates detailed feature specifications",
     icon: FileText,
     color: "text-emerald-500",
+    gradient: "from-emerald-500/20 to-teal-600/5",
   },
   gtm: {
     name: "GTM Agent",
     description: "Develops launch materials and messaging",
     icon: Megaphone,
     color: "text-orange-500",
+    gradient: "from-orange-500/20 to-red-600/5",
   },
   "product-marketing": {
     name: "Product Marketing",
     description: "Creates internal product updates",
     icon: Share2,
     color: "text-violet-500",
+    gradient: "from-violet-500/20 to-purple-600/5",
   },
 };
 
@@ -263,37 +269,46 @@ export function AgentDetailModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8">
       {/* Backdrop */}
       <div
         className={cn(
-          "absolute inset-0 bg-black/40 backdrop-blur-sm",
+          "absolute inset-0 bg-black/60 backdrop-blur-md",
           "animate-in fade-in duration-200"
         )}
         onClick={onClose}
       />
 
-      {/* Panel */}
+      {/* Modal */}
       <div
         className={cn(
-          "relative w-full md:w-[600px] lg:w-[720px] h-full",
-          "bg-background border-l flex flex-col",
-          "animate-in slide-in-from-right duration-300"
+          "relative w-full max-w-5xl h-[90vh] max-h-[900px]",
+          "bg-background rounded-2xl shadow-2xl",
+          "flex flex-col overflow-hidden",
+          "animate-in zoom-in-95 fade-in duration-300",
+          "ring-1 ring-white/10"
         )}
       >
+        {/* Gradient header background */}
+        <div className={cn(
+          "absolute top-0 left-0 right-0 h-32 bg-gradient-to-b opacity-50 pointer-events-none",
+          config.gradient
+        )} />
+
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b bg-card/50">
-          <div className="flex items-center gap-3">
+        <div className="relative flex items-center justify-between px-6 md:px-8 py-5 border-b bg-card/30 backdrop-blur-sm">
+          <div className="flex items-center gap-4">
             <div
               className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center",
-                "bg-secondary"
+                "w-12 h-12 rounded-xl flex items-center justify-center",
+                "bg-gradient-to-br shadow-lg",
+                config.gradient
               )}
             >
-              <Icon className={cn("w-5 h-5", config.color)} />
+              <Icon className={cn("w-6 h-6", config.color)} />
             </div>
             <div>
-              <h2 className="font-semibold">{config.name}</h2>
+              <h2 className="text-lg font-semibold tracking-tight">{config.name}</h2>
               <p className="text-sm text-muted-foreground">
                 {config.description}
               </p>
@@ -301,66 +316,91 @@ export function AgentDetailModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-secondary transition-colors"
+            className="p-2.5 rounded-xl hover:bg-secondary/80 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Content Area - Scrollable */}
-        <div className="flex-1 overflow-y-auto">
-          {/* Agent Output Section */}
-          {displayContent && (
-            <div className="p-6 border-b">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  {formattedOutput ? "Current Output" : "Agent Log"}
-                </span>
+        {/* Two-column layout on desktop */}
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+          {/* Left: Output Section */}
+          <div className="flex-1 overflow-y-auto border-b md:border-b-0 md:border-r">
+            {displayContent ? (
+              <div className="p-6 md:p-8">
+                <div className="flex items-center gap-2 mb-5">
+                  <div className={cn("w-2 h-2 rounded-full", config.color.replace("text-", "bg-"))} />
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    {formattedOutput ? "Generated Output" : "Agent Log"}
+                  </span>
+                </div>
+                <div className={cn(
+                  "prose prose-sm max-w-none",
+                  "prose-headings:font-semibold prose-headings:tracking-tight",
+                  "prose-h1:text-xl prose-h2:text-lg prose-h3:text-base",
+                  "prose-p:text-muted-foreground prose-p:leading-relaxed",
+                  "prose-li:text-muted-foreground",
+                  "prose-strong:text-foreground prose-strong:font-semibold",
+                  "prose-code:text-xs prose-code:bg-secondary prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:font-mono",
+                  "prose-pre:bg-secondary/50 prose-pre:border prose-pre:rounded-xl",
+                  !formattedOutput && "font-mono text-xs whitespace-pre-wrap text-muted-foreground"
+                )}>
+                  {formattedOutput ? (
+                    <ReactMarkdown>{displayContent}</ReactMarkdown>
+                  ) : (
+                    <div>{displayContent}</div>
+                  )}
+                </div>
               </div>
-              <div className={cn(
-                "prose prose-sm max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-h1:text-lg prose-h2:text-base prose-h3:text-sm prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground prose-code:text-xs prose-code:bg-secondary prose-code:px-1 prose-code:py-0.5 prose-code:rounded",
-                !formattedOutput && "font-mono text-xs whitespace-pre-wrap"
-              )}>
-                {formattedOutput ? (
-                  <ReactMarkdown>{displayContent}</ReactMarkdown>
-                ) : (
-                  <div className="text-muted-foreground">{displayContent}</div>
-                )}
+            ) : (
+              <div className="flex items-center justify-center h-full p-8">
+                <div className="text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-secondary/50 flex items-center justify-center mx-auto mb-4">
+                    <Loader2 className="w-7 h-7 text-muted-foreground/50 animate-spin" />
+                  </div>
+                  <p className="text-muted-foreground">Generating output...</p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Chat Section */}
-          <div className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <MessageSquare className="w-4 h-4 text-muted-foreground" />
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Refine with Chat
-              </span>
+          {/* Right: Chat Section */}
+          <div className="w-full md:w-[400px] flex flex-col bg-secondary/20">
+            {/* Chat Header */}
+            <div className="px-5 py-4 border-b bg-card/30">
+              <div className="flex items-center gap-2">
+                <Zap className={cn("w-4 h-4", config.color)} />
+                <span className="text-sm font-semibold">Refine Output</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Chat with the agent to iterate on results
+              </p>
             </div>
 
             {/* Messages */}
-            <div className="space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {isLoadingHistory ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                 </div>
               ) : messages.length === 0 && !streamingContent ? (
-                <div className="text-center py-8">
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Ask questions or request changes to refine the output
+                <div className="text-center py-8 px-4">
+                  <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center mx-auto mb-3">
+                    <MessageSquare className="w-5 h-5 text-muted-foreground/50" />
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Ask questions or request changes
                   </p>
-                  <div className="flex flex-wrap gap-2 justify-center">
+                  <div className="flex flex-col gap-2">
                     {[
                       "Make it more concise",
-                      "Add more detail",
-                      "Change the tone",
+                      "Add more technical detail",
+                      "Focus on user benefits",
                     ].map((suggestion) => (
                       <button
                         key={suggestion}
                         onClick={() => setInput(suggestion)}
-                        className="px-3 py-1.5 text-xs rounded-full border hover:bg-secondary transition-colors"
+                        className="px-4 py-2 text-xs rounded-lg border bg-card hover:bg-secondary transition-colors text-left"
                       >
                         {suggestion}
                       </button>
@@ -379,10 +419,10 @@ export function AgentDetailModal({
                     >
                       <div
                         className={cn(
-                          "max-w-[85%] rounded-2xl px-4 py-2.5",
+                          "max-w-[90%] rounded-2xl px-4 py-2.5",
                           message.role === "user"
                             ? "bg-foreground text-background rounded-br-md"
-                            : "bg-secondary rounded-bl-md"
+                            : "bg-card border rounded-bl-md"
                         )}
                       >
                         {message.role === "assistant" ? (
@@ -399,7 +439,7 @@ export function AgentDetailModal({
                   {/* Streaming message */}
                   {streamingContent && (
                     <div className="flex justify-start">
-                      <div className="max-w-[85%] rounded-2xl rounded-bl-md bg-secondary px-4 py-2.5">
+                      <div className="max-w-[90%] rounded-2xl rounded-bl-md bg-card border px-4 py-2.5">
                         <div className="prose prose-sm max-w-none prose-p:text-foreground prose-p:my-1">
                           <ReactMarkdown>{streamingContent}</ReactMarkdown>
                         </div>
@@ -410,8 +450,8 @@ export function AgentDetailModal({
                   {/* Loading indicator */}
                   {isLoading && !streamingContent && (
                     <div className="flex justify-start">
-                      <div className="rounded-2xl rounded-bl-md bg-secondary px-4 py-3">
-                        <div className="flex items-center gap-1">
+                      <div className="rounded-2xl rounded-bl-md bg-card border px-4 py-3">
+                        <div className="flex items-center gap-1.5">
                           <div className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:-0.3s]" />
                           <div className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:-0.15s]" />
                           <div className="w-2 h-2 rounded-full bg-muted-foreground/40 animate-bounce" />
@@ -423,58 +463,56 @@ export function AgentDetailModal({
               )}
               <div ref={messagesEndRef} />
             </div>
-          </div>
-        </div>
 
-        {/* Input Area - Fixed at bottom */}
-        <div className="border-t bg-card/50 p-4">
-          <div className="flex items-end gap-3">
-            <div className="flex-1 relative">
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={`Ask ${config.name} to refine the output...`}
-                rows={1}
-                className={cn(
-                  "w-full resize-none rounded-xl border bg-background px-4 py-3 pr-12",
-                  "text-sm placeholder:text-muted-foreground/50",
-                  "focus:outline-none focus:ring-2 focus:ring-foreground/10",
-                  "max-h-32 min-h-[48px]"
-                )}
-                style={{
-                  height: "auto",
-                  minHeight: "48px",
-                }}
-                onInput={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  target.style.height = "auto";
-                  target.style.height = Math.min(target.scrollHeight, 128) + "px";
-                }}
-              />
-              <button
-                onClick={handleSend}
-                disabled={!input.trim() || isLoading}
-                className={cn(
-                  "absolute right-2 bottom-2 p-2 rounded-lg",
-                  "transition-all duration-150",
-                  input.trim() && !isLoading
-                    ? "bg-foreground text-background hover:bg-foreground/90"
-                    : "bg-secondary text-muted-foreground"
-                )}
-              >
-                {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <ArrowRight className="w-4 h-4" />
-                )}
-              </button>
+            {/* Input Area */}
+            <div className="border-t bg-card/50 p-4">
+              <div className="relative">
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Ask for changes..."
+                  rows={1}
+                  className={cn(
+                    "w-full resize-none rounded-xl border bg-background px-4 py-3 pr-12",
+                    "text-sm placeholder:text-muted-foreground/50",
+                    "focus:outline-none focus:ring-2 focus:ring-foreground/10",
+                    "max-h-28 min-h-[48px]"
+                  )}
+                  style={{
+                    height: "auto",
+                    minHeight: "48px",
+                  }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = "auto";
+                    target.style.height = Math.min(target.scrollHeight, 112) + "px";
+                  }}
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={!input.trim() || isLoading}
+                  className={cn(
+                    "absolute right-2 bottom-2 p-2 rounded-lg",
+                    "transition-all duration-150",
+                    input.trim() && !isLoading
+                      ? cn("bg-gradient-to-r shadow-md", config.gradient.replace("/20", "").replace("/5", ""), "text-white")
+                      : "bg-secondary text-muted-foreground"
+                  )}
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ArrowRight className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+              <p className="text-[10px] text-muted-foreground/60 mt-2 text-center">
+                Enter to send · Shift+Enter for new line · Esc to close
+              </p>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-2 text-center">
-            Press Enter to send · Shift+Enter for new line
-          </p>
         </div>
       </div>
     </div>
