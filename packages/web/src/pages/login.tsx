@@ -110,10 +110,12 @@ export function LoginPage() {
         </div>
 
         {/* Email form */}
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} autoComplete="on">
           <div className="rounded-xl border bg-card p-1">
             <input
               type="email"
+              name="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
@@ -129,6 +131,8 @@ export function LoginPage() {
             {needsPassword && (
               <input
                 type="password"
+                name="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
