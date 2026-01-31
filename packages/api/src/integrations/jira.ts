@@ -182,14 +182,19 @@ export const jiraAdapter: IntegrationAdapter = {
           continue;
         }
 
-        console.log(`Jira project ${project.id}: Found ${data.issues.length} issues`);
+        // Log issue types found for debugging
+        const issueTypes = data.issues.map((i: { fields: { issuetype: { name: string } } }) =>
+          i.fields.issuetype?.name
+        );
+        console.log(`Jira project ${project.id}: Found ${data.issues.length} issues, types:`, [...new Set(issueTypes)]);
 
-        // Group by type
+        // Group by type - Epics go to OKRs, everything else goes to tickets
         const epics = data.issues.filter((i: { fields: { issuetype: { name: string } } }) =>
           i.fields.issuetype?.name === "Epic"
         );
-        const stories = data.issues.filter((i: { fields: { issuetype: { name: string } } }) =>
-          ["Story", "Task", "Bug", "Sub-task"].includes(i.fields.issuetype?.name || "")
+        // Include ALL non-epic issues as tickets (not just Story/Task/Bug)
+        const allOtherIssues = data.issues.filter((i: { fields: { issuetype: { name: string } } }) =>
+          i.fields.issuetype?.name !== "Epic"
         );
 
         if (epics.length > 0) {
@@ -208,14 +213,14 @@ export const jiraAdapter: IntegrationAdapter = {
           });
         }
 
-        if (stories.length > 0) {
+        if (allOtherIssues.length > 0) {
           items.push({
             dataType: "tickets",
             sourceId: `${project.id}/issues`,
             sourceName: `${project.name} / Issues`,
             title: `${project.name} Issues`,
-            summary: `${stories.length} issues`,
-            content: stories.map((s: { key: string; fields: { summary: string; description: unknown; issuetype: { name: string }; status: { name: string } } }) => ({
+            summary: `${allOtherIssues.length} issues`,
+            content: allOtherIssues.map((s: { key: string; fields: { summary: string; description: unknown; issuetype: { name: string }; status: { name: string } } }) => ({
               key: s.key,
               summary: s.fields.summary,
               description: s.fields.description,
