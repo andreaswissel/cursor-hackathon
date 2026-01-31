@@ -39,6 +39,43 @@ const DATA_TYPE_COLORS: Record<string, string> = {
   messages: "bg-pink-500/10 text-pink-500",
 };
 
+// Generate a preview of the content
+function getContentPreview(item: IntegrationDataItem): string[] {
+  const previews: string[] = [];
+
+  if (!item.content || !Array.isArray(item.content)) {
+    if (typeof item.content === "string") {
+      // For docs/text content, show first 100 chars
+      return [item.content.slice(0, 100) + (item.content.length > 100 ? "..." : "")];
+    }
+    return [];
+  }
+
+  // Take first 3 records
+  const records = (item.content as Array<Record<string, unknown>>).slice(0, 3);
+
+  for (const record of records) {
+    // Try to find the most meaningful field to preview
+    const previewField =
+      record.Objective || record.objective ||
+      record.Name || record.name ||
+      record.Title || record.title ||
+      record.Summary || record.summary ||
+      record.Feedback || record.feedback ||
+      record.Comment || record.comment ||
+      record.Text || record.text ||
+      record.Description || record.description ||
+      Object.values(record).find(v => typeof v === "string" && v.length > 0);
+
+    if (previewField) {
+      const text = String(previewField);
+      previews.push(text.slice(0, 80) + (text.length > 80 ? "..." : ""));
+    }
+  }
+
+  return previews;
+}
+
 export function DataSourceSelector({ onContextChange }: DataSourceSelectorProps) {
   const [useMockData, setUseMockData] = useState(true);
   const [integrationData, setIntegrationData] = useState<IntegrationDataItem[]>([]);
@@ -283,6 +320,7 @@ export function DataSourceSelector({ onContextChange }: DataSourceSelectorProps)
                 const Icon = DATA_TYPE_ICONS[item.dataType] || FileText;
                 const colorClass = DATA_TYPE_COLORS[item.dataType] || "bg-gray-500/10 text-gray-500";
                 const isSelected = selectedIds.has(item.id);
+                const previews = getContentPreview(item);
 
                 return (
                   <button
@@ -305,7 +343,7 @@ export function DataSourceSelector({ onContextChange }: DataSourceSelectorProps)
                         >
                           <Icon className={cn("w-4 h-4", colorClass.split(" ")[1])} />
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="font-medium text-sm truncate">
                             {item.title || item.sourceName || "Untitled"}
                           </p>
@@ -326,6 +364,24 @@ export function DataSourceSelector({ onContextChange }: DataSourceSelectorProps)
                         {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
                       </div>
                     </div>
+                    {/* Content Preview */}
+                    {previews.length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-border/50 space-y-1">
+                        {previews.map((preview, i) => (
+                          <p
+                            key={i}
+                            className="text-xs text-muted-foreground line-clamp-1"
+                          >
+                            {preview}
+                          </p>
+                        ))}
+                        {Array.isArray(item.content) && (item.content as unknown[]).length > 3 && (
+                          <p className="text-xs text-muted-foreground/60">
+                            +{(item.content as unknown[]).length - 3} more rows
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </button>
                 );
               })}
