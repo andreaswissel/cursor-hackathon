@@ -57,3 +57,48 @@ export const messages = pgTable("messages", {
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// Integration types
+export type IntegrationProvider = "airtable" | "jira" | "notion" | "google" | "slack";
+
+// User integrations (OAuth connections to external tools)
+export const integrations = pgTable("integrations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  provider: text("provider").$type<IntegrationProvider>().notNull(),
+  // OAuth tokens
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  tokenExpiresAt: timestamp("token_expires_at"),
+  // Provider-specific metadata (workspace ID, team ID, etc.)
+  metadata: jsonb("metadata").$type<{
+    workspaceId?: string;
+    workspaceName?: string;
+    teamId?: string;
+    email?: string;
+    [key: string]: unknown;
+  }>(),
+  // Connection status
+  isActive: integer("is_active").default(1).notNull(),
+  lastSyncedAt: timestamp("last_synced_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Synced data from integrations (cached for context)
+export const integrationData = pgTable("integration_data", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  integrationId: uuid("integration_id").references(() => integrations.id).notNull(),
+  // Type of data (e.g., "okrs", "feedback", "tickets", "docs")
+  dataType: text("data_type").$type<"okrs" | "feedback" | "tickets" | "docs" | "messages">().notNull(),
+  // Source identifier (e.g., base ID, project key, page ID)
+  sourceId: text("source_id").notNull(),
+  sourceName: text("source_name"),
+  // The actual synced content
+  content: jsonb("content").notNull(),
+  // For display/selection
+  title: text("title"),
+  summary: text("summary"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

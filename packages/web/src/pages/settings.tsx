@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/sidebar";
 import { useAuth } from "@/contexts/auth-context";
-import { Key, Loader2, Check, Trash2, Eye, EyeOff, Sparkles } from "lucide-react";
+import { Key, Loader2, Check, Trash2, Eye, EyeOff, Sparkles, Link2 } from "lucide-react";
 import { getAllSessions, type SessionSummary } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { IntegrationsPanel } from "@/components/integrations-panel";
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -352,6 +353,22 @@ export function SettingsPage() {
                     </p>
                   </div>
                 </div>
+              </div>
+
+              {/* Integrations Section */}
+              <div className="pt-8 border-t">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                    <Link2 className="w-5 h-5 text-blue-500" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold">Integrations</h2>
+                    <p className="text-sm text-muted-foreground">
+                      Connect your tools to import OKRs, feedback, and docs
+                    </p>
+                  </div>
+                </div>
+                <IntegrationsPanel />
               </div>
             </div>
           )}
