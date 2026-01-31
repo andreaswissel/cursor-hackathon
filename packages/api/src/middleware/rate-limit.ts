@@ -6,14 +6,18 @@ import { sessions, users } from "../db/schema";
 const MAX_SESSIONS_PER_USER = 1;
 const MAX_PROMPTS_PER_SESSION = 5;
 
-// Check if user has their own API key (bypass limits)
+// Check if user has any API key configured (bypass limits)
 async function userHasApiKey(userId: string): Promise<boolean> {
   const [user] = await db
-    .select({ apiKey: users.anthropicApiKey })
+    .select({
+      anthropicApiKey: users.anthropicApiKey,
+      openaiApiKey: users.openaiApiKey,
+      geminiApiKey: users.geminiApiKey,
+    })
     .from(users)
     .where(eq(users.id, userId));
 
-  return !!user?.apiKey;
+  return !!(user?.anthropicApiKey || user?.openaiApiKey || user?.geminiApiKey);
 }
 
 // Check if user can create a new session (max 1, unlimited for admins or BYOK users)

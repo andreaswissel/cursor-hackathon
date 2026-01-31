@@ -1,59 +1,48 @@
-import Anthropic from "@anthropic-ai/sdk";
+// Backward-compatible wrapper around the new LLM abstraction
+// Uses the default Anthropic configuration from env
+import {
+  streamCompletion as llmStreamCompletion,
+  completion as llmCompletion,
+  type StreamCallbacks,
+  type Message,
+  type LLMConfig,
+} from "./llm";
+import type Anthropic from "@anthropic-ai/sdk";
 
-export const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
+// Re-export types for backward compatibility
+export type { StreamCallbacks };
 
-export const MODEL = "claude-opus-4-5-20251101";
+// Default config uses Anthropic with env key
+const defaultConfig: LLMConfig = {
+  provider: "anthropic",
+  apiKey: process.env.ANTHROPIC_API_KEY || "",
+};
 
-export interface StreamCallbacks {
-  onText: (text: string) => void;
-  onComplete: (fullText: string) => void;
-  onError: (error: Error) => void;
+// Convert Anthropic message format to our generic format
+function convertMessages(messages: Anthropic.MessageParam[]): Message[] {
+  return messages.map((m) => ({
+    role: m.role as "user" | "assistant",
+    content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
+  }));
 }
 
 export async function streamCompletion(
   systemPrompt: string,
   messages: Anthropic.MessageParam[],
-  callbacks: StreamCallbacks
+  callbacks: StreamCallbacks,
+  config: LLMConfig = defaultConfig
 ): Promise<string> {
-  let fullText = "";
-
-  try {
-    const stream = anthropic.messages.stream({
-      model: MODEL,
-      max_tokens: 8192,
-      system: systemPrompt,
-      messages,
-    });
-
-    for await (const event of stream) {
-      if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-        const text = event.delta.text;
-        fullText += text;
-        callbacks.onText(text);
-      }
-    }
-
-    callbacks.onComplete(fullText);
-    return fullText;
-  } catch (error) {
-    callbacks.onError(error as Error);
-    throw error;
-  }
+  return llmStreamCompletion(systemPrompt, convertMessages(messages), callbacks, config);
 }
 
 export async function completion(
   systemPrompt: string,
-  messages: Anthropic.MessageParam[]
+  messages: Anthropic.MessageParam[],
+  config: LLMConfig = defaultConfig
 ): Promise<string> {
-  const response = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: 8192,
-    system: systemPrompt,
-    messages,
-  });
-
-  const textBlock = response.content.find((block) => block.type === "text");
-  return textBlock?.text ?? "";
+  return llmCompletion(systemPrompt, convertMessages(messages), config);
 }
+
+// Re-export LLM utilities for direct usage
+export { getUserLLMConfig } from "./llm";
+export type { LLMConfig } from "./llm";

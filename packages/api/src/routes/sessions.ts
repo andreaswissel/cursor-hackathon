@@ -2,7 +2,10 @@ import { Router, Request, Response } from "express";
 import { v4 as uuid } from "uuid";
 import { sessionStore, SessionContext, SessionEvents, AgentType } from "../lib/session-store";
 import { OrchestratorAgent } from "../agents/orchestrator-agent";
-import { streamCompletion } from "../lib/claude";
+import { streamCompletion, getUserLLMConfig } from "../lib/claude";
+import { db } from "../db";
+import { users } from "../db/schema";
+import { eq } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
 import {
   checkSessionLimit,
@@ -126,6 +129,7 @@ router.get("/:sessionId/stream", checkSessionOwnership, async (req: Request, res
 // Chat with an agent
 router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (req: Request, res: Response) => {
   const { sessionId } = req.params;
+  const userId = req.user!.id;
   const { agentType, message } = req.body as {
     agentType: AgentType;
     message: string;
@@ -141,6 +145,19 @@ router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (
     res.status(404).json({ error: "Session not found" });
     return;
   }
+
+  // Get user's LLM config (for BYOK)
+  const [user] = await db
+    .select({
+      activeProvider: users.activeProvider,
+      anthropicApiKey: users.anthropicApiKey,
+      openaiApiKey: users.openaiApiKey,
+      geminiApiKey: users.geminiApiKey,
+    })
+    .from(users)
+    .where(eq(users.id, userId));
+
+  const llmConfig = getUserLLMConfig(user || {});
 
   // Get agent's previous output as context
   const agent = session.agents.get(agentType);
@@ -185,7 +202,7 @@ router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (
         res.write(`data: ${JSON.stringify({ type: "error", error: error.message })}\n\n`);
         res.end();
       },
-    });
+    }, llmConfig);
   } catch (error) {
     res.write(`data: ${JSON.stringify({ type: "error", error: (error as Error).message })}\n\n`);
     res.end();

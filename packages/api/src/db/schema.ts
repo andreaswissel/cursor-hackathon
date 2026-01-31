@@ -6,7 +6,11 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash"),
   isAdmin: integer("is_admin").default(0).notNull(),
+  // Multi-provider API keys
   anthropicApiKey: text("anthropic_api_key"),
+  openaiApiKey: text("openai_api_key"),
+  geminiApiKey: text("gemini_api_key"),
+  activeProvider: text("active_provider").$type<"anthropic" | "openai" | "gemini">().default("anthropic"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
