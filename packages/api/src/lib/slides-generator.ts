@@ -107,7 +107,7 @@ export async function generateProductUpdateSlides(
       },
     });
     requests.push({ insertText: { objectId: "discovery_title", text: "Problem & Opportunity", insertionIndex: 0 } });
-    requests.push({ insertText: { objectId: "discovery_body", text: truncateForSlide(content.discovery), insertionIndex: 0 } });
+    requests.push({ insertText: { objectId: "discovery_body", text: formatForSlide(content.discovery), insertionIndex: 0 } });
   }
 
   // Slide 3: Strategy & Positioning
@@ -123,7 +123,7 @@ export async function generateProductUpdateSlides(
       },
     });
     requests.push({ insertText: { objectId: "strategy_title", text: "Strategy & Positioning", insertionIndex: 0 } });
-    requests.push({ insertText: { objectId: "strategy_body", text: truncateForSlide(content.strategy), insertionIndex: 0 } });
+    requests.push({ insertText: { objectId: "strategy_body", text: formatForSlide(content.strategy), insertionIndex: 0 } });
   }
 
   // Slide 4: Solution Overview (from Spec)
@@ -139,7 +139,7 @@ export async function generateProductUpdateSlides(
       },
     });
     requests.push({ insertText: { objectId: "spec_title", text: "Solution Overview", insertionIndex: 0 } });
-    requests.push({ insertText: { objectId: "spec_body", text: truncateForSlide(extractKeyPoints(content.spec)), insertionIndex: 0 } });
+    requests.push({ insertText: { objectId: "spec_body", text: extractKeyPoints(content.spec), insertionIndex: 0 } });
   }
 
   // Slide 5: Go-to-Market Strategy
@@ -155,7 +155,7 @@ export async function generateProductUpdateSlides(
       },
     });
     requests.push({ insertText: { objectId: "gtm_title", text: "Go-to-Market Strategy", insertionIndex: 0 } });
-    requests.push({ insertText: { objectId: "gtm_body", text: truncateForSlide(content.gtm), insertionIndex: 0 } });
+    requests.push({ insertText: { objectId: "gtm_body", text: formatForSlide(content.gtm), insertionIndex: 0 } });
   }
 
   // Slide 6: Success Metrics
@@ -220,56 +220,114 @@ export async function generateProductUpdateSlides(
   return `https://docs.google.com/presentation/d/${presentationId}/edit`;
 }
 
-// Helper to truncate text for slides (max ~500 chars)
-function truncateForSlide(text: string): string {
-  // Remove markdown formatting
-  let clean = text
+// Constants for slide formatting
+const MAX_BULLETS_PER_SLIDE = 5;
+const MAX_CHARS_PER_BULLET = 80;
+
+// Clean markdown formatting from text
+function cleanMarkdown(text: string): string {
+  return text
     .replace(/#{1,6}\s/g, "")
     .replace(/\*\*/g, "")
     .replace(/\*/g, "")
     .replace(/`/g, "")
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .trim();
+}
 
-  // Convert markdown lists to bullet points
-  clean = clean.replace(/^[-*]\s/gm, "• ");
+// Truncate a single line to max chars
+function truncateLine(text: string, maxChars: number = MAX_CHARS_PER_BULLET): string {
+  const clean = cleanMarkdown(text).trim();
+  if (clean.length <= maxChars) return clean;
+  return clean.substring(0, maxChars - 3).trim() + "...";
+}
 
-  // Truncate if too long
-  if (clean.length > 800) {
-    clean = clean.substring(0, 800) + "...";
+// Extract bullet points from text, limiting count and length
+function extractBulletPoints(text: string, maxBullets: number = MAX_BULLETS_PER_SLIDE): string {
+  const lines = text.split("\n");
+  const bullets: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Check if it's a bullet point or meaningful content
+    const isBullet = trimmed.match(/^[-*•]\s/) || trimmed.match(/^\d+\.\s/);
+    const isHeader = trimmed.match(/^#{1,3}\s/);
+
+    if (isBullet || isHeader) {
+      // Clean the bullet/header prefix
+      let content = trimmed
+        .replace(/^[-*•]\s*/, "")
+        .replace(/^\d+\.\s*/, "")
+        .replace(/^#{1,3}\s*/, "");
+
+      content = truncateLine(content);
+      if (content && content.length > 10) { // Skip very short items
+        bullets.push(`• ${content}`);
+      }
+    }
+
+    if (bullets.length >= maxBullets) break;
   }
 
-  return clean.trim();
+  // If we didn't find enough bullets, try to extract sentences
+  if (bullets.length < 2) {
+    const sentences = text
+      .replace(/\n+/g, " ")
+      .split(/[.!?]+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 20 && s.length < 150);
+
+    for (const sentence of sentences) {
+      if (bullets.length >= maxBullets) break;
+      const clean = truncateLine(sentence);
+      if (clean && !bullets.includes(`• ${clean}`)) {
+        bullets.push(`• ${clean}`);
+      }
+    }
+  }
+
+  return bullets.slice(0, maxBullets).join("\n");
+}
+
+// Format content for a slide body - strict limits
+function formatForSlide(text: string): string {
+  if (!text) return "• No content available";
+  return extractBulletPoints(text) || "• No key points extracted";
 }
 
 // Extract key points from spec for slide
 function extractKeyPoints(spec: string): string {
-  const lines = spec.split("\n");
-  const keyPoints: string[] = [];
-
-  for (const line of lines) {
-    // Look for headers or bullet points
-    if (line.match(/^#{1,3}\s/) || line.match(/^[-*]\s/)) {
-      const clean = line.replace(/^#{1,3}\s/, "• ").replace(/^[-*]\s/, "• ");
-      keyPoints.push(clean);
-      if (keyPoints.length >= 8) break;
-    }
-  }
-
-  return keyPoints.join("\n") || truncateForSlide(spec);
+  return formatForSlide(spec);
 }
 
 // Extract or generate metrics section
 function extractMetrics(text: string): string {
-  // Try to find existing metrics in the text
-  const metricsMatch = text.match(/metric[s]?:?\s*([\s\S]*?)(?=\n\n|$)/i);
-  if (metricsMatch) {
-    return truncateForSlide(metricsMatch[1]);
+  // Try to extract metrics-related bullets from the text
+  const metricKeywords = ["metric", "kpi", "measure", "track", "target", "goal", "%", "rate"];
+  const lines = text.split("\n");
+  const metricBullets: string[] = [];
+
+  for (const line of lines) {
+    const lower = line.toLowerCase();
+    if (metricKeywords.some(kw => lower.includes(kw))) {
+      const clean = truncateLine(line.replace(/^[-*•]\s*/, ""));
+      if (clean && clean.length > 10) {
+        metricBullets.push(`• ${clean}`);
+      }
+    }
+    if (metricBullets.length >= MAX_BULLETS_PER_SLIDE) break;
+  }
+
+  if (metricBullets.length >= 2) {
+    return metricBullets.join("\n");
   }
 
   // Default metrics template
-  return `• Adoption Rate: Target X% of users within 30 days
+  return `• Adoption: Target X% of users within 30 days
 • Engagement: Track feature usage frequency
-• Satisfaction: Measure NPS delta
-• Performance: Monitor latency and error rates
+• Satisfaction: Measure NPS improvement
+• Performance: Monitor latency and errors
 • Business Impact: Revenue/conversion uplift`;
 }
