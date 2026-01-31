@@ -26,6 +26,8 @@ export interface AgentState {
 export interface SessionContext {
   okrs: Array<{ objective: string; keyResults: string[] }>;
   customerFeedback: string[];
+  internalFeedback?: Array<{ channel: string; author: string; message: string }>;
+  metrics?: Array<{ name: string; value: string; trend: string; delta: string; source: string; description: string }>;
   additionalDocs?: string;
 }
 

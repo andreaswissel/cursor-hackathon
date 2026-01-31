@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { createSession, getAllSessions, getUsageStats, type SessionSummary, type UsageStats } from "@/lib/api";
-import { MOCK_OKRS, MOCK_CUSTOMER_FEEDBACK } from "@product-os/shared";
+import { MOCK_OKRS, MOCK_CUSTOMER_FEEDBACK, MOCK_INTERNAL_FEEDBACK, MOCK_METRICS } from "@product-os/shared";
 import { Sidebar } from "@/components/sidebar";
 import { DataSourceSelector } from "@/components/data-source-selector";
 import { Zap, ArrowRight, AlertCircle } from "lucide-react";
@@ -18,9 +18,13 @@ export function HomePage() {
   const [context, setContext] = useState<{
     okrs: Array<{ objective: string; keyResults: string[] }>;
     customerFeedback: string[];
+    internalFeedback?: Array<{ channel: string; author: string; message: string }>;
+    metrics?: Array<{ name: string; value: string; trend: string; delta: string; source: string; description: string }>;
   }>({
     okrs: MOCK_OKRS,
     customerFeedback: MOCK_CUSTOMER_FEEDBACK,
+    internalFeedback: MOCK_INTERNAL_FEEDBACK,
+    metrics: MOCK_METRICS,
   });
 
   const handleContextChange = useCallback((newContext: typeof context) => {

@@ -73,6 +73,18 @@ Output your analysis in the following format:
       .map((f, i) => `${i + 1}. "${f}"`)
       .join("\n");
 
+    const internalFeedbackList = input.context.internalFeedback
+      ? input.context.internalFeedback
+          .map((f) => `${f.channel} - ${f.author}: "${f.message}"`)
+          .join("\n")
+      : "";
+
+    const metricsList = input.context.metrics
+      ? input.context.metrics
+          .map((m) => `- ${m.name}: ${m.value} (${m.delta}, ${m.trend}) - ${m.description}`)
+          .join("\n")
+      : "";
+
     return [
       {
         role: "user",
@@ -81,8 +93,14 @@ ${input.idea}
 
 ## Customer Feedback
 ${feedbackList}
+${internalFeedbackList ? `
+## Internal Feedback (Slack/Teams)
+${internalFeedbackList}` : ""}
+${metricsList ? `
+## Current Product Metrics
+${metricsList}` : ""}
 
-Please analyze this idea against the customer feedback and provide your discovery analysis.`,
+Please analyze this idea against the customer feedback, internal discussions, and metrics. Provide your discovery analysis.`,
       },
     ];
   }

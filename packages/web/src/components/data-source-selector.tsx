@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { getIntegrationData, type IntegrationDataItem } from "@/lib/api";
-import { MOCK_OKRS, MOCK_CUSTOMER_FEEDBACK } from "@product-os/shared";
+import { MOCK_OKRS, MOCK_CUSTOMER_FEEDBACK, MOCK_INTERNAL_FEEDBACK, MOCK_METRICS } from "@product-os/shared";
 import { cn } from "@/lib/utils";
 import {
   Target,
@@ -14,12 +14,19 @@ import {
   Loader2,
   RefreshCw,
   AlertCircle,
+  Hash,
+  BarChart3,
+  TrendingUp,
+  TrendingDown,
+  Minus,
 } from "lucide-react";
 
 interface DataSourceSelectorProps {
   onContextChange: (context: {
     okrs: Array<{ objective: string; keyResults: string[] }>;
     customerFeedback: string[];
+    internalFeedback?: Array<{ channel: string; author: string; message: string }>;
+    metrics?: Array<{ name: string; value: string; trend: string; delta: string; source: string; description: string }>;
   }) => void;
 }
 
@@ -94,6 +101,8 @@ export function DataSourceSelector({ onContextChange }: DataSourceSelectorProps)
       onContextChange({
         okrs: MOCK_OKRS,
         customerFeedback: MOCK_CUSTOMER_FEEDBACK,
+        internalFeedback: MOCK_INTERNAL_FEEDBACK,
+        metrics: MOCK_METRICS,
       });
     } else {
       // Convert selected integration data to context format
@@ -259,6 +268,67 @@ export function DataSourceSelector({ onContextChange }: DataSourceSelectorProps)
               {MOCK_CUSTOMER_FEEDBACK.length > 4 && (
                 <li className="text-xs text-muted-foreground/60">
                   +{MOCK_CUSTOMER_FEEDBACK.length - 4} more entries
+                </li>
+              )}
+            </ul>
+          </div>
+
+          {/* Internal Feedback Card */}
+          <div className="rounded-xl border bg-card p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                <Hash className="w-4 h-4 text-purple-500" />
+              </div>
+              <div>
+                <h3 className="font-medium text-sm">Internal Feedback</h3>
+                <p className="text-xs text-muted-foreground">
+                  {MOCK_INTERNAL_FEEDBACK.length} Slack messages
+                </p>
+              </div>
+            </div>
+            <ul className="space-y-2">
+              {MOCK_INTERNAL_FEEDBACK.slice(0, 3).map((item, i) => (
+                <li key={i} className="text-sm text-muted-foreground">
+                  <span className="text-purple-500 text-xs font-medium">{item.channel}</span>
+                  <span className="line-clamp-1 block">"{item.message.slice(0, 60)}..."</span>
+                </li>
+              ))}
+              {MOCK_INTERNAL_FEEDBACK.length > 3 && (
+                <li className="text-xs text-muted-foreground/60">
+                  +{MOCK_INTERNAL_FEEDBACK.length - 3} more messages
+                </li>
+              )}
+            </ul>
+          </div>
+
+          {/* Metrics Card */}
+          <div className="rounded-xl border bg-card p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                <BarChart3 className="w-4 h-4 text-amber-500" />
+              </div>
+              <div>
+                <h3 className="font-medium text-sm">Product Metrics</h3>
+                <p className="text-xs text-muted-foreground">
+                  {MOCK_METRICS.length} key metrics
+                </p>
+              </div>
+            </div>
+            <ul className="space-y-2">
+              {MOCK_METRICS.slice(0, 4).map((metric, i) => (
+                <li key={i} className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground truncate mr-2">{metric.name}</span>
+                  <span className="flex items-center gap-1 font-medium">
+                    {metric.value}
+                    {metric.trend === "up" && <TrendingUp className="w-3 h-3 text-red-500" />}
+                    {metric.trend === "down" && <TrendingDown className="w-3 h-3 text-red-500" />}
+                    {metric.trend === "flat" && <Minus className="w-3 h-3 text-muted-foreground" />}
+                  </span>
+                </li>
+              ))}
+              {MOCK_METRICS.length > 4 && (
+                <li className="text-xs text-muted-foreground/60">
+                  +{MOCK_METRICS.length - 4} more metrics
                 </li>
               )}
             </ul>

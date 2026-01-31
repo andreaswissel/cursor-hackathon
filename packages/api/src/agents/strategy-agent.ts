@@ -81,6 +81,12 @@ Output your analysis in the following format:
 
     const discoveryOutput = input.previousOutputs?.discovery as string | undefined;
 
+    const metricsList = input.context.metrics
+      ? input.context.metrics
+          .map((m) => `- ${m.name}: ${m.value} (${m.delta}, trending ${m.trend}) - ${m.description}`)
+          .join("\n")
+      : "";
+
     return [
       {
         role: "user",
@@ -89,10 +95,14 @@ ${input.idea}
 
 ## Company OKRs
 ${okrsList}
+${metricsList ? `
+## Current Product Metrics
+${metricsList}` : ""}
+${discoveryOutput ? `
+## Discovery Findings
+${discoveryOutput}` : ""}
 
-${discoveryOutput ? `## Discovery Findings\n${discoveryOutput}\n` : ""}
-
-Please analyze this idea against our OKRs and provide your strategic assessment.`,
+Please analyze this idea against our OKRs and current metrics. Provide your strategic assessment.`,
       },
     ];
   }
