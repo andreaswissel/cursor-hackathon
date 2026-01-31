@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import type { Session, AgentType, AgentLog, AgentStatus, AgentState, SSEEvent } from "@product-os/shared";
+import { getAuthToken } from "@/lib/api";
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -18,7 +19,12 @@ export function useSessionStream(sessionId: string): UseSessionStreamResult {
   useEffect(() => {
     if (!sessionId) return;
 
-    const eventSource = new EventSource(`${API_BASE}/sessions/${sessionId}/stream`);
+    const token = getAuthToken();
+    const url = token
+      ? `${API_BASE}/sessions/${sessionId}/stream?token=${encodeURIComponent(token)}`
+      : `${API_BASE}/sessions/${sessionId}/stream`;
+
+    const eventSource = new EventSource(url);
     eventSourceRef.current = eventSource;
 
     eventSource.onopen = () => {

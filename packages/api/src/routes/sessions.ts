@@ -3,17 +3,37 @@ import { v4 as uuid } from "uuid";
 import { sessionStore, SessionContext, SessionEvents, AgentType } from "../lib/session-store";
 import { OrchestratorAgent } from "../agents/orchestrator-agent";
 import { streamCompletion } from "../lib/claude";
+import { requireAuth } from "../middleware/auth";
+import {
+  checkSessionLimit,
+  checkPromptLimit,
+  checkSessionOwnership,
+  incrementPromptCount,
+  getUserUsageStats,
+  getSessionUsageStats,
+} from "../middleware/rate-limit";
 
 const router = Router();
 
-// Get all sessions (for sidebar)
-router.get("/", async (_req: Request, res: Response) => {
-  const sessions = await sessionStore.getAll();
+// All session routes require authentication
+router.use(requireAuth);
+
+// Get user's usage stats
+router.get("/usage", async (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  const stats = await getUserUsageStats(userId);
+  res.json(stats);
+});
+
+// Get all sessions (for sidebar) - filtered by user
+router.get("/", async (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  const sessions = await sessionStore.getAllForUser(userId);
   res.json({ sessions });
 });
 
 // Create a new session
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", checkSessionLimit, async (req: Request, res: Response) => {
   const { idea, context } = req.body as {
     idea: string;
     context: SessionContext;
@@ -24,8 +44,9 @@ router.post("/", async (req: Request, res: Response) => {
     return;
   }
 
+  const userId = req.user!.id;
   const sessionId = uuid();
-  await sessionStore.create(sessionId, idea, context);
+  await sessionStore.create(sessionId, idea, context, userId);
 
   // Start orchestrator in background
   const orchestrator = new OrchestratorAgent();
@@ -38,7 +59,7 @@ router.post("/", async (req: Request, res: Response) => {
 });
 
 // Get session state
-router.get("/:sessionId", async (req: Request, res: Response) => {
+router.get("/:sessionId", checkSessionOwnership, async (req: Request, res: Response) => {
   const { sessionId } = req.params;
   const state = await sessionStore.getState(sessionId);
 
@@ -47,11 +68,13 @@ router.get("/:sessionId", async (req: Request, res: Response) => {
     return;
   }
 
-  res.json(state);
+  // Add usage stats
+  const usageStats = await getSessionUsageStats(sessionId);
+  res.json({ ...state, usage: usageStats });
 });
 
 // SSE endpoint for real-time updates
-router.get("/:sessionId/stream", async (req: Request, res: Response) => {
+router.get("/:sessionId/stream", checkSessionOwnership, async (req: Request, res: Response) => {
   const { sessionId } = req.params;
   const session = await sessionStore.get(sessionId);
 
@@ -100,7 +123,7 @@ router.get("/:sessionId/stream", async (req: Request, res: Response) => {
 });
 
 // Chat with an agent
-router.post("/:sessionId/chat", async (req: Request, res: Response) => {
+router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (req: Request, res: Response) => {
   const { sessionId } = req.params;
   const { agentType, message } = req.body as {
     agentType: AgentType;
@@ -151,8 +174,9 @@ router.post("/:sessionId/chat", async (req: Request, res: Response) => {
         res.write(`data: ${JSON.stringify({ type: "text", content: text })}\n\n`);
       },
       onComplete: async () => {
-        // Save assistant message
+        // Save assistant message and increment prompt count
         await sessionStore.addMessage(sessionId, agentType, "assistant", fullResponse);
+        await incrementPromptCount(sessionId);
         res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
         res.end();
       },
@@ -168,7 +192,7 @@ router.post("/:sessionId/chat", async (req: Request, res: Response) => {
 });
 
 // Get chat history for an agent
-router.get("/:sessionId/chat/:agentType", async (req: Request, res: Response) => {
+router.get("/:sessionId/chat/:agentType", checkSessionOwnership, async (req: Request, res: Response) => {
   const { sessionId, agentType } = req.params;
 
   const session = await sessionStore.get(sessionId);

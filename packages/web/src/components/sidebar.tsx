@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/auth-context";
 import {
   Zap,
   Plus,
@@ -7,8 +8,9 @@ import {
   Loader2,
   CheckCircle,
   XCircle,
-  Settings,
+  LogOut,
   FileText,
+  User,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -55,6 +57,7 @@ const STATUS_CONFIG = {
 
 export function Sidebar({ sessions = [] }: SidebarProps) {
   const location = useLocation();
+  const { user, logout } = useAuth();
 
   // Group sessions by status
   const groupedSessions = sessions.reduce(
@@ -157,10 +160,19 @@ export function Sidebar({ sessions = [] }: SidebarProps) {
       </div>
 
       {/* Bottom section */}
-      <div className="border-t p-3">
-        <button className="flex items-center gap-2 px-3 py-2 w-full text-sm text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors">
-          <Settings className="w-4 h-4" />
-          Settings
+      <div className="border-t p-3 space-y-1">
+        {user && (
+          <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+            <User className="w-4 h-4" />
+            <span className="truncate">{user.email}</span>
+          </div>
+        )}
+        <button
+          onClick={logout}
+          className="flex items-center gap-2 px-3 py-2 w-full text-sm text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          Sign out
         </button>
       </div>
     </aside>

@@ -13,6 +13,7 @@ import {
   ExternalLink,
   Copy,
   Check,
+  MessageSquare,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getAllSessions, type SessionSummary } from "@/lib/api";
@@ -114,6 +115,20 @@ export function SessionPage() {
                   <span className="text-xs text-muted-foreground">
                     {completedAgents}/{AGENT_ORDER.length} agents complete
                   </span>
+                  {session.promptCount !== undefined && (
+                    <>
+                      <span className="text-xs text-muted-foreground">·</span>
+                      <div className="flex items-center gap-1.5">
+                        <MessageSquare className="w-3 h-3 text-muted-foreground" />
+                        <span className={cn(
+                          "text-xs",
+                          session.promptCount >= 5 ? "text-amber-500" : "text-muted-foreground"
+                        )}>
+                          {session.promptCount}/5 prompts
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
               <div

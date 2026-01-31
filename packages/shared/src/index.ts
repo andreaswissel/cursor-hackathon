@@ -30,6 +30,7 @@ export interface Session {
   idea: string;
   context: SessionContext;
   status: SessionStatus;
+  promptCount?: number;
   agents: Record<AgentType, AgentState>;
   outputs: {
     spec?: string;

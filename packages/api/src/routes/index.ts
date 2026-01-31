@@ -1,8 +1,10 @@
 import { Router } from "express";
 import sessionsRouter from "./sessions";
+import authRouter from "./auth";
 
 const router = Router();
 
+router.use("/auth", authRouter);
 router.use("/sessions", sessionsRouter);
 
 // Health check

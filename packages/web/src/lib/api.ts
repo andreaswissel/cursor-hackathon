@@ -3,6 +3,11 @@ import type { SessionContext, Session, AgentType } from "@product-os/shared";
 // In production, use the full API URL; in dev, proxy through Vite
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
+function getAuthHeaders(): HeadersInit {
+  const token = localStorage.getItem("auth_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export interface SessionSummary {
   id: string;
   idea: string;
@@ -10,8 +15,28 @@ export interface SessionSummary {
   createdAt: string;
 }
 
+export interface UsageStats {
+  sessionCount: number;
+  maxSessions: number;
+  canCreateSession: boolean;
+}
+
+export async function getUsageStats(): Promise<UsageStats> {
+  const res = await fetch(`${API_BASE}/sessions/usage`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to get usage stats");
+  }
+
+  return res.json();
+}
+
 export async function getAllSessions(): Promise<{ sessions: SessionSummary[] }> {
-  const res = await fetch(`${API_BASE}/sessions`);
+  const res = await fetch(`${API_BASE}/sessions`, {
+    headers: getAuthHeaders(),
+  });
 
   if (!res.ok) {
     throw new Error("Failed to get sessions");
@@ -26,12 +51,13 @@ export async function createSession(
 ): Promise<{ sessionId: string }> {
   const res = await fetch(`${API_BASE}/sessions`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
     body: JSON.stringify({ idea, context }),
   });
 
   if (!res.ok) {
-    throw new Error("Failed to create session");
+    const error = await res.json().catch(() => ({ error: "Failed to create session" }));
+    throw new Error(error.message || error.error || "Failed to create session");
   }
 
   return res.json();
@@ -39,8 +65,10 @@ export async function createSession(
 
 export async function getSession(
   sessionId: string
-): Promise<{ session: Session }> {
-  const res = await fetch(`${API_BASE}/sessions/${sessionId}`);
+): Promise<{ session: Session; usage?: { promptCount: number; maxPrompts: number; canSendPrompt: boolean } }> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+    headers: getAuthHeaders(),
+  });
 
   if (!res.ok) {
     throw new Error("Failed to get session");
@@ -57,7 +85,7 @@ export async function answerQuestion(
 ): Promise<void> {
   const res = await fetch(`${API_BASE}/sessions/${sessionId}/answer`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
     body: JSON.stringify({ agentType, questionId, answer }),
   });
 
@@ -79,12 +107,13 @@ export function chatWithAgent(
 
   fetch(`${API_BASE}/sessions/${sessionId}/chat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
     body: JSON.stringify({ agentType, message }),
     signal: controller.signal,
   }).then(async (res) => {
     if (!res.ok) {
-      onError("Failed to start chat");
+      const error = await res.json().catch(() => ({ error: "Failed to start chat" }));
+      onError(error.message || error.error || "Failed to start chat");
       return;
     }
 
@@ -135,11 +164,18 @@ export async function getChatHistory(
   sessionId: string,
   agentType: AgentType
 ): Promise<{ messages: Array<{ role: string; content: string; createdAt: string }> }> {
-  const res = await fetch(`${API_BASE}/sessions/${sessionId}/chat/${agentType}`);
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/chat/${agentType}`, {
+    headers: getAuthHeaders(),
+  });
 
   if (!res.ok) {
     throw new Error("Failed to get chat history");
   }
 
   return res.json();
+}
+
+// Export for use in SSE connections
+export function getAuthToken(): string | null {
+  return localStorage.getItem("auth_token");
 }

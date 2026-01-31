@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { createSession, getAllSessions, type SessionSummary } from "@/lib/api";
+import { createSession, getAllSessions, getUsageStats, type SessionSummary, type UsageStats } from "@/lib/api";
 import { MOCK_OKRS, MOCK_CUSTOMER_FEEDBACK } from "@product-os/shared";
 import { Sidebar } from "@/components/sidebar";
-import { Zap, ArrowRight, Target, MessageSquare } from "lucide-react";
+import { Zap, ArrowRight, Target, MessageSquare, AlertCircle } from "lucide-react";
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -12,26 +12,34 @@ export function HomePage() {
   );
   const [isLoading, setIsLoading] = useState(false);
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    getAllSessions()
-      .then(({ sessions }) => setSessions(sessions))
+    Promise.all([getAllSessions(), getUsageStats()])
+      .then(([{ sessions }, stats]) => {
+        setSessions(sessions);
+        setUsageStats(stats);
+      })
       .catch(console.error);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!idea.trim()) return;
+    if (usageStats && !usageStats.canCreateSession) return;
 
     setIsLoading(true);
+    setError(null);
     try {
       const { sessionId } = await createSession(idea, {
         okrs: MOCK_OKRS,
         customerFeedback: MOCK_CUSTOMER_FEEDBACK,
       });
       navigate(`/session/${sessionId}`);
-    } catch (error) {
-      console.error("Failed to create session:", error);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to create session";
+      setError(message);
       setIsLoading(false);
     }
   };
@@ -57,6 +65,27 @@ export function HomePage() {
             </p>
           </div>
 
+          {/* Session limit warning */}
+          {usageStats && !usageStats.canCreateSession && (
+            <div className="mb-6 p-4 rounded-xl border border-amber-500/20 bg-amber-500/10 flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-amber-600">Session limit reached</p>
+                <p className="text-sm text-amber-600/80 mt-1">
+                  You've used your {usageStats.maxSessions} session for this demo.
+                  Please continue with your existing session.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Error message */}
+          {error && (
+            <div className="mb-6 p-4 rounded-xl border border-red-500/20 bg-red-500/10">
+              <p className="text-sm text-red-500">{error}</p>
+            </div>
+          )}
+
           {/* Input form */}
           <form onSubmit={handleSubmit} className="mb-12">
             <div className="rounded-xl border bg-card p-1">
@@ -65,14 +94,15 @@ export function HomePage() {
                 onChange={(e) => setIdea(e.target.value)}
                 placeholder="Describe your product idea..."
                 className="w-full min-h-[140px] px-4 py-3 text-base bg-transparent resize-none focus:outline-none placeholder:text-muted-foreground/50"
+                disabled={usageStats && !usageStats.canCreateSession}
               />
               <div className="flex items-center justify-between px-3 py-2 border-t">
                 <span className="text-xs text-muted-foreground">
-                  Press Enter to submit
+                  {usageStats ? `${usageStats.sessionCount}/${usageStats.maxSessions} sessions used` : "Press Enter to submit"}
                 </span>
                 <button
                   type="submit"
-                  disabled={isLoading || !idea.trim()}
+                  disabled={isLoading || !idea.trim() || (usageStats && !usageStats.canCreateSession)}
                   className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {isLoading ? (

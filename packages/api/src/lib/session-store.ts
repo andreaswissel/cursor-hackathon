@@ -31,9 +31,11 @@ export interface SessionContext {
 
 export interface Session {
   id: string;
+  userId?: string;
   idea: string;
   context: SessionContext;
   status: "pending" | "running" | "waiting_input" | "completed" | "failed";
+  promptCount: number;
   agents: Map<AgentType, AgentState>;
   outputs: {
     spec?: string;
@@ -70,20 +72,24 @@ class SessionStore {
   public events = new TypedEventEmitter<SessionEvents>();
 
   // Create a new session
-  async create(id: string, idea: string, context: SessionContext): Promise<Session> {
+  async create(id: string, idea: string, context: SessionContext, userId?: string): Promise<Session> {
     // Insert into database
     await db.insert(sessions).values({
       id,
+      userId,
       idea,
       context,
       status: "pending",
+      promptCount: 1,
     });
 
     const session: Session = {
       id,
+      userId,
       idea,
       context,
       status: "pending",
+      promptCount: 1,
       agents: new Map(),
       outputs: {},
       createdAt: new Date(),
@@ -113,9 +119,11 @@ class SessionStore {
     // Build session object
     const session: Session = {
       id: dbSession.id,
+      userId: dbSession.userId ?? undefined,
       idea: dbSession.idea,
       context: dbSession.context as SessionContext,
       status: dbSession.status,
+      promptCount: dbSession.promptCount,
       agents: new Map(),
       outputs: {},
       createdAt: dbSession.createdAt,
@@ -157,6 +165,29 @@ class SessionStore {
       id: s.id,
       idea: s.idea,
       status: s.status,
+      createdAt: s.createdAt,
+    }));
+  }
+
+  // Get all sessions for a specific user
+  async getAllForUser(userId: string): Promise<Array<{ id: string; idea: string; status: string; promptCount: number; createdAt: Date }>> {
+    const dbSessions = await db
+      .select({
+        id: sessions.id,
+        idea: sessions.idea,
+        status: sessions.status,
+        promptCount: sessions.promptCount,
+        createdAt: sessions.createdAt,
+      })
+      .from(sessions)
+      .where(eq(sessions.userId, userId))
+      .orderBy(sessions.createdAt);
+
+    return dbSessions.map((s) => ({
+      id: s.id,
+      idea: s.idea,
+      status: s.status,
+      promptCount: s.promptCount,
       createdAt: s.createdAt,
     }));
   }
