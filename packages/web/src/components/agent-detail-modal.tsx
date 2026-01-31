@@ -208,8 +208,8 @@ export function AgentDetailModal({
     }
   };
 
-  // Get formatted output
-  const getFormattedOutput = () => {
+  // Get formatted output from agent.output
+  const getFormattedOutput = (): string | null => {
     if (!agent?.output) return null;
 
     // Handle different output formats
@@ -233,11 +233,32 @@ export function AgentDetailModal({
       return (agent.output as { reasoning: string }).reasoning;
     }
 
-    // Fallback to JSON
-    return "```json\n" + JSON.stringify(agent.output, null, 2) + "\n```";
+    // Check for problemValidation (discovery agent)
+    if (
+      typeof agent.output === "object" &&
+      "problemValidation" in (agent.output as object)
+    ) {
+      const pv = (agent.output as { problemValidation: { reasoning?: string } }).problemValidation;
+      if (pv?.reasoning) return pv.reasoning;
+    }
+
+    // Fallback to JSON for non-empty objects
+    if (typeof agent.output === "object" && Object.keys(agent.output as object).length > 0) {
+      return "```json\n" + JSON.stringify(agent.output, null, 2) + "\n```";
+    }
+
+    return null;
+  };
+
+  // Get logs content as fallback
+  const getLogsContent = (): string | null => {
+    if (!agent?.logs || agent.logs.length === 0) return null;
+    return agent.logs.map((l) => l.content).join("");
   };
 
   const formattedOutput = getFormattedOutput();
+  const logsContent = getLogsContent();
+  const displayContent = formattedOutput || logsContent;
 
   if (!isOpen) return null;
 
@@ -289,16 +310,23 @@ export function AgentDetailModal({
         {/* Content Area - Scrollable */}
         <div className="flex-1 overflow-y-auto">
           {/* Agent Output Section */}
-          {formattedOutput && (
+          {displayContent && (
             <div className="p-6 border-b">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Current Output
+                  {formattedOutput ? "Current Output" : "Agent Log"}
                 </span>
               </div>
-              <div className="prose prose-sm max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-h1:text-lg prose-h2:text-base prose-h3:text-sm prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground prose-code:text-xs prose-code:bg-secondary prose-code:px-1 prose-code:py-0.5 prose-code:rounded">
-                <ReactMarkdown>{formattedOutput}</ReactMarkdown>
+              <div className={cn(
+                "prose prose-sm max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-h1:text-lg prose-h2:text-base prose-h3:text-sm prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground prose-code:text-xs prose-code:bg-secondary prose-code:px-1 prose-code:py-0.5 prose-code:rounded",
+                !formattedOutput && "font-mono text-xs whitespace-pre-wrap"
+              )}>
+                {formattedOutput ? (
+                  <ReactMarkdown>{displayContent}</ReactMarkdown>
+                ) : (
+                  <div className="text-muted-foreground">{displayContent}</div>
+                )}
               </div>
             </div>
           )}
