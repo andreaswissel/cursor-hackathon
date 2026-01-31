@@ -13,6 +13,8 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   login: (email: string, password?: string) => Promise<void>;
+  loginWithGoogle: () => void;
+  setTokenFromOAuth: (token: string) => void;
   logout: () => void;
 }
 
@@ -75,6 +77,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(newUser);
   }, []);
 
+  const loginWithGoogle = useCallback(() => {
+    // Redirect to backend Google OAuth endpoint
+    window.location.href = `${API_BASE}/auth/google`;
+  }, []);
+
+  const setTokenFromOAuth = useCallback(async (newToken: string) => {
+    localStorage.setItem("auth_token", newToken);
+    setToken(newToken);
+
+    // Fetch user info
+    try {
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        headers: { Authorization: `Bearer ${newToken}` },
+      });
+
+      if (res.ok) {
+        const { user } = await res.json();
+        setUser(user);
+      }
+    } catch (err) {
+      console.error("Failed to fetch user after OAuth:", err);
+    }
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem("auth_token");
     setToken(null);
@@ -82,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, loginWithGoogle, setTokenFromOAuth, logout }}>
       {children}
     </AuthContext.Provider>
   );
