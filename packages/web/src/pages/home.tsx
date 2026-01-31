@@ -16,11 +16,13 @@ export function HomePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([getAllSessions(), getUsageStats()])
-      .then(([{ sessions }, stats]) => {
-        setSessions(sessions);
-        setUsageStats(stats);
-      })
+    // Fetch independently so one failure doesn't block the other
+    getAllSessions()
+      .then(({ sessions }) => setSessions(sessions))
+      .catch(console.error);
+
+    getUsageStats()
+      .then((stats) => setUsageStats(stats))
       .catch(console.error);
   }, []);
 
