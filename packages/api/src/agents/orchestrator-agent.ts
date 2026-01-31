@@ -204,7 +204,7 @@ export class OrchestratorAgent {
 
     if (!googleIntegration) {
       console.log("No Google integration found for user");
-      return null;
+      throw new Error("Connect Google in Settings to generate slides");
     }
 
     let accessToken = googleIntegration.accessToken;
@@ -226,7 +226,7 @@ export class OrchestratorAgent {
           .where(eq(integrations.id, googleIntegration.id));
       } else {
         console.log("Google token expired and no refresh token");
-        return null;
+        throw new Error("Google token expired - reconnect Google in Settings");
       }
     }
 
