@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useSessionStream } from "@/hooks/use-session-stream";
 import { AgentPanel } from "@/components/agent-panel";
+import { AgentDetailModal } from "@/components/agent-detail-modal";
 import { Sidebar } from "@/components/sidebar";
 import type { AgentType } from "@product-os/shared";
 import ReactMarkdown from "react-markdown";
@@ -69,6 +70,7 @@ export function SessionPage() {
   const [copiedUpdate, setCopiedUpdate] = useState(false);
   const [allSessions, setAllSessions] = useState<SessionSummary[]>([]);
   const [showOutputMobile, setShowOutputMobile] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState<AgentType | null>(null);
 
   const refreshSessions = () => {
     getAllSessions()
@@ -249,11 +251,24 @@ export function SessionPage() {
                   key={type}
                   type={type}
                   agent={session.agents[type]}
+                  onClick={() => setSelectedAgent(type)}
                 />
               ))}
             </div>
           </div>
         </div>
+
+        {/* Agent Detail Modal */}
+        {selectedAgent && (
+          <AgentDetailModal
+            isOpen={!!selectedAgent}
+            onClose={() => setSelectedAgent(null)}
+            sessionId={sessionId}
+            agentType={selectedAgent}
+            agent={session.agents[selectedAgent]}
+            onMessageSent={refreshSessions}
+          />
+        )}
 
         {/* Output sidebar - collapsible on mobile */}
         <div className={cn(

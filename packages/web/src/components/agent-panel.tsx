@@ -13,6 +13,7 @@ import {
   Megaphone,
   Compass,
   Share2,
+  ChevronRight,
 } from "lucide-react";
 
 interface AgentPanelProps {
@@ -20,6 +21,7 @@ interface AgentPanelProps {
   type: AgentType;
   expanded?: boolean;
   onToggle?: () => void;
+  onClick?: () => void;
 }
 
 const AGENT_CONFIG: Record<
@@ -91,7 +93,7 @@ const STATUS_CONFIG = {
   },
 };
 
-export function AgentPanel({ agent, type, expanded = true }: AgentPanelProps) {
+export function AgentPanel({ agent, type, expanded = true, onClick }: AgentPanelProps) {
   const logRef = useRef<HTMLDivElement>(null);
   const agentConfig = AGENT_CONFIG[type];
   const status = agent?.status ?? "pending";
@@ -108,13 +110,17 @@ export function AgentPanel({ agent, type, expanded = true }: AgentPanelProps) {
 
   const logContent = agent?.logs.map((l) => l.content).join("") ?? "";
 
+  const isClickable = status === "completed" && onClick;
+
   return (
     <div
+      onClick={isClickable ? onClick : undefined}
       className={cn(
         "rounded-xl border bg-card overflow-hidden transition-all",
         status === "running" && "ring-1 ring-blue-500/20",
         status === "completed" && "ring-1 ring-emerald-500/20",
-        status === "failed" && "ring-1 ring-red-500/20"
+        status === "failed" && "ring-1 ring-red-500/20",
+        isClickable && "cursor-pointer hover:border-foreground/20 hover:shadow-md"
       )}
     >
       {/* Header */}
@@ -159,17 +165,22 @@ export function AgentPanel({ agent, type, expanded = true }: AgentPanelProps) {
             {agentConfig.description}
           </p>
         </div>
-        <div className="flex items-center gap-1.5">
-          <StatusIcon
-            className={cn(
-              "w-4 h-4",
-              statusConfig.color,
-              status === "running" && "animate-spin"
-            )}
-          />
-          <span className={cn("text-xs font-medium", statusConfig.color)}>
-            {statusConfig.label}
-          </span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <StatusIcon
+              className={cn(
+                "w-4 h-4",
+                statusConfig.color,
+                status === "running" && "animate-spin"
+              )}
+            />
+            <span className={cn("text-xs font-medium", statusConfig.color)}>
+              {statusConfig.label}
+            </span>
+          </div>
+          {isClickable && (
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          )}
         </div>
       </div>
 
