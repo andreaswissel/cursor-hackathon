@@ -341,8 +341,9 @@ export function AgentDetailModal({
                   "prose-p:text-muted-foreground prose-p:leading-relaxed",
                   "prose-li:text-muted-foreground",
                   "prose-strong:text-foreground prose-strong:font-semibold",
-                  "prose-code:text-xs prose-code:bg-secondary prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:font-mono",
-                  "prose-pre:bg-secondary/50 prose-pre:border prose-pre:rounded-xl",
+                  "prose-code:text-xs prose-code:bg-muted prose-code:text-foreground prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:font-mono prose-code:before:content-none prose-code:after:content-none",
+                  "prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:rounded-xl prose-pre:p-4 prose-pre:overflow-x-auto",
+                  "[&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-xs [&_pre_code]:text-foreground/90",
                   !formattedOutput && "font-mono text-xs whitespace-pre-wrap text-muted-foreground"
                 )}>
                   {formattedOutput ? (

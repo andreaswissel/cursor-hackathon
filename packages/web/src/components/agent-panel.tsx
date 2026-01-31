@@ -222,7 +222,16 @@ export function AgentPanel({ agent, type, expanded = true, onClick }: AgentPanel
           ref={logRef}
           className={cn(
             "p-4 overflow-y-auto h-48 bg-secondary/20",
-            isMarkdown ? "prose prose-sm max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-h1:text-base prose-h2:text-sm prose-h3:text-sm prose-p:text-muted-foreground prose-p:text-sm prose-p:leading-relaxed prose-li:text-muted-foreground prose-li:text-sm prose-strong:text-foreground prose-code:text-xs prose-code:bg-secondary prose-code:px-1 prose-code:py-0.5 prose-code:rounded" : "agent-log text-foreground/80"
+            isMarkdown ? [
+              "prose prose-sm max-w-none",
+              "prose-headings:font-semibold prose-headings:tracking-tight prose-h1:text-base prose-h2:text-sm prose-h3:text-sm",
+              "prose-p:text-muted-foreground prose-p:text-sm prose-p:leading-relaxed prose-p:my-2",
+              "prose-li:text-muted-foreground prose-li:text-sm prose-li:my-0.5",
+              "prose-strong:text-foreground",
+              "prose-code:text-xs prose-code:bg-muted prose-code:text-foreground prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:before:content-none prose-code:after:content-none",
+              "prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:rounded-lg prose-pre:p-3 prose-pre:my-2 prose-pre:overflow-x-auto",
+              "[&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_pre_code]:text-xs [&_pre_code]:text-foreground/90"
+            ].join(" ") : "agent-log text-foreground/80"
           )}
         >
           {displayContent ? (
