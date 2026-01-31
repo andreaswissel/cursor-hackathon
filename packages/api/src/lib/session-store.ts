@@ -3,7 +3,7 @@ import { db } from "../db";
 import { sessions, agentRuns, outputs, messages } from "../db/schema";
 import { TypedEventEmitter } from "./event-emitter";
 
-export type AgentType = "orchestrator" | "discovery" | "strategy" | "spec" | "gtm";
+export type AgentType = "orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "product-marketing";
 export type AgentStatus = "pending" | "running" | "waiting_input" | "completed" | "failed";
 
 export interface AgentLog {
@@ -40,6 +40,7 @@ export interface Session {
   outputs: {
     spec?: string;
     slidesUrl?: string;
+    productUpdate?: string;
     validation?: string;
     strategy?: string;
   };

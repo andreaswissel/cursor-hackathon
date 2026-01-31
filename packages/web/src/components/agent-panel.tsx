@@ -12,6 +12,7 @@ import {
   FileText,
   Megaphone,
   Compass,
+  Share2,
 } from "lucide-react";
 
 interface AgentPanelProps {
@@ -49,6 +50,11 @@ const AGENT_CONFIG: Record<
     name: "GTM",
     description: "Creates launch materials",
     icon: Megaphone,
+  },
+  "product-marketing": {
+    name: "Product Marketing",
+    description: "Internal product update",
+    icon: Share2,
   },
 };
 

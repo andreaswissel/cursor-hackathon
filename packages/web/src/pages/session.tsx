@@ -16,6 +16,7 @@ import {
   MessageSquare,
   ChevronUp,
   ChevronDown,
+  Share2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getAllSessions, type SessionSummary } from "@/lib/api";
@@ -27,10 +28,11 @@ const AGENT_ORDER: AgentType[] = [
   "strategy",
   "spec",
   "gtm",
+  "product-marketing",
 ];
 
 // Agents that actually represent progress steps (excludes orchestrator which runs the whole time)
-const PROGRESS_AGENTS: AgentType[] = ["discovery", "strategy", "spec", "gtm"];
+const PROGRESS_AGENTS: AgentType[] = ["discovery", "strategy", "spec", "gtm", "product-marketing"];
 
 // Human-friendly descriptions for each agent phase
 const AGENT_PROGRESS_INFO: Record<AgentType, { title: string; description: string }> = {
@@ -54,12 +56,17 @@ const AGENT_PROGRESS_INFO: Record<AgentType, { title: string; description: strin
     title: "Planning Go-to-Market",
     description: "Building launch strategy and defining success metrics...",
   },
+  "product-marketing": {
+    title: "Creating Product Update",
+    description: "Writing internal announcement for Teams/Slack...",
+  },
 };
 
 export function SessionPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const { session, isConnected, error } = useSessionStream(sessionId ?? "");
   const [copied, setCopied] = useState(false);
+  const [copiedUpdate, setCopiedUpdate] = useState(false);
   const [allSessions, setAllSessions] = useState<SessionSummary[]>([]);
   const [showOutputMobile, setShowOutputMobile] = useState(false);
 
@@ -78,6 +85,14 @@ export function SessionPage() {
       navigator.clipboard.writeText(session.outputs.spec);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleCopyProductUpdate = () => {
+    if (session?.outputs.productUpdate) {
+      navigator.clipboard.writeText(session.outputs.productUpdate);
+      setCopiedUpdate(true);
+      setTimeout(() => setCopiedUpdate(false), 2000);
     }
   };
 
@@ -306,6 +321,39 @@ export function SessionPage() {
                     <ReactMarkdown>{session.outputs.spec}</ReactMarkdown>
                   </div>
                 </div>
+
+                {/* Product Update for Teams/Slack */}
+                {session.outputs.productUpdate && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                          <Share2 className="w-4 h-4 text-blue-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Product Update</p>
+                          <p className="text-xs text-muted-foreground">
+                            Ready for Teams/Slack
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleCopyProductUpdate}
+                        className="p-2 hover:bg-secondary rounded-lg transition-colors"
+                        title="Copy to clipboard"
+                      >
+                        {copiedUpdate ? (
+                          <Check className="w-4 h-4 text-emerald-500" />
+                        ) : (
+                          <Copy className="w-4 h-4 text-muted-foreground" />
+                        )}
+                      </button>
+                    </div>
+                    <div className="rounded-xl border bg-card p-4 prose prose-sm max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-h1:text-lg prose-h2:text-base prose-h3:text-sm prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground max-h-[300px] overflow-y-auto">
+                      <ReactMarkdown>{session.outputs.productUpdate}</ReactMarkdown>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center py-12">

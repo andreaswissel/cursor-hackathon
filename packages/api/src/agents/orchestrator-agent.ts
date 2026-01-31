@@ -5,6 +5,7 @@ import { DiscoveryAgent } from "./discovery-agent";
 import { StrategyAgent } from "./strategy-agent";
 import { SpecAgent } from "./spec-agent";
 import { GTMAgent } from "./gtm-agent";
+import { ProductMarketingAgent } from "./product-marketing-agent";
 import { generateProductUpdateSlides } from "../lib/slides-generator";
 import { db } from "../db";
 import { integrations } from "../db/schema";
@@ -22,6 +23,7 @@ export class OrchestratorAgent {
   private strategyAgent = new StrategyAgent();
   private specAgent = new SpecAgent();
   private gtmAgent = new GTMAgent();
+  private productMarketingAgent = new ProductMarketingAgent();
 
   async run(input: OrchestratorInput): Promise<void> {
     const { sessionId, idea, context } = input;
@@ -122,9 +124,29 @@ export class OrchestratorAgent {
     const gtmOutput = gtmResult.output as { reasoning?: string };
     previousOutputs.gtm = gtmOutput?.reasoning ?? "";
 
-    // Phase 5: Generate Product Update Slides
+    // Phase 5: Product Marketing (Internal Update)
+    await sessionStore.appendLog(sessionId, "orchestrator", "\nPhase 5: Running Product Marketing Agent...\n");
+    const productMarketingResult = await this.productMarketingAgent.run({
+      sessionId,
+      idea,
+      context,
+      previousOutputs,
+    });
+
+    if (!productMarketingResult.success) {
+      await sessionStore.setAgentStatus(sessionId, "orchestrator", "failed");
+      await sessionStore.setSessionStatus(sessionId, "failed");
+      return;
+    }
+
+    // Format and save the product update for Teams/Slack
+    const productUpdateContent = productMarketingResult.output;
+    const productUpdateMarkdown = this.productMarketingAgent.formatForTeams(productUpdateContent);
+    await sessionStore.setSessionOutput(sessionId, "productUpdate", productUpdateMarkdown);
+
+    // Phase 6: Generate Product Update Slides
     if (input.userId) {
-      await sessionStore.appendLog(sessionId, "orchestrator", "\nPhase 5: Generating Product Update Slides...\n");
+      await sessionStore.appendLog(sessionId, "orchestrator", "\nPhase 6: Generating Product Update Slides...\n");
 
       try {
         const slidesUrl = await this.generateSlides(

@@ -312,6 +312,18 @@ Your job is to:
 - Refine launch materials
 - Discuss positioning
 - Help with communication strategy`,
+
+    "product-marketing": `You are the Product Marketing Agent. You specialize in internal product communications.
+
+${baseContext}
+
+${previousOutput ? `## Your Previous Output\n${JSON.stringify(previousOutput)}\n` : ""}
+
+Your job is to:
+- Answer questions about the internal product update
+- Refine the announcement for Teams/Slack
+- Help clarify the message for different audiences
+- Suggest improvements to make the update more engaging`,
   };
 
   return agentContexts[agentType];

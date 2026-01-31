@@ -1,4 +1,4 @@
-export type AgentType = "orchestrator" | "discovery" | "strategy" | "spec" | "gtm";
+export type AgentType = "orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "product-marketing";
 export type AgentStatus = "pending" | "running" | "waiting_input" | "completed" | "failed";
 export type SessionStatus = "pending" | "running" | "waiting_input" | "completed" | "failed";
 
@@ -35,6 +35,7 @@ export interface Session {
   outputs: {
     spec?: string;
     slidesUrl?: string;
+    productUpdate?: string;
     validation?: string;
     strategy?: string;
   };
