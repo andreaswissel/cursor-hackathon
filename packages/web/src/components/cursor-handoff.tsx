@@ -31,10 +31,15 @@ ${spec}
 
 Please implement this feature following best practices. Start by analyzing the spec and proposing an implementation plan, then proceed with the code changes.`;
 
-  // CLI command - escapes the prompt for shell
-  const cliCommand = `cursor --chat "${cursorPrompt.replace(/"/g, '\\"').replace(/\n/g, '\\n')}"`;
+  // CLI command for terminal
+  const cliCommand = `cursor agent "$(cat <<'EOF'
+${cursorPrompt}
+EOF
+)"`;
 
-  // Simpler approach: just copy the prompt and user pastes in Cursor
+  // Cursor deeplink with prefilled prompt (max 8000 chars)
+  const cursorDeeplink = `cursor://anysphere.cursor-deeplink/prompt?text=${encodeURIComponent(cursorPrompt.slice(0, 7500))}`;
+
   const handleCopyPrompt = () => {
     navigator.clipboard.writeText(cursorPrompt);
     setCopiedPrompt(true);
@@ -47,14 +52,9 @@ Please implement this feature following best practices. Start by analyzing the s
     setTimeout(() => setCopiedCli(false), 2000);
   };
 
-  // Open in Cursor via protocol handler
+  // Open in Cursor via deeplink with prefilled prompt
   const handleOpenInCursor = () => {
-    // Cursor uses cursor:// protocol
-    // We'll copy the prompt first, then open Cursor
-    navigator.clipboard.writeText(cursorPrompt);
-
-    // Try to open Cursor - this will prompt user if Cursor isn't the default handler
-    window.location.href = "cursor://";
+    window.location.href = cursorDeeplink;
   };
 
   return (
@@ -92,16 +92,16 @@ Please implement this feature following best practices. Start by analyzing the s
         {/* Dropdown options */}
         {isOpen && (
           <div className="absolute top-full left-0 right-0 mt-2 z-20 rounded-lg border bg-card shadow-lg overflow-hidden">
-            {/* Option 1: Open in Cursor App */}
+            {/* Option 1: Open in Cursor App with prefilled prompt */}
             <button
               onClick={handleOpenInCursor}
               className="w-full flex items-start gap-3 px-4 py-3 hover:bg-secondary transition-colors text-left"
             >
               <ExternalLink className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-medium">Open Cursor App</p>
+                <p className="text-sm font-medium">Open in Cursor</p>
                 <p className="text-xs text-muted-foreground">
-                  Copies prompt & opens Cursor. Paste in chat.
+                  Opens Cursor with prompt pre-filled
                 </p>
               </div>
             </button>
@@ -145,7 +145,7 @@ Please implement this feature following best practices. Start by analyzing the s
                   {copiedCli ? "Copied!" : "Copy CLI Command"}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Run <code className="text-[10px] bg-secondary px-1 rounded">cursor --chat</code> in terminal
+                  Run <code className="text-[10px] bg-secondary px-1 rounded">cursor agent</code> in your project
                 </p>
               </div>
             </button>
@@ -155,7 +155,7 @@ Please implement this feature following best practices. Start by analyzing the s
 
       {/* Quick tip */}
       <p className="text-xs text-muted-foreground">
-        Tip: Open your project in Cursor first, then paste the prompt in Composer (Cmd+I)
+        Tip: Make sure your project is open in Cursor before clicking "Open in Cursor"
       </p>
     </div>
   );
