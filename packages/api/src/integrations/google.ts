@@ -97,15 +97,21 @@ export const googleAdapter: IntegrationAdapter = {
       "(mimeType='application/vnd.google-apps.document' or mimeType='application/vnd.google-apps.spreadsheet')"
     );
     const res = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=modifiedTime desc&pageSize=50&fields=files(id,name,mimeType)`,
+      `https://www.googleapis.com/drive/v3/files?q=${query}&orderBy=modifiedTime desc&pageSize=100&fields=files(id,name,mimeType)`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
 
     if (!res.ok) {
-      throw new Error("Failed to list Google Drive files");
+      console.error("Google Drive list files error:", res.status, await res.text());
+      return [];
     }
 
     const data = await res.json();
+    if (!data.files || !Array.isArray(data.files)) {
+      console.error("Google: No files in response", data);
+      return [];
+    }
+
     return data.files.map((file: { id: string; name: string; mimeType: string }) => ({
       id: file.id,
       name: file.name,
@@ -113,13 +119,21 @@ export const googleAdapter: IntegrationAdapter = {
     }));
   },
 
-  async syncData(accessToken: string): Promise<SyncedDataItem[]> {
+  async syncData(accessToken: string, metadata: IntegrationMetadata): Promise<SyncedDataItem[]> {
     const items: SyncedDataItem[] = [];
-    const sources = await this.listSources(accessToken, {});
+    const selectedSources = (metadata.selectedSources as string[]) || [];
+    const allSources = await this.listSources(accessToken, metadata);
+
+    // Filter to selected sources, or use defaults if none selected
+    const sourcesToSync = selectedSources.length > 0
+      ? allSources.filter(s => selectedSources.includes(s.id))
+      : allSources;
+
+    console.log(`Google: Syncing ${sourcesToSync.length} of ${allSources.length} sources`);
 
     // Sync Google Docs
-    const docs = sources.filter(s => s.type === "doc");
-    for (const doc of docs.slice(0, 10)) {
+    const docs = sourcesToSync.filter(s => s.type === "doc");
+    for (const doc of docs.slice(0, 20)) {
       const res = await fetch(
         `https://docs.googleapis.com/v1/documents/${doc.id}`,
         { headers: { Authorization: `Bearer ${accessToken}` } }
@@ -150,8 +164,8 @@ export const googleAdapter: IntegrationAdapter = {
     }
 
     // Sync Google Sheets
-    const sheets = sources.filter(s => s.type === "sheet");
-    for (const sheet of sheets.slice(0, 5)) {
+    const sheets = sourcesToSync.filter(s => s.type === "sheet");
+    for (const sheet of sheets.slice(0, 10)) {
       const res = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${sheet.id}?includeGridData=true`,
         { headers: { Authorization: `Bearer ${accessToken}` } }
