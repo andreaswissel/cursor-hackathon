@@ -77,23 +77,45 @@ export const jiraAdapter: IntegrationAdapter = {
     });
 
     if (!res.ok) {
+      console.error("Jira getAccountInfo error:", res.status, await res.text());
       throw new Error("Failed to get Jira sites");
     }
 
     const sites = await res.json();
+    console.log("Jira accessible sites:", JSON.stringify(sites));
+
     const site = sites[0]; // Use first site
+    if (!site) {
+      console.error("Jira: No accessible sites found");
+    }
 
     return {
       workspaceId: site?.id,
-      workspaceName: site?.name,
+      workspaceName: site?.name || site?.url,
     };
   },
 
   async listSources(accessToken: string, metadata: IntegrationMetadata): Promise<Array<{ id: string; name: string; type: string }>> {
-    if (!metadata.workspaceId) {
-      console.error("Jira: No workspace ID in metadata");
+    let workspaceId = metadata.workspaceId;
+
+    // If no workspaceId in metadata, try to fetch it
+    if (!workspaceId) {
+      console.log("Jira: No workspace ID in metadata, fetching...");
+      try {
+        const accountInfo = await this.getAccountInfo(accessToken);
+        workspaceId = accountInfo.workspaceId;
+      } catch (err) {
+        console.error("Jira: Failed to fetch workspace ID:", err);
+        return [];
+      }
+    }
+
+    if (!workspaceId) {
+      console.error("Jira: Still no workspace ID after fetch");
       return [];
     }
+
+    console.log("Jira: Listing projects for workspace:", workspaceId);
 
     const res = await fetch(
       `https://api.atlassian.com/ex/jira/${metadata.workspaceId}/rest/api/3/project/search`,
