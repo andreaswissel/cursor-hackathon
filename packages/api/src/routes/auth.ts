@@ -70,7 +70,12 @@ router.get("/me", requireAuth, async (req: Request, res: Response) => {
 
 // Google OAuth - Initiate login
 router.get("/google", (req: Request, res: Response) => {
+  console.log("[Google OAuth] Starting OAuth flow");
+  console.log("[Google OAuth] GOOGLE_AUTH_REDIRECT_URI:", GOOGLE_AUTH_REDIRECT_URI);
+  console.log("[Google OAuth] API_BASE_URL:", API_BASE_URL);
+
   if (!GOOGLE_CLIENT_ID) {
+    console.error("[Google OAuth] GOOGLE_CLIENT_ID not configured");
     res.status(500).json({ error: "Google OAuth not configured" });
     return;
   }
@@ -87,14 +92,20 @@ router.get("/google", (req: Request, res: Response) => {
     prompt: "select_account",
   });
 
-  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+  console.log("[Google OAuth] Redirecting to:", authUrl);
+  res.redirect(authUrl);
 });
 
 // Google OAuth - Callback
 router.get("/google/callback", async (req: Request, res: Response) => {
+  console.log("[Google OAuth Callback] Received callback");
+  console.log("[Google OAuth Callback] Query params:", req.query);
+
   const { code, error } = req.query;
 
   if (error || !code) {
+    console.error("[Google OAuth Callback] Error or no code:", error);
     res.redirect(`${FRONTEND_URL}/login?error=${encodeURIComponent(error as string || "OAuth cancelled")}`);
     return;
   }
@@ -115,10 +126,12 @@ router.get("/google/callback", async (req: Request, res: Response) => {
 
     if (!tokenRes.ok) {
       const err = await tokenRes.text();
-      console.error("Google token exchange failed:", err);
+      console.error("[Google OAuth Callback] Token exchange failed:", err);
+      console.error("[Google OAuth Callback] Redirect URI used:", GOOGLE_AUTH_REDIRECT_URI);
       res.redirect(`${FRONTEND_URL}/login?error=${encodeURIComponent("Failed to authenticate with Google")}`);
       return;
     }
+    console.log("[Google OAuth Callback] Token exchange successful");
 
     const tokens = await tokenRes.json();
 
