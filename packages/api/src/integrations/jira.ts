@@ -91,7 +91,8 @@ export const jiraAdapter: IntegrationAdapter = {
 
   async listSources(accessToken: string, metadata: IntegrationMetadata): Promise<Array<{ id: string; name: string; type: string }>> {
     if (!metadata.workspaceId) {
-      throw new Error("No Jira workspace found");
+      console.error("Jira: No workspace ID in metadata");
+      return [];
     }
 
     const res = await fetch(
@@ -100,10 +101,16 @@ export const jiraAdapter: IntegrationAdapter = {
     );
 
     if (!res.ok) {
-      throw new Error("Failed to list Jira projects");
+      console.error("Jira list projects error:", res.status, await res.text());
+      return [];
     }
 
     const data = await res.json();
+    if (!data.values || !Array.isArray(data.values)) {
+      console.error("Jira: No projects in response", data);
+      return [];
+    }
+
     return data.values.map((project: { id: string; name: string; key: string }) => ({
       id: project.key,
       name: project.name,
@@ -113,66 +120,90 @@ export const jiraAdapter: IntegrationAdapter = {
 
   async syncData(accessToken: string, metadata: IntegrationMetadata): Promise<SyncedDataItem[]> {
     if (!metadata.workspaceId) {
-      throw new Error("No Jira workspace found");
+      console.error("Jira sync: No workspace ID");
+      return [];
     }
 
     const items: SyncedDataItem[] = [];
-    const projects = await this.listSources(accessToken, metadata);
+    const selectedSources = (metadata.selectedSources as string[]) || [];
+    const allProjects = await this.listSources(accessToken, metadata);
 
-    for (const project of projects.slice(0, 5)) { // Limit to 5 projects
-      // Get issues from project
-      const jql = encodeURIComponent(`project = ${project.id} ORDER BY updated DESC`);
-      const res = await fetch(
-        `https://api.atlassian.com/ex/jira/${metadata.workspaceId}/rest/api/3/search?jql=${jql}&maxResults=50`,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
+    // Filter to selected projects, or use all (up to 5) if none selected
+    const projectsToSync = selectedSources.length > 0
+      ? allProjects.filter(p => selectedSources.includes(p.id))
+      : allProjects.slice(0, 5);
 
-      if (!res.ok) continue;
+    console.log(`Jira: Syncing ${projectsToSync.length} projects`);
 
-      const data = await res.json();
+    for (const project of projectsToSync) {
+      try {
+        // Get issues from project
+        const jql = encodeURIComponent(`project = ${project.id} ORDER BY updated DESC`);
+        const res = await fetch(
+          `https://api.atlassian.com/ex/jira/${metadata.workspaceId}/rest/api/3/search?jql=${jql}&maxResults=50`,
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
 
-      // Group by type
-      const epics = data.issues.filter((i: { fields: { issuetype: { name: string } } }) =>
-        i.fields.issuetype.name === "Epic"
-      );
-      const stories = data.issues.filter((i: { fields: { issuetype: { name: string } } }) =>
-        ["Story", "Task", "Bug"].includes(i.fields.issuetype.name)
-      );
+        if (!res.ok) {
+          console.error(`Jira project ${project.id} error:`, res.status);
+          continue;
+        }
 
-      if (epics.length > 0) {
-        items.push({
-          dataType: "okrs",
-          sourceId: `${project.id}/epics`,
-          sourceName: `${project.name} / Epics`,
-          title: `${project.name} Epics`,
-          summary: `${epics.length} epics`,
-          content: epics.map((e: { key: string; fields: { summary: string; description: unknown; status: { name: string } } }) => ({
-            key: e.key,
-            summary: e.fields.summary,
-            description: e.fields.description,
-            status: e.fields.status.name,
-          })),
-        });
-      }
+        const data = await res.json();
+        if (!data.issues || !Array.isArray(data.issues)) {
+          console.log(`Jira project ${project.id}: No issues found`);
+          continue;
+        }
 
-      if (stories.length > 0) {
-        items.push({
-          dataType: "tickets",
-          sourceId: `${project.id}/issues`,
-          sourceName: `${project.name} / Issues`,
-          title: `${project.name} Issues`,
-          summary: `${stories.length} issues`,
-          content: stories.map((s: { key: string; fields: { summary: string; description: unknown; issuetype: { name: string }; status: { name: string } } }) => ({
-            key: s.key,
-            summary: s.fields.summary,
-            description: s.fields.description,
-            type: s.fields.issuetype.name,
-            status: s.fields.status.name,
-          })),
-        });
+        console.log(`Jira project ${project.id}: Found ${data.issues.length} issues`);
+
+        // Group by type
+        const epics = data.issues.filter((i: { fields: { issuetype: { name: string } } }) =>
+          i.fields.issuetype?.name === "Epic"
+        );
+        const stories = data.issues.filter((i: { fields: { issuetype: { name: string } } }) =>
+          ["Story", "Task", "Bug", "Sub-task"].includes(i.fields.issuetype?.name || "")
+        );
+
+        if (epics.length > 0) {
+          items.push({
+            dataType: "okrs",
+            sourceId: `${project.id}/epics`,
+            sourceName: `${project.name} / Epics`,
+            title: `${project.name} Epics`,
+            summary: `${epics.length} epics`,
+            content: epics.map((e: { key: string; fields: { summary: string; description: unknown; status: { name: string } } }) => ({
+              key: e.key,
+              summary: e.fields.summary,
+              description: e.fields.description,
+              status: e.fields.status?.name,
+            })),
+          });
+        }
+
+        if (stories.length > 0) {
+          items.push({
+            dataType: "tickets",
+            sourceId: `${project.id}/issues`,
+            sourceName: `${project.name} / Issues`,
+            title: `${project.name} Issues`,
+            summary: `${stories.length} issues`,
+            content: stories.map((s: { key: string; fields: { summary: string; description: unknown; issuetype: { name: string }; status: { name: string } } }) => ({
+              key: s.key,
+              summary: s.fields.summary,
+              description: s.fields.description,
+              type: s.fields.issuetype?.name,
+              status: s.fields.status?.name,
+            })),
+          });
+        }
+      } catch (err) {
+        console.error(`Jira project ${project.id} sync error:`, err);
+        continue;
       }
     }
 
+    console.log(`Jira: Synced ${items.length} data items`);
     return items;
   },
 };
