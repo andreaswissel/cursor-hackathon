@@ -1,10 +1,20 @@
+console.log("Starting API server...");
+
 import "dotenv/config";
+console.log("Loaded dotenv");
+
 import express from "express";
+console.log("Loaded express");
+
 import cors from "cors";
+console.log("Loaded cors");
+
 import routes from "./routes";
+console.log("Loaded routes");
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
+console.log(`Using port: ${PORT}`);
 
 // CORS configuration
 const corsOptions = {
