@@ -180,10 +180,13 @@ export function SessionPage() {
 
           {/* Progress Indicator */}
           {session.status === "running" && (() => {
-            const runningAgent = AGENT_ORDER.find(
+            const runningAgentIndex = AGENT_ORDER.findIndex(
               (type) => session.agents[type]?.status === "running"
             );
-            const progressPercent = (completedAgents / AGENT_ORDER.length) * 100;
+            const runningAgent = runningAgentIndex >= 0 ? AGENT_ORDER[runningAgentIndex] : null;
+            // Progress includes completed agents + the currently running one
+            // Each agent is 20% (1/5), so running agent counts as that step being in progress
+            const progressPercent = ((runningAgentIndex >= 0 ? runningAgentIndex + 1 : completedAgents) / AGENT_ORDER.length) * 100;
             const info = runningAgent ? AGENT_PROGRESS_INFO[runningAgent] : null;
 
             return (
