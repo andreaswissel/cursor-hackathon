@@ -203,7 +203,6 @@ export function DataSourceSelector({ onContextChange }: DataSourceSelectorProps)
               ? "bg-secondary text-muted-foreground"
               : "bg-primary text-primary-foreground"
           )}
-          disabled={!hasIntegrationData && !useMockData}
         >
           {useMockData ? (
             <>
