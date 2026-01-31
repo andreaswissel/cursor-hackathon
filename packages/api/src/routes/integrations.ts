@@ -172,6 +172,105 @@ router.delete("/:integrationId", async (req: Request, res: Response) => {
   res.json({ success: true });
 });
 
+// List available sources (bases, projects, etc.) for an integration
+router.get("/:integrationId/sources", async (req: Request, res: Response) => {
+  const { integrationId } = req.params;
+  const userId = req.user!.id;
+
+  // Get integration
+  const [integration] = await db
+    .select()
+    .from(integrations)
+    .where(and(
+      eq(integrations.id, integrationId),
+      eq(integrations.userId, userId)
+    ));
+
+  if (!integration) {
+    res.status(404).json({ error: "Integration not found" });
+    return;
+  }
+
+  try {
+    const adapter = getAdapter(integration.provider as IntegrationProvider);
+    let accessToken = integration.accessToken;
+
+    // Check if token needs refresh
+    if (integration.tokenExpiresAt && new Date(integration.tokenExpiresAt) < new Date()) {
+      if (integration.refreshToken) {
+        const newTokens = await adapter.refreshTokens(integration.refreshToken);
+        accessToken = newTokens.accessToken;
+
+        await db
+          .update(integrations)
+          .set({
+            accessToken: newTokens.accessToken,
+            refreshToken: newTokens.refreshToken,
+            tokenExpiresAt: newTokens.expiresAt,
+            updatedAt: new Date(),
+          })
+          .where(eq(integrations.id, integrationId));
+      } else {
+        res.status(401).json({ error: "Token expired, please reconnect" });
+        return;
+      }
+    }
+
+    const sources = await adapter.listSources(accessToken, integration.metadata || {});
+    const selectedSources = (integration.metadata as Record<string, unknown>)?.selectedSources as string[] || [];
+
+    res.json({
+      sources,
+      selectedSources,
+    });
+  } catch (error) {
+    console.error("List sources error:", error);
+    res.status(500).json({ error: (error as Error).message });
+  }
+});
+
+// Update selected sources for an integration
+router.put("/:integrationId/sources", async (req: Request, res: Response) => {
+  const { integrationId } = req.params;
+  const { selectedSources } = req.body;
+  const userId = req.user!.id;
+
+  if (!Array.isArray(selectedSources)) {
+    res.status(400).json({ error: "selectedSources must be an array" });
+    return;
+  }
+
+  // Get integration
+  const [integration] = await db
+    .select()
+    .from(integrations)
+    .where(and(
+      eq(integrations.id, integrationId),
+      eq(integrations.userId, userId)
+    ));
+
+  if (!integration) {
+    res.status(404).json({ error: "Integration not found" });
+    return;
+  }
+
+  // Update metadata with selected sources
+  const updatedMetadata = {
+    ...(integration.metadata || {}),
+    selectedSources,
+  };
+
+  await db
+    .update(integrations)
+    .set({
+      metadata: updatedMetadata,
+      updatedAt: new Date(),
+    })
+    .where(eq(integrations.id, integrationId));
+
+  res.json({ success: true, selectedSources });
+});
+
 // Sync data from an integration
 router.post("/:integrationId/sync", async (req: Request, res: Response) => {
   const { integrationId } = req.params;

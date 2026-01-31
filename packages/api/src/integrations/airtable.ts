@@ -135,11 +135,17 @@ export const airtableAdapter: IntegrationAdapter = {
 
   async syncData(accessToken: string, metadata: IntegrationMetadata): Promise<SyncedDataItem[]> {
     const items: SyncedDataItem[] = [];
+    const selectedSources = (metadata.selectedSources as string[]) || [];
 
     // Get all bases
-    const bases = await this.listSources(accessToken, metadata);
+    const allBases = await this.listSources(accessToken, metadata);
 
-    for (const base of bases.slice(0, 5)) { // Limit to 5 bases for demo
+    // Filter to selected bases, or use all if none selected
+    const bases = selectedSources.length > 0
+      ? allBases.filter(base => selectedSources.includes(base.id))
+      : allBases.slice(0, 5); // Default: limit to 5 bases
+
+    for (const base of bases) {
       // Get tables in base
       const schemaRes = await fetch(`https://api.airtable.com/v0/meta/bases/${base.id}/tables`, {
         headers: { Authorization: `Bearer ${accessToken}` },
@@ -149,7 +155,7 @@ export const airtableAdapter: IntegrationAdapter = {
 
       const schema = await schemaRes.json();
 
-      for (const table of schema.tables.slice(0, 3)) { // Limit to 3 tables per base
+      for (const table of schema.tables.slice(0, 5)) { // Limit to 5 tables per base
         // Get records from table
         const recordsRes = await fetch(
           `https://api.airtable.com/v0/${base.id}/${encodeURIComponent(table.name)}?maxRecords=100`,

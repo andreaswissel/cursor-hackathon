@@ -6,7 +6,6 @@ import {
   Check,
   X,
   RefreshCw,
-  ExternalLink,
   Trash2,
   Table,
   Ticket,
@@ -14,6 +13,7 @@ import {
   File,
   MessageSquare,
   Plus,
+  Settings2,
 } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
@@ -26,6 +26,7 @@ interface Integration {
   metadata: {
     workspaceName?: string;
     email?: string;
+    selectedSources?: string[];
   };
   isActive: number;
   lastSyncedAt: string | null;
@@ -42,6 +43,12 @@ interface AvailableProvider {
   name: string;
   description: string;
   color: string;
+}
+
+interface Source {
+  id: string;
+  name: string;
+  type: string;
 }
 
 const PROVIDER_ICONS: Record<Provider, typeof Table> = {
@@ -61,6 +68,13 @@ export function IntegrationsPanel() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Source configuration modal state
+  const [configuringIntegration, setConfiguringIntegration] = useState<Integration | null>(null);
+  const [sources, setSources] = useState<Source[]>([]);
+  const [selectedSources, setSelectedSources] = useState<Set<string>>(new Set());
+  const [loadingSources, setLoadingSources] = useState(false);
+  const [savingSources, setSavingSources] = useState(false);
 
   const fetchIntegrations = async () => {
     try {
@@ -157,6 +171,66 @@ export function IntegrationsPanel() {
     }
   };
 
+  const handleConfigure = async (integration: Integration) => {
+    setConfiguringIntegration(integration);
+    setLoadingSources(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/integrations/${integration.id}/sources`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch sources");
+      const data = await res.json();
+      setSources(data.sources);
+      setSelectedSources(new Set(data.selectedSources || []));
+    } catch (err) {
+      setError((err as Error).message);
+      setConfiguringIntegration(null);
+    } finally {
+      setLoadingSources(false);
+    }
+  };
+
+  const handleSaveSources = async () => {
+    if (!configuringIntegration) return;
+
+    setSavingSources(true);
+    setError(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/integrations/${configuringIntegration.id}/sources`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ selectedSources: Array.from(selectedSources) }),
+      });
+      if (!res.ok) throw new Error("Failed to save sources");
+      setSuccess("Sources saved! Click Sync to fetch data.");
+      setTimeout(() => setSuccess(null), 3000);
+      setConfiguringIntegration(null);
+      fetchIntegrations();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSavingSources(false);
+    }
+  };
+
+  const toggleSource = (sourceId: string) => {
+    setSelectedSources((prev) => {
+      const next = new Set(prev);
+      if (next.has(sourceId)) {
+        next.delete(sourceId);
+      } else {
+        next.add(sourceId);
+      }
+      return next;
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -167,12 +241,98 @@ export function IntegrationsPanel() {
 
   return (
     <div className="space-y-6">
+      {/* Source Configuration Modal */}
+      {configuringIntegration && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-background rounded-xl border shadow-lg w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
+            <div className="p-4 border-b flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">Configure {configuringIntegration.providerInfo.name}</h3>
+                <p className="text-sm text-muted-foreground">Select which sources to sync</p>
+              </div>
+              <button
+                onClick={() => setConfiguringIntegration(null)}
+                className="p-2 hover:bg-secondary rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-4 overflow-y-auto flex-1">
+              {loadingSources ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : sources.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  No sources found
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {sources.map((source) => {
+                    const isSelected = selectedSources.has(source.id);
+                    return (
+                      <button
+                        key={source.id}
+                        onClick={() => toggleSource(source.id)}
+                        className={cn(
+                          "w-full p-3 rounded-lg border text-left flex items-center justify-between transition-colors",
+                          isSelected
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:bg-secondary/50"
+                        )}
+                      >
+                        <div>
+                          <p className="font-medium text-sm">{source.name}</p>
+                          <p className="text-xs text-muted-foreground capitalize">{source.type}</p>
+                        </div>
+                        <div
+                          className={cn(
+                            "w-5 h-5 rounded-full border-2 flex items-center justify-center",
+                            isSelected ? "border-primary bg-primary" : "border-muted-foreground/30"
+                          )}
+                        >
+                          {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                {selectedSources.size} of {sources.length} selected
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfiguringIntegration(null)}
+                  className="px-4 py-2 text-sm rounded-lg border hover:bg-secondary transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveSources}
+                  disabled={savingSources}
+                  className="px-4 py-2 text-sm rounded-lg bg-foreground text-background hover:bg-foreground/90 disabled:opacity-50 transition-colors flex items-center gap-2"
+                >
+                  {savingSources && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Connected Integrations */}
       {connected.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted-foreground">Connected</h3>
           {connected.map((integration) => {
             const Icon = PROVIDER_ICONS[integration.provider];
+            const selectedCount = integration.metadata.selectedSources?.length || 0;
             return (
               <div
                 key={integration.id}
@@ -196,10 +356,18 @@ export function IntegrationsPanel() {
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {integration.metadata.workspaceName || integration.metadata.email}
+                        {selectedCount > 0 && ` · ${selectedCount} sources selected`}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleConfigure(integration)}
+                      className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+                      title="Configure sources"
+                    >
+                      <Settings2 className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={() => handleSync(integration.id)}
                       disabled={syncingId === integration.id}
