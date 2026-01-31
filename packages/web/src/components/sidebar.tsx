@@ -141,7 +141,8 @@ export function Sidebar({ sessions = [], onSessionDeleted }: SidebarProps) {
 
       {/* Sidebar */}
       <aside className={cn(
-        "w-64 h-screen border-r bg-card flex flex-col",
+        "w-64 border-r bg-card flex flex-col",
+        "h-[100dvh] md:h-screen",
         "fixed md:relative z-40",
         "transition-transform duration-200 ease-in-out",
         isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
@@ -165,7 +166,7 @@ export function Sidebar({ sessions = [], onSessionDeleted }: SidebarProps) {
         <div className="h-14 md:hidden" />
 
       {/* New Session Button */}
-      <div className="p-3">
+      <div className="p-3 flex-shrink-0">
         <Link
           to="/"
           className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium border rounded-lg hover:bg-secondary transition-colors"
@@ -254,7 +255,7 @@ export function Sidebar({ sessions = [], onSessionDeleted }: SidebarProps) {
       </div>
 
       {/* Bottom section */}
-      <div className="border-t p-3 space-y-1">
+      <div className="border-t p-3 space-y-1 flex-shrink-0">
         {user && (
           <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
             <User className="w-4 h-4" />
