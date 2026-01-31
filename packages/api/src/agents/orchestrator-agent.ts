@@ -120,9 +120,15 @@ export class OrchestratorAgent {
       return;
     }
 
-    // Extract GTM output for slides
-    const gtmOutput = gtmResult.output as { reasoning?: string };
-    previousOutputs.gtm = gtmOutput?.reasoning ?? "";
+    // Extract GTM output for slides - convert slides structure to readable text
+    const gtmOutput = gtmResult.output as { title?: string; slides?: Array<{ title: string; bullets: string[] }> };
+    if (gtmOutput?.slides) {
+      previousOutputs.gtm = gtmOutput.slides
+        .map((slide) => `## ${slide.title}\n${slide.bullets.map((b) => `- ${b}`).join("\n")}`)
+        .join("\n\n");
+    } else {
+      previousOutputs.gtm = "";
+    }
 
     // Phase 5: Product Marketing (Internal Update)
     await sessionStore.appendLog(sessionId, "orchestrator", "\nPhase 5: Running Product Marketing Agent...\n");

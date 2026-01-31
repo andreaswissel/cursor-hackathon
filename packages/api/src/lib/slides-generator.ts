@@ -221,6 +221,13 @@ export async function generateProductUpdateSlides(
 }
 
 async function generateSlideContent(content: SlideContent): Promise<SlideReplacements> {
+  // Log what content we're working with
+  console.log("Generating slide content for:", content.title);
+  console.log("Discovery length:", content.discovery?.length || 0);
+  console.log("Strategy length:", content.strategy?.length || 0);
+  console.log("Spec length:", content.spec?.length || 0);
+  console.log("GTM length:", content.gtm?.length || 0);
+
   const userMessage = `## Original Product Idea
 ${content.idea}
 
@@ -238,10 +245,12 @@ ${content.gtm || "No GTM output available"}
 
 Please generate the slide content JSON based on these outputs.`;
 
+  console.log("Calling LLM for slide content...");
   const response = await completion(
     SLIDE_CONTENT_PROMPT,
     [{ role: "user", content: userMessage }]
   );
+  console.log("LLM response length:", response.length);
 
   // Extract JSON from response
   const jsonMatch = response.match(/\{[\s\S]*\}/);
