@@ -97,8 +97,8 @@ Specifically:
 ## Slide 5: Why Us / Why Now
 
 ### Why this team?
-- **Andreas:** [Insert background - engineering/product experience, shipped products at scale]
-- **Manu:** [Insert background - PM/design experience, understands the pain firsthand]
+- **Andreas:** Fully invested in the startup space, building towards the next AI unicorn. Technical founder with deep experience shipping products at scale.
+- **Manuel:** Bought into agentic AI completely—not just using it, but building with it. Joining forces to create AI-native tools that actually work.
 - We've LIVED this pain. We've written hundreds of PRDs, fought for prioritization, and watched good ideas die in committee.
 
 ### What we learned in 48 hours
