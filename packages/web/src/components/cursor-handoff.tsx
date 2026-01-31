@@ -37,8 +37,8 @@ ${cursorPrompt}
 EOF
 )"`;
 
-  // Cursor deeplink with prefilled prompt (max 8000 chars)
-  const cursorDeeplink = `cursor://anysphere.cursor-deeplink/prompt?text=${encodeURIComponent(cursorPrompt.slice(0, 7500))}`;
+  // Simple deeplink prompt (no markdown, just instruction)
+  const simplePrompt = `Implement this feature: ${ideaTitle}. The full specification has been copied to your clipboard - please paste it to see the details.`;
 
   const handleCopyPrompt = () => {
     navigator.clipboard.writeText(cursorPrompt);
@@ -52,9 +52,13 @@ EOF
     setTimeout(() => setCopiedCli(false), 2000);
   };
 
-  // Open in Cursor via deeplink with prefilled prompt
+  // Open in Cursor: copy full prompt to clipboard, then open with simple deeplink
   const handleOpenInCursor = () => {
-    window.location.href = cursorDeeplink;
+    navigator.clipboard.writeText(cursorPrompt).then(() => {
+      // Open Cursor with a simple prompt that tells user to paste
+      const deeplink = `cursor://anysphere.cursor-deeplink/prompt?text=${encodeURIComponent(simplePrompt)}`;
+      window.location.href = deeplink;
+    });
   };
 
   return (
@@ -92,7 +96,7 @@ EOF
         {/* Dropdown options */}
         {isOpen && (
           <div className="absolute top-full left-0 right-0 mt-2 z-20 rounded-lg border bg-card shadow-lg overflow-hidden">
-            {/* Option 1: Open in Cursor App with prefilled prompt */}
+            {/* Option 1: Open in Cursor App with prompt copied */}
             <button
               onClick={handleOpenInCursor}
               className="w-full flex items-start gap-3 px-4 py-3 hover:bg-secondary transition-colors text-left"
@@ -101,7 +105,7 @@ EOF
               <div>
                 <p className="text-sm font-medium">Open in Cursor</p>
                 <p className="text-xs text-muted-foreground">
-                  Opens Cursor with prompt pre-filled
+                  Copies spec & opens Cursor chat. Just paste!
                 </p>
               </div>
             </button>
@@ -155,7 +159,7 @@ EOF
 
       {/* Quick tip */}
       <p className="text-xs text-muted-foreground">
-        Tip: Make sure your project is open in Cursor before clicking "Open in Cursor"
+        Tip: Have your project open in Cursor, then paste (Cmd+V) the spec when prompted
       </p>
     </div>
   );
