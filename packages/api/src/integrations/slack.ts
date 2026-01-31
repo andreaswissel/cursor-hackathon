@@ -147,10 +147,11 @@ export const slackAdapter: IntegrationAdapter = {
 
         if (!data.messages?.length) continue;
 
-        // Filter out bot messages and extract meaningful content
+        // Filter out system messages and extract meaningful content
+        // Note: We allow bot messages since internal feedback is often posted by integrations
         const messages = data.messages
           .filter((m: { bot_id?: string; subtype?: string; text: string }) =>
-            !m.bot_id && !m.subtype && m.text && m.text.length > 10
+            !m.subtype && m.text && m.text.length > 10
           )
           .map((m: { text: string; ts: string; user: string }) => ({
             text: m.text,
