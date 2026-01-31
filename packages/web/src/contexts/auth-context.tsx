@@ -5,13 +5,14 @@ const API_BASE = import.meta.env.VITE_API_URL || "/api";
 interface User {
   id: string;
   email: string;
+  isAdmin?: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  login: (email: string) => Promise<void>;
+  login: (email: string, password?: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -56,11 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     verifyToken();
   }, []);
 
-  const login = useCallback(async (email: string) => {
+  const login = useCallback(async (email: string, password?: string) => {
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, password }),
     });
 
     if (!res.ok) {

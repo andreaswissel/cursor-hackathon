@@ -7,6 +7,8 @@ export function LoginPage() {
   const navigate = useNavigate();
   const { user, login, isLoading: authLoading } = useAuth();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [needsPassword, setNeedsPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,15 +28,22 @@ export function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
+    if (needsPassword && !password) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
-      await login(email);
+      await login(email, needsPassword ? password : undefined);
       navigate("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      const message = err instanceof Error ? err.message : "Login failed";
+      if (message === "Password required") {
+        setNeedsPassword(true);
+        setError(null);
+      } else {
+        setError(message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -63,19 +72,35 @@ export function LoginPage() {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setNeedsPassword(false);
+                setPassword("");
+              }}
               placeholder="you@company.com"
               className="w-full px-4 py-3 text-base bg-transparent focus:outline-none placeholder:text-muted-foreground/50"
               autoFocus
               required
+              disabled={needsPassword}
             />
+            {needsPassword && (
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                className="w-full px-4 py-3 text-base bg-transparent focus:outline-none placeholder:text-muted-foreground/50 border-t"
+                autoFocus
+                required
+              />
+            )}
             <div className="flex items-center justify-between px-3 py-2 border-t">
               <span className="text-xs text-muted-foreground">
-                Demo mode - no password required
+                {needsPassword ? "Enter your password" : "Demo mode - no password required"}
               </span>
               <button
                 type="submit"
-                disabled={isLoading || !email.trim()}
+                disabled={isLoading || !email.trim() || (needsPassword && !password)}
                 className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isLoading ? (

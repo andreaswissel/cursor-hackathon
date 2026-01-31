@@ -94,7 +94,7 @@ export function HomePage() {
                 onChange={(e) => setIdea(e.target.value)}
                 placeholder="Describe your product idea..."
                 className="w-full min-h-[140px] px-4 py-3 text-base bg-transparent resize-none focus:outline-none placeholder:text-muted-foreground/50"
-                disabled={usageStats && !usageStats.canCreateSession}
+                disabled={usageStats !== null && !usageStats.canCreateSession}
               />
               <div className="flex items-center justify-between px-3 py-2 border-t">
                 <span className="text-xs text-muted-foreground">
@@ -102,7 +102,7 @@ export function HomePage() {
                 </span>
                 <button
                   type="submit"
-                  disabled={isLoading || !idea.trim() || (usageStats && !usageStats.canCreateSession)}
+                  disabled={isLoading || !idea.trim() || (usageStats !== null && !usageStats.canCreateSession)}
                   className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {isLoading ? (

@@ -1,0 +1,42 @@
+import "dotenv/config";
+import bcrypt from "bcryptjs";
+import { db } from "../db";
+import { users } from "../db/schema";
+import { eq } from "drizzle-orm";
+
+const ADMIN_EMAIL = "hello@andreaswissel.com";
+const ADMIN_PASSWORD = "3YnPBotkPGzUpfkF@HKkJo.";
+
+async function seedAdmin() {
+  console.log("Seeding admin user...");
+
+  const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 10);
+
+  // Check if user exists
+  const [existing] = await db.select().from(users).where(eq(users.email, ADMIN_EMAIL));
+
+  if (existing) {
+    // Update existing user to admin with password
+    await db
+      .update(users)
+      .set({ passwordHash, isAdmin: 1 })
+      .where(eq(users.email, ADMIN_EMAIL));
+    console.log(`Updated existing user ${ADMIN_EMAIL} to admin`);
+  } else {
+    // Create new admin user
+    await db.insert(users).values({
+      email: ADMIN_EMAIL,
+      passwordHash,
+      isAdmin: 1,
+    });
+    console.log(`Created admin user ${ADMIN_EMAIL}`);
+  }
+
+  console.log("Done!");
+  process.exit(0);
+}
+
+seedAdmin().catch((err) => {
+  console.error("Error seeding admin:", err);
+  process.exit(1);
+});

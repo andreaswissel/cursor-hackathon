@@ -15,6 +15,13 @@
       "when": 1769865490967,
       "tag": "0001_talented_tag",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1769865804389,
+      "tag": "0002_abandoned_outlaw_kid",
+      "breakpoints": true
     }
   ]
 }

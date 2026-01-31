@@ -6,12 +6,18 @@ import { sessions } from "../db/schema";
 const MAX_SESSIONS_PER_USER = 1;
 const MAX_PROMPTS_PER_SESSION = 5;
 
-// Check if user can create a new session (max 1)
+// Check if user can create a new session (max 1, unlimited for admins)
 export async function checkSessionLimit(req: Request, res: Response, next: NextFunction): Promise<void> {
   const userId = req.user?.id;
 
   if (!userId) {
     res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+
+  // Admin users have unlimited sessions
+  if (req.user?.isAdmin) {
+    next();
     return;
   }
 
@@ -33,8 +39,14 @@ export async function checkSessionLimit(req: Request, res: Response, next: NextF
   next();
 }
 
-// Check if session has prompts remaining (max 5)
+// Check if session has prompts remaining (max 5, unlimited for admins)
 export async function checkPromptLimit(req: Request, res: Response, next: NextFunction): Promise<void> {
+  // Admin users have unlimited prompts
+  if (req.user?.isAdmin) {
+    next();
+    return;
+  }
+
   const { sessionId } = req.params;
 
   const [session] = await db
