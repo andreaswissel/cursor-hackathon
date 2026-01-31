@@ -99,10 +99,10 @@ export class OrchestratorAgent {
       await sessionStore.setSessionStatus(sessionId, "failed");
       return;
     }
-    previousOutputs.spec = specResult.output;
 
-    // Save the spec as a session output
+    // Save the spec as a session output and store markdown string for slides
     const specMarkdown = (specResult.output as { markdown: string }).markdown;
+    previousOutputs.spec = specMarkdown;
     await sessionStore.setSessionOutput(sessionId, "spec", specMarkdown);
 
     // Phase 4: GTM

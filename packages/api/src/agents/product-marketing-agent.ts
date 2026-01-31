@@ -53,7 +53,7 @@ Keep it scannable - people will read this in Teams/Slack. Use clear, jargon-free
   buildMessages(input: AgentInput): Anthropic.MessageParam[] {
     const discoveryOutput = input.previousOutputs?.discovery as string | undefined;
     const strategyOutput = input.previousOutputs?.strategy as string | undefined;
-    const specOutput = input.previousOutputs?.spec as { markdown: string } | undefined;
+    const specOutput = input.previousOutputs?.spec as string | undefined;
     const gtmOutput = input.previousOutputs?.gtm as string | undefined;
 
     return [
@@ -72,7 +72,7 @@ ${discoveryOutput ?? "No discovery output available"}
 ${strategyOutput ?? "No strategy output available"}
 
 ## Feature Specification
-${specOutput?.markdown ?? "No spec available"}
+${specOutput ?? "No spec available"}
 
 ## GTM Strategy
 ${gtmOutput ?? "No GTM output available"}

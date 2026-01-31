@@ -62,7 +62,7 @@ Output slide content in JSON format:
 Keep slides concise - max 4-5 bullets per slide, each bullet under 15 words.`;
 
   buildMessages(input: AgentInput): Anthropic.MessageParam[] {
-    const specOutput = input.previousOutputs?.spec as { markdown: string } | undefined;
+    const specOutput = input.previousOutputs?.spec as string | undefined;
 
     return [
       {
@@ -71,7 +71,7 @@ Keep slides concise - max 4-5 bullets per slide, each bullet under 15 words.`;
 ${input.idea}
 
 ## Feature Specification
-${specOutput?.markdown ?? "No spec available yet"}
+${specOutput ?? "No spec available yet"}
 
 Please create slide content for a product update presentation announcing this feature.`,
       },
