@@ -8,10 +8,15 @@ export const jiraAdapter: IntegrationAdapter = {
   provider: "jira",
 
   getAuthUrl(state: string): string {
+    // Scopes needed for Jira Cloud:
+    // - read:me - for accessible-resources endpoint
+    // - read:jira-work - for reading projects and issues
+    // - read:jira-user - for reading user info
+    // - offline_access - for refresh token
     const params = new URLSearchParams({
       audience: "api.atlassian.com",
       client_id: JIRA_CLIENT_ID,
-      scope: "read:jira-work read:jira-user offline_access",
+      scope: "read:me read:jira-work read:jira-user offline_access",
       redirect_uri: JIRA_REDIRECT_URI,
       state,
       response_type: "code",
