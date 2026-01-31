@@ -328,8 +328,8 @@ export function SessionPage() {
               {hasOutputs ? (
                 <div className="space-y-8">
                   {/* Hero: Cursor Handoff */}
-                  <div className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-violet-500/10 via-background to-indigo-500/10 p-6 md:p-8">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-violet-500/20 to-transparent rounded-full blur-3xl" />
+                  <div className="relative rounded-2xl border bg-gradient-to-br from-violet-500/10 via-background to-indigo-500/10 p-6 md:p-8">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-violet-500/20 to-transparent rounded-full blur-3xl pointer-events-none" />
                     <div className="relative">
                       <div className="flex items-center gap-2 mb-4">
                         <Sparkles className="w-5 h-5 text-violet-500" />
