@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getAllSessions, type SessionSummary } from "@/lib/api";
+import { CursorHandoff } from "@/components/cursor-handoff";
 
 const AGENT_ORDER: AgentType[] = [
   "orchestrator",
@@ -195,33 +196,39 @@ export function SessionPage() {
             !showOutputMobile && "hidden lg:block"
           )}>
             {session.outputs.spec ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                      <FileText className="w-4 h-4 text-emerald-500" />
+              <div className="space-y-6">
+                {/* Cursor Handoff - Primary CTA */}
+                <CursorHandoff spec={session.outputs.spec} ideaTitle={session.idea} />
+
+                {/* Spec Preview */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                        <FileText className="w-4 h-4 text-emerald-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Feature Spec</p>
+                        <p className="text-xs text-muted-foreground">
+                          Generated specification
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium">Feature Spec</p>
-                      <p className="text-xs text-muted-foreground">
-                        Ready for Cursor
-                      </p>
-                    </div>
+                    <button
+                      onClick={handleCopySpec}
+                      className="p-2 hover:bg-secondary rounded-lg transition-colors"
+                      title="Copy to clipboard"
+                    >
+                      {copied ? (
+                        <Check className="w-4 h-4 text-emerald-500" />
+                      ) : (
+                        <Copy className="w-4 h-4 text-muted-foreground" />
+                      )}
+                    </button>
                   </div>
-                  <button
-                    onClick={handleCopySpec}
-                    className="p-2 hover:bg-secondary rounded-lg transition-colors"
-                    title="Copy to clipboard"
-                  >
-                    {copied ? (
-                      <Check className="w-4 h-4 text-emerald-500" />
-                    ) : (
-                      <Copy className="w-4 h-4 text-muted-foreground" />
-                    )}
-                  </button>
-                </div>
-                <div className="rounded-xl border bg-card p-4 prose prose-sm max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-h1:text-lg prose-h2:text-base prose-h3:text-sm prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground">
-                  <ReactMarkdown>{session.outputs.spec}</ReactMarkdown>
+                  <div className="rounded-xl border bg-card p-4 prose prose-sm max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-h1:text-lg prose-h2:text-base prose-h3:text-sm prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground max-h-[400px] overflow-y-auto">
+                    <ReactMarkdown>{session.outputs.spec}</ReactMarkdown>
+                  </div>
                 </div>
               </div>
             ) : (
