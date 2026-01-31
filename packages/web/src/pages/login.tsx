@@ -110,12 +110,13 @@ export function LoginPage() {
         </div>
 
         {/* Email form */}
-        <form onSubmit={handleSubmit} autoComplete="on">
+        <form onSubmit={handleSubmit} autoComplete="on" action="/login" method="POST">
           <div className="rounded-xl border bg-card p-1">
             <input
               type="email"
+              id="email"
               name="email"
-              autoComplete="email"
+              autoComplete="username email"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
@@ -128,19 +129,18 @@ export function LoginPage() {
               required
               disabled={needsPassword}
             />
-            {needsPassword && (
-              <input
-                type="password"
-                name="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-                className="w-full px-4 py-3 text-base bg-transparent focus:outline-none placeholder:text-muted-foreground/50 border-t"
-                autoFocus
-                required
-              />
-            )}
+            <input
+              type="password"
+              id="password"
+              name="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
+              className={needsPassword ? "w-full px-4 py-3 text-base bg-transparent focus:outline-none placeholder:text-muted-foreground/50 border-t" : "sr-only"}
+              tabIndex={needsPassword ? 0 : -1}
+              required={needsPassword}
+            />
             <div className="flex items-center justify-between px-3 py-2 border-t">
               <span className="text-xs text-muted-foreground">
                 {needsPassword ? "Enter your password" : "Demo mode - no password required"}
