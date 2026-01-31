@@ -37,7 +37,7 @@ export interface IntegrationAdapter {
 
   // OAuth flow
   getAuthUrl(state: string): string;
-  exchangeCodeForTokens(code: string): Promise<OAuthTokens>;
+  exchangeCodeForTokens(code: string, codeVerifier?: string): Promise<OAuthTokens>;
   refreshTokens(refreshToken: string): Promise<OAuthTokens>;
 
   // Get workspace/account info after auth

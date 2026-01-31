@@ -8,7 +8,78 @@ import { getAdapter, PROVIDER_INFO, type IntegrationProvider } from "../integrat
 
 const router = Router();
 
-// All integration routes require auth
+// OAuth callback handler - MUST be before requireAuth since it's a browser redirect
+router.get("/callback/:provider", async (req: Request, res: Response) => {
+  const { provider } = req.params;
+  const { code, state, error: oauthError } = req.query;
+
+  if (oauthError) {
+    res.redirect(`/settings?error=${encodeURIComponent(oauthError as string)}`);
+    return;
+  }
+
+  if (!code || !state) {
+    res.redirect("/settings?error=missing_params");
+    return;
+  }
+
+  try {
+    // Decode state
+    const stateData = JSON.parse(Buffer.from(state as string, "base64url").toString());
+    const { userId, codeVerifier } = stateData;
+
+    const adapter = getAdapter(provider as IntegrationProvider);
+
+    // Exchange code for tokens (pass codeVerifier for PKCE if present)
+    const tokens = await adapter.exchangeCodeForTokens(code as string, codeVerifier);
+
+    // Get account info
+    const metadata = await adapter.getAccountInfo(tokens.accessToken);
+
+    // Check if integration already exists
+    const [existing] = await db
+      .select()
+      .from(integrations)
+      .where(and(
+        eq(integrations.userId, userId),
+        eq(integrations.provider, provider)
+      ));
+
+    if (existing) {
+      // Update existing integration
+      await db
+        .update(integrations)
+        .set({
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          tokenExpiresAt: tokens.expiresAt,
+          metadata,
+          isActive: 1,
+          updatedAt: new Date(),
+        })
+        .where(eq(integrations.id, existing.id));
+    } else {
+      // Create new integration
+      await db.insert(integrations).values({
+        id: uuid(),
+        userId,
+        provider: provider as IntegrationProvider,
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        tokenExpiresAt: tokens.expiresAt,
+        metadata,
+        isActive: 1,
+      });
+    }
+
+    res.redirect(`/settings?connected=${provider}`);
+  } catch (error) {
+    console.error("OAuth callback error:", error);
+    res.redirect(`/settings?error=${encodeURIComponent((error as Error).message)}`);
+  }
+});
+
+// All other integration routes require auth
 router.use(requireAuth);
 
 // List all integrations for user
@@ -67,77 +138,6 @@ router.get("/connect/:provider", async (req: Request, res: Response) => {
     res.json({ authUrl });
   } catch (error) {
     res.status(400).json({ error: (error as Error).message });
-  }
-});
-
-// OAuth callback handler
-router.get("/callback/:provider", async (req: Request, res: Response) => {
-  const { provider } = req.params;
-  const { code, state, error: oauthError } = req.query;
-
-  if (oauthError) {
-    res.redirect(`/settings?error=${encodeURIComponent(oauthError as string)}`);
-    return;
-  }
-
-  if (!code || !state) {
-    res.redirect("/settings?error=missing_params");
-    return;
-  }
-
-  try {
-    // Decode state
-    const stateData = JSON.parse(Buffer.from(state as string, "base64url").toString());
-    const { userId } = stateData;
-
-    const adapter = getAdapter(provider as IntegrationProvider);
-
-    // Exchange code for tokens
-    const tokens = await adapter.exchangeCodeForTokens(code as string);
-
-    // Get account info
-    const metadata = await adapter.getAccountInfo(tokens.accessToken);
-
-    // Check if integration already exists
-    const [existing] = await db
-      .select()
-      .from(integrations)
-      .where(and(
-        eq(integrations.userId, userId),
-        eq(integrations.provider, provider)
-      ));
-
-    if (existing) {
-      // Update existing integration
-      await db
-        .update(integrations)
-        .set({
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-          tokenExpiresAt: tokens.expiresAt,
-          metadata,
-          isActive: 1,
-          updatedAt: new Date(),
-        })
-        .where(eq(integrations.id, existing.id));
-    } else {
-      // Create new integration
-      await db.insert(integrations).values({
-        id: uuid(),
-        userId,
-        provider: provider as IntegrationProvider,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        tokenExpiresAt: tokens.expiresAt,
-        metadata,
-        isActive: 1,
-      });
-    }
-
-    res.redirect(`/settings?connected=${provider}`);
-  } catch (error) {
-    console.error("OAuth callback error:", error);
-    res.redirect(`/settings?error=${encodeURIComponent((error as Error).message)}`);
   }
 });
 

@@ -1,35 +1,65 @@
+import crypto from "crypto";
 import type { IntegrationAdapter, OAuthTokens, IntegrationMetadata, SyncedDataItem } from "./types";
 
 const AIRTABLE_CLIENT_ID = process.env.AIRTABLE_CLIENT_ID || "";
 const AIRTABLE_CLIENT_SECRET = process.env.AIRTABLE_CLIENT_SECRET || "";
 const AIRTABLE_REDIRECT_URI = process.env.AIRTABLE_REDIRECT_URI || "";
 
+// Generate PKCE code verifier and challenge
+function generatePKCE(): { codeVerifier: string; codeChallenge: string } {
+  // Generate random 43-128 character string
+  const codeVerifier = crypto.randomBytes(32).toString("base64url");
+  // SHA256 hash, base64url encoded
+  const codeChallenge = crypto
+    .createHash("sha256")
+    .update(codeVerifier)
+    .digest("base64url");
+  return { codeVerifier, codeChallenge };
+}
+
 export const airtableAdapter: IntegrationAdapter = {
   provider: "airtable",
 
   getAuthUrl(state: string): string {
+    // Generate PKCE and include verifier in state
+    const { codeVerifier, codeChallenge } = generatePKCE();
+
+    // Decode state, add code verifier, re-encode
+    const stateData = JSON.parse(Buffer.from(state, "base64url").toString());
+    stateData.codeVerifier = codeVerifier;
+    const newState = Buffer.from(JSON.stringify(stateData)).toString("base64url");
+
     const params = new URLSearchParams({
       client_id: AIRTABLE_CLIENT_ID,
       redirect_uri: AIRTABLE_REDIRECT_URI,
       response_type: "code",
-      state,
+      state: newState,
       scope: "data.records:read data.recordComments:read schema.bases:read",
+      code_challenge: codeChallenge,
+      code_challenge_method: "S256",
     });
     return `https://airtable.com/oauth2/v1/authorize?${params}`;
   },
 
-  async exchangeCodeForTokens(code: string): Promise<OAuthTokens> {
+  async exchangeCodeForTokens(code: string, codeVerifier?: string): Promise<OAuthTokens> {
+    const body: Record<string, string> = {
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: AIRTABLE_REDIRECT_URI,
+    };
+
+    // Add code_verifier for PKCE
+    if (codeVerifier) {
+      body.code_verifier = codeVerifier;
+    }
+
     const res = await fetch("https://airtable.com/oauth2/v1/token", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
         Authorization: `Basic ${Buffer.from(`${AIRTABLE_CLIENT_ID}:${AIRTABLE_CLIENT_SECRET}`).toString("base64")}`,
       },
-      body: new URLSearchParams({
-        grant_type: "authorization_code",
-        code,
-        redirect_uri: AIRTABLE_REDIRECT_URI,
-      }),
+      body: new URLSearchParams(body),
     });
 
     if (!res.ok) {
