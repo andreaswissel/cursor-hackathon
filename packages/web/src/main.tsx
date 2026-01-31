@@ -9,6 +9,7 @@ import { SessionPage } from "./pages/session";
 import { LoginPage } from "./pages/login";
 import { AuthCallbackPage } from "./pages/auth-callback";
 import { SettingsPage } from "./pages/settings";
+import { PrivacyPage } from "./pages/privacy";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -17,6 +18,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
           <Route
             path="/"
             element={
