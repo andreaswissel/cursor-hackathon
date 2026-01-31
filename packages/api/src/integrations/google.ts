@@ -17,6 +17,7 @@ export const googleAdapter: IntegrationAdapter = {
         "https://www.googleapis.com/auth/drive.readonly",
         "https://www.googleapis.com/auth/documents.readonly",
         "https://www.googleapis.com/auth/spreadsheets.readonly",
+        "https://www.googleapis.com/auth/presentations",
         "https://www.googleapis.com/auth/userinfo.email",
       ].join(" "),
       access_type: "offline",

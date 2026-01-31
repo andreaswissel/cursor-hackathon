@@ -52,9 +52,9 @@ router.post("/", checkSessionLimit, async (req: Request, res: Response) => {
   const sessionId = uuid();
   await sessionStore.create(sessionId, idea, context, userId);
 
-  // Start orchestrator in background
+  // Start orchestrator in background (pass userId for slides generation)
   const orchestrator = new OrchestratorAgent();
-  orchestrator.run({ sessionId, idea, context }).catch((error) => {
+  orchestrator.run({ sessionId, userId, idea, context }).catch((error) => {
     console.error("Orchestrator error:", error);
     sessionStore.setSessionStatus(sessionId, "failed");
   });

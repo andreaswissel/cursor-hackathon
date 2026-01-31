@@ -1,12 +1,18 @@
 import { v4 as uuid } from "uuid";
+import { eq, and } from "drizzle-orm";
 import { sessionStore, SessionContext } from "../lib/session-store";
 import { DiscoveryAgent } from "./discovery-agent";
 import { StrategyAgent } from "./strategy-agent";
 import { SpecAgent } from "./spec-agent";
 import { GTMAgent } from "./gtm-agent";
+import { generateProductUpdateSlides } from "../lib/slides-generator";
+import { db } from "../db";
+import { integrations } from "../db/schema";
+import { googleAdapter } from "../integrations/google";
 
 export interface OrchestratorInput {
   sessionId: string;
+  userId?: string;
   idea: string;
   context: SessionContext;
 }
@@ -112,7 +118,39 @@ export class OrchestratorAgent {
       return;
     }
 
-    // TODO: Create Google Slides from GTM output
+    // Extract GTM output for slides
+    const gtmOutput = gtmResult.output as { reasoning?: string };
+    previousOutputs.gtm = gtmOutput?.reasoning ?? "";
+
+    // Phase 5: Generate Product Update Slides
+    if (input.userId) {
+      await sessionStore.appendLog(sessionId, "orchestrator", "\nPhase 5: Generating Product Update Slides...\n");
+
+      try {
+        const slidesUrl = await this.generateSlides(
+          input.userId,
+          idea,
+          previousOutputs as Record<string, string>
+        );
+
+        if (slidesUrl) {
+          await sessionStore.setSessionOutput(sessionId, "slidesUrl", slidesUrl);
+          await sessionStore.appendLog(
+            sessionId,
+            "orchestrator",
+            `📊 Slides created: ${slidesUrl}\n`
+          );
+        }
+      } catch (err) {
+        console.error("Failed to generate slides:", err);
+        await sessionStore.appendLog(
+          sessionId,
+          "orchestrator",
+          `⚠️ Could not generate slides: ${(err as Error).message}\n`
+        );
+      }
+    }
+
     await sessionStore.appendLog(
       sessionId,
       "orchestrator",
@@ -120,5 +158,60 @@ export class OrchestratorAgent {
     );
     await sessionStore.setAgentStatus(sessionId, "orchestrator", "completed");
     await sessionStore.setSessionStatus(sessionId, "completed");
+  }
+
+  private async generateSlides(
+    userId: string,
+    idea: string,
+    outputs: Record<string, string>
+  ): Promise<string | null> {
+    // Get user's Google integration
+    const [googleIntegration] = await db
+      .select()
+      .from(integrations)
+      .where(and(
+        eq(integrations.userId, userId),
+        eq(integrations.provider, "google")
+      ));
+
+    if (!googleIntegration) {
+      console.log("No Google integration found for user");
+      return null;
+    }
+
+    let accessToken = googleIntegration.accessToken;
+
+    // Refresh token if expired
+    if (googleIntegration.tokenExpiresAt && new Date(googleIntegration.tokenExpiresAt) < new Date()) {
+      if (googleIntegration.refreshToken) {
+        const newTokens = await googleAdapter.refreshTokens(googleIntegration.refreshToken);
+        accessToken = newTokens.accessToken;
+
+        await db
+          .update(integrations)
+          .set({
+            accessToken: newTokens.accessToken,
+            refreshToken: newTokens.refreshToken,
+            tokenExpiresAt: newTokens.expiresAt,
+            updatedAt: new Date(),
+          })
+          .where(eq(integrations.id, googleIntegration.id));
+      } else {
+        console.log("Google token expired and no refresh token");
+        return null;
+      }
+    }
+
+    // Generate slides
+    const slidesUrl = await generateProductUpdateSlides(accessToken, {
+      title: idea,
+      idea,
+      discovery: outputs.discovery,
+      strategy: outputs.strategy,
+      spec: outputs.spec,
+      gtm: outputs.gtm,
+    });
+
+    return slidesUrl;
   }
 }
