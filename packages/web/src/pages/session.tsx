@@ -29,6 +29,9 @@ const AGENT_ORDER: AgentType[] = [
   "gtm",
 ];
 
+// Agents that actually represent progress steps (excludes orchestrator which runs the whole time)
+const PROGRESS_AGENTS: AgentType[] = ["discovery", "strategy", "spec", "gtm"];
+
 // Human-friendly descriptions for each agent phase
 const AGENT_PROGRESS_INFO: Record<AgentType, { title: string; description: string }> = {
   orchestrator: {
@@ -180,13 +183,19 @@ export function SessionPage() {
 
           {/* Progress Indicator */}
           {session.status === "running" && (() => {
-            const runningAgentIndex = AGENT_ORDER.findIndex(
+            // Find the currently running worker agent (not orchestrator)
+            const runningAgentIndex = PROGRESS_AGENTS.findIndex(
               (type) => session.agents[type]?.status === "running"
             );
-            const runningAgent = runningAgentIndex >= 0 ? AGENT_ORDER[runningAgentIndex] : null;
-            // Progress includes completed agents + the currently running one
-            // Each agent is 20% (1/5), so running agent counts as that step being in progress
-            const progressPercent = ((runningAgentIndex >= 0 ? runningAgentIndex + 1 : completedAgents) / AGENT_ORDER.length) * 100;
+            const runningAgent = runningAgentIndex >= 0 ? PROGRESS_AGENTS[runningAgentIndex] : null;
+            // Count completed worker agents
+            const completedWorkerAgents = PROGRESS_AGENTS.filter(
+              (type) => session.agents[type]?.status === "completed"
+            ).length;
+            // Progress: each worker agent is 25% (1/4). Running agent fills its portion.
+            const progressPercent = runningAgentIndex >= 0
+              ? ((runningAgentIndex + 1) / PROGRESS_AGENTS.length) * 100
+              : (completedWorkerAgents / PROGRESS_AGENTS.length) * 100;
             const info = runningAgent ? AGENT_PROGRESS_INFO[runningAgent] : null;
 
             return (
