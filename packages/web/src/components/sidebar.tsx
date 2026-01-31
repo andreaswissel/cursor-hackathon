@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
 import { deleteSession } from "@/lib/api";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
   Zap,
   Plus,
@@ -68,14 +69,22 @@ export function Sidebar({ sessions = [], onSessionDeleted }: SidebarProps) {
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; idea: string } | null>(null);
+  const [errorDialog, setErrorDialog] = useState<string | null>(null);
 
-  const handleDelete = async (e: React.MouseEvent, sessionId: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, sessionId: string, idea: string) => {
     e.preventDefault();
     e.stopPropagation();
+    setDeleteConfirm({ id: sessionId, idea });
+  };
 
-    if (!confirm("Delete this session? This cannot be undone.")) return;
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm) return;
 
+    const sessionId = deleteConfirm.id;
+    setDeleteConfirm(null);
     setDeletingId(sessionId);
+
     try {
       await deleteSession(sessionId);
       onSessionDeleted?.();
@@ -85,7 +94,7 @@ export function Sidebar({ sessions = [], onSessionDeleted }: SidebarProps) {
       }
     } catch (error) {
       console.error("Failed to delete session:", error);
-      alert("Failed to delete session");
+      setErrorDialog("Failed to delete session. Please try again.");
     } finally {
       setDeletingId(null);
     }
@@ -214,7 +223,7 @@ export function Sidebar({ sessions = [], onSessionDeleted }: SidebarProps) {
                     </span>
                   </Link>
                   <button
-                    onClick={(e) => handleDelete(e, session.id)}
+                    onClick={(e) => handleDeleteClick(e, session.id, session.idea)}
                     disabled={deletingId === session.id}
                     className={cn(
                       "absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded",
@@ -272,6 +281,28 @@ export function Sidebar({ sessions = [], onSessionDeleted }: SidebarProps) {
         </button>
       </div>
     </aside>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete session?"
+        description={`This will permanently delete "${deleteConfirm?.idea.slice(0, 40)}${(deleteConfirm?.idea.length ?? 0) > 40 ? "..." : ""}". This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+      />
+
+      {/* Error Alert Dialog */}
+      <ConfirmDialog
+        isOpen={!!errorDialog}
+        onClose={() => setErrorDialog(null)}
+        title="Something went wrong"
+        description={errorDialog || ""}
+        variant="destructive"
+        alertOnly
+      />
     </>
   );
 }

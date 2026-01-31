@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
   Loader2,
   Check,
@@ -76,6 +77,9 @@ export function IntegrationsPanel() {
   const [loadingSources, setLoadingSources] = useState(false);
   const [savingSources, setSavingSources] = useState(false);
 
+  // Disconnect confirmation state
+  const [disconnectConfirm, setDisconnectConfirm] = useState<Integration | null>(null);
+
   const fetchIntegrations = async () => {
     try {
       const res = await fetch(`${API_BASE}/integrations`, {
@@ -149,9 +153,15 @@ export function IntegrationsPanel() {
     }
   };
 
-  const handleDisconnect = async (integrationId: string) => {
-    if (!confirm("Disconnect this integration? Synced data will be removed.")) return;
+  const handleDisconnectClick = (integration: Integration) => {
+    setDisconnectConfirm(integration);
+  };
 
+  const handleDisconnectConfirm = async () => {
+    if (!disconnectConfirm) return;
+
+    const integrationId = disconnectConfirm.id;
+    setDisconnectConfirm(null);
     setDeletingId(integrationId);
     setError(null);
 
@@ -381,7 +391,7 @@ export function IntegrationsPanel() {
                       )}
                     </button>
                     <button
-                      onClick={() => handleDisconnect(integration.id)}
+                      onClick={() => handleDisconnectClick(integration)}
                       disabled={deletingId === integration.id}
                       className="p-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                       title="Disconnect"
@@ -457,6 +467,18 @@ export function IntegrationsPanel() {
           {success}
         </div>
       )}
+
+      {/* Disconnect Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={!!disconnectConfirm}
+        onClose={() => setDisconnectConfirm(null)}
+        onConfirm={handleDisconnectConfirm}
+        title="Disconnect integration?"
+        description={`This will disconnect ${disconnectConfirm?.providerInfo.name} and remove all synced data. You can reconnect anytime.`}
+        confirmLabel="Disconnect"
+        cancelLabel="Cancel"
+        variant="destructive"
+      />
     </div>
   );
 }
