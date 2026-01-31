@@ -8,18 +8,21 @@ import { getAdapter, PROVIDER_INFO, type IntegrationProvider } from "../integrat
 
 const router = Router();
 
+// Frontend URL for redirects after OAuth
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+
 // OAuth callback handler - MUST be before requireAuth since it's a browser redirect
 router.get("/callback/:provider", async (req: Request, res: Response) => {
   const { provider } = req.params;
   const { code, state, error: oauthError } = req.query;
 
   if (oauthError) {
-    res.redirect(`/settings?error=${encodeURIComponent(oauthError as string)}`);
+    res.redirect(`${FRONTEND_URL}/settings?error=${encodeURIComponent(oauthError as string)}`);
     return;
   }
 
   if (!code || !state) {
-    res.redirect("/settings?error=missing_params");
+    res.redirect(`${FRONTEND_URL}/settings?error=missing_params`);
     return;
   }
 
@@ -72,10 +75,10 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
       });
     }
 
-    res.redirect(`/settings?connected=${provider}`);
+    res.redirect(`${FRONTEND_URL}/settings?connected=${provider}`);
   } catch (error) {
     console.error("OAuth callback error:", error);
-    res.redirect(`/settings?error=${encodeURIComponent((error as Error).message)}`);
+    res.redirect(`${FRONTEND_URL}/settings?error=${encodeURIComponent((error as Error).message)}`);
   }
 });
 
