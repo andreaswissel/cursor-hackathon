@@ -1,0 +1,17 @@
+{
+  "name": "product-os",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": {
+    "dev": "bun run --filter '*' dev",
+    "dev:api": "bun run --filter @product-os/api dev",
+    "dev:web": "bun run --filter @product-os/web dev",
+    "build": "bun run --filter '*' build",
+    "db:generate": "bun run --filter @product-os/api db:generate",
+    "db:migrate": "bun run --filter @product-os/api db:migrate",
+    "db:studio": "bun run --filter @product-os/api db:studio"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
