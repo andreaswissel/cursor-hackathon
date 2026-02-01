@@ -187,9 +187,11 @@ export const jiraAdapter: IntegrationAdapter = {
     for (const project of projectsToSync) {
       try {
         // Get issues from project using new /search/jql endpoint (old /search was deprecated)
+        // Must explicitly request fields - new endpoint returns minimal data by default
         const jql = encodeURIComponent(`project = ${project.id} ORDER BY updated DESC`);
+        const fields = encodeURIComponent("summary,description,issuetype,status");
         const res = await fetch(
-          `https://api.atlassian.com/ex/jira/${workspaceId}/rest/api/3/search/jql?jql=${jql}&maxResults=50`,
+          `https://api.atlassian.com/ex/jira/${workspaceId}/rest/api/3/search/jql?jql=${jql}&maxResults=50&fields=${fields}`,
           { headers: { Authorization: `Bearer ${accessToken}` } }
         );
 
