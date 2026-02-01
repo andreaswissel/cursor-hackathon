@@ -200,24 +200,31 @@ export const jiraAdapter: IntegrationAdapter = {
         }
 
         const data = await res.json();
+        console.log(`Jira project ${project.id} response keys:`, Object.keys(data));
+
         if (!data.issues || !Array.isArray(data.issues)) {
-          console.log(`Jira project ${project.id}: No issues found`);
+          console.log(`Jira project ${project.id}: No issues found, data:`, JSON.stringify(data).slice(0, 500));
           continue;
         }
 
-        // Log issue types found for debugging
-        const issueTypes = data.issues.map((i: { fields: { issuetype: { name: string } } }) =>
-          i.fields.issuetype?.name
-        );
+        // Log first issue structure for debugging
+        if (data.issues[0]) {
+          console.log(`Jira project ${project.id} first issue keys:`, Object.keys(data.issues[0]));
+        }
+
+        // Log issue types found for debugging (with safety checks)
+        const issueTypes = data.issues
+          .filter((i: { fields?: { issuetype?: { name: string } } }) => i.fields?.issuetype?.name)
+          .map((i: { fields: { issuetype: { name: string } } }) => i.fields.issuetype.name);
         console.log(`Jira project ${project.id}: Found ${data.issues.length} issues, types:`, [...new Set(issueTypes)]);
 
         // Group by type - Epics go to OKRs, everything else goes to tickets
-        const epics = data.issues.filter((i: { fields: { issuetype: { name: string } } }) =>
-          i.fields.issuetype?.name === "Epic"
+        const epics = data.issues.filter((i: { fields?: { issuetype?: { name: string } } }) =>
+          i.fields?.issuetype?.name === "Epic"
         );
         // Include ALL non-epic issues as tickets (not just Story/Task/Bug)
-        const allOtherIssues = data.issues.filter((i: { fields: { issuetype: { name: string } } }) =>
-          i.fields.issuetype?.name !== "Epic"
+        const allOtherIssues = data.issues.filter((i: { fields?: { issuetype?: { name: string } } }) =>
+          i.fields?.issuetype?.name && i.fields.issuetype.name !== "Epic"
         );
 
         if (epics.length > 0) {
