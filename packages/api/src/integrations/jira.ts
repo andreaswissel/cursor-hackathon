@@ -194,7 +194,8 @@ export const jiraAdapter: IntegrationAdapter = {
         );
 
         if (!res.ok) {
-          console.error(`Jira project ${project.id} error:`, res.status);
+          const errorBody = await res.text();
+          console.error(`Jira project ${project.id} error:`, res.status, errorBody);
           continue;
         }
 
