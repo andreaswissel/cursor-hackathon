@@ -168,16 +168,21 @@ export const jiraAdapter: IntegrationAdapter = {
     const items: SyncedDataItem[] = [];
     const selectedSources = (metadata.selectedSources as string[]) || [];
 
+    console.log("Jira sync: selectedSources from metadata:", JSON.stringify(selectedSources));
+    console.log("Jira sync: full metadata:", JSON.stringify(metadata));
+
     // Pass workspaceId in metadata for listSources
     const metadataWithWorkspace = { ...metadata, workspaceId };
     const allProjects = await this.listSources(accessToken, metadataWithWorkspace);
+
+    console.log("Jira sync: allProjects:", JSON.stringify(allProjects.map(p => ({ id: p.id, name: p.name }))));
 
     // Filter to selected projects, or use all (up to 5) if none selected
     const projectsToSync = selectedSources.length > 0
       ? allProjects.filter(p => selectedSources.includes(p.id))
       : allProjects.slice(0, 5);
 
-    console.log(`Jira: Syncing ${projectsToSync.length} projects`);
+    console.log(`Jira: Syncing ${projectsToSync.length} projects:`, JSON.stringify(projectsToSync.map(p => p.id)));
 
     for (const project of projectsToSync) {
       try {
