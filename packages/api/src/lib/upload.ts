@@ -4,11 +4,15 @@ import fs from "fs";
 import { v4 as uuid } from "uuid";
 
 // Configurable upload directory
-const UPLOAD_DIR = process.env.UPLOAD_DIR || "./uploads";
+const UPLOAD_DIR = process.env.UPLOAD_DIR || "/tmp/uploads";
 
-// Ensure upload directory exists
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+// Ensure upload directory exists (with error handling for production)
+try {
+  if (!fs.existsSync(UPLOAD_DIR)) {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  }
+} catch (err) {
+  console.error("Failed to create upload directory:", err);
 }
 
 // Allowed video MIME types

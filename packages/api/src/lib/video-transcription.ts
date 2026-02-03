@@ -21,40 +21,61 @@ export interface TranscriptionCallbacks {
   onError?: (error: Error) => void;
 }
 
+// Max file size for Claude vision API (approximately 20MB after base64)
+const MAX_CLAUDE_VIDEO_SIZE = 15 * 1024 * 1024; // 15MB raw = ~20MB base64
+
 /**
  * Transcribe a video file using the configured LLM provider.
  *
  * Provider support:
- * - Anthropic: Uses Claude vision API with video support
- * - OpenAI: Uses Whisper API for audio transcription
+ * - Anthropic: Uses Claude vision API with video support (files under 15MB)
+ * - OpenAI: Uses Whisper API for audio transcription (preferred for large files)
  * - Gemini: Uses multimodal API (requires separate handling)
  */
 export async function transcribeVideo(
   videoPath: string,
   config: LLMConfig,
-  callbacks: TranscriptionCallbacks = {}
+  callbacks: TranscriptionCallbacks = {},
+  openaiApiKey?: string // Optional fallback for large files
 ): Promise<TranscriptionResult> {
   const { onProgress, onComplete, onError } = callbacks;
 
   try {
     onProgress?.(10, "Starting transcription...");
 
+    // Check file size
+    const stats = await fs.promises.stat(videoPath);
+    const fileSizeMB = stats.size / (1024 * 1024);
+
     let result: TranscriptionResult;
 
-    switch (config.provider) {
-      case "anthropic":
-        result = await transcribeWithAnthropic(videoPath, config.apiKey, onProgress);
-        break;
-      case "openai":
-        result = await transcribeWithOpenAI(videoPath, config.apiKey, onProgress);
-        break;
-      case "gemini":
-        // For now, fall back to Anthropic-style approach for Gemini
-        // In production, would use Gemini's video API
-        result = await transcribeWithAnthropic(videoPath, config.apiKey, onProgress);
-        break;
-      default:
-        throw new Error(`Unsupported provider: ${config.provider}`);
+    // For large files, prefer OpenAI Whisper if available
+    if (stats.size > MAX_CLAUDE_VIDEO_SIZE && (config.provider === "openai" || openaiApiKey)) {
+      const apiKey = config.provider === "openai" ? config.apiKey : openaiApiKey!;
+      onProgress?.(15, `File is ${fileSizeMB.toFixed(1)}MB - using Whisper for transcription...`);
+      result = await transcribeWithOpenAI(videoPath, apiKey, onProgress);
+    } else if (stats.size > MAX_CLAUDE_VIDEO_SIZE) {
+      throw new Error(
+        `Video file (${fileSizeMB.toFixed(1)}MB) is too large for Claude vision API. ` +
+        `Maximum size is ~15MB. Please configure an OpenAI API key in Settings for larger files, ` +
+        `or upload a shorter/compressed video.`
+      );
+    } else {
+      switch (config.provider) {
+        case "anthropic":
+          result = await transcribeWithAnthropic(videoPath, config.apiKey, onProgress);
+          break;
+        case "openai":
+          result = await transcribeWithOpenAI(videoPath, config.apiKey, onProgress);
+          break;
+        case "gemini":
+          // For now, fall back to Anthropic-style approach for Gemini
+          // In production, would use Gemini's video API
+          result = await transcribeWithAnthropic(videoPath, config.apiKey, onProgress);
+          break;
+        default:
+          throw new Error(`Unsupported provider: ${config.provider}`);
+      }
     }
 
     onProgress?.(100, "Transcription complete");
