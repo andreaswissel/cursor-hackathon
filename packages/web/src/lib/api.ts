@@ -1,4 +1,4 @@
-import type { SessionContext, Session, AgentType } from "@product-os/shared";
+import type { SessionContext, Session, AgentType, DocumentationPiece, DocPieceStatus, SessionMode } from "@product-os/shared";
 
 // In production, use the full API URL; in dev, proxy through Vite
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
@@ -12,6 +12,7 @@ export interface SessionSummary {
   id: string;
   idea: string;
   status: string;
+  mode?: SessionMode;
   createdAt: string;
 }
 
@@ -215,4 +216,125 @@ export async function getIntegrationData(): Promise<{ data: IntegrationDataItem[
   }
 
   return res.json();
+}
+
+// Documentation Mode API functions
+
+export async function createDocumentationSession(
+  description: string,
+  videoFile: File
+): Promise<{ sessionId: string }> {
+  const formData = new FormData();
+  formData.append("description", description);
+  formData.append("video", videoFile);
+
+  const res = await fetch(`${API_BASE}/sessions/documentation`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to create documentation session" }));
+    throw new Error(error.message || error.error || "Failed to create documentation session");
+  }
+
+  return res.json();
+}
+
+export async function getDocumentationPieces(
+  sessionId: string
+): Promise<{ pieces: DocumentationPiece[] }> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/documentation-pieces`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to get documentation pieces");
+  }
+
+  return res.json();
+}
+
+export async function updateDocumentationPieceStatus(
+  sessionId: string,
+  pieceId: string,
+  status: DocPieceStatus
+): Promise<{ piece: DocumentationPiece }> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/documentation-pieces/${pieceId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({ status }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to update documentation piece status");
+  }
+
+  return res.json();
+}
+
+export function refineDocumentationPiece(
+  sessionId: string,
+  pieceId: string,
+  message: string,
+  onText: (text: string) => void,
+  onDone: () => void,
+  onError: (error: string) => void
+): () => void {
+  const controller = new AbortController();
+
+  fetch(`${API_BASE}/sessions/${sessionId}/documentation-pieces/${pieceId}/refine`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({ message }),
+    signal: controller.signal,
+  }).then(async (res) => {
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ error: "Failed to refine documentation piece" }));
+      onError(error.message || error.error || "Failed to refine documentation piece");
+      return;
+    }
+
+    const reader = res.body?.getReader();
+    if (!reader) {
+      onError("No response body");
+      return;
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.type === "text") {
+              onText(data.content);
+            } else if (data.type === "done") {
+              onDone();
+            } else if (data.type === "error") {
+              onError(data.error);
+            }
+          } catch {
+            // Ignore parse errors
+          }
+        }
+      }
+    }
+  }).catch((error) => {
+    if (error.name !== "AbortError") {
+      onError(error.message);
+    }
+  });
+
+  return () => controller.abort();
 }

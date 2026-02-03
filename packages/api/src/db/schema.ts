@@ -24,6 +24,15 @@ export const sessions = pgTable("sessions", {
   }>(),
   status: text("status").$type<"pending" | "running" | "waiting_input" | "completed" | "failed">().default("pending").notNull(),
   promptCount: integer("prompt_count").default(1).notNull(),
+  mode: text("mode").$type<"idea-to-spec" | "documentation">().default("idea-to-spec").notNull(),
+  videoMetadata: jsonb("video_metadata").$type<{
+    filename: string;
+    originalName: string;
+    mimeType: string;
+    size: number;
+    path: string;
+    duration?: number;
+  }>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -31,7 +40,7 @@ export const sessions = pgTable("sessions", {
 export const agentRuns = pgTable("agent_runs", {
   id: uuid("id").primaryKey().defaultRandom(),
   sessionId: uuid("session_id").references(() => sessions.id).notNull(),
-  agentType: text("agent_type").$type<"orchestrator" | "discovery" | "strategy" | "spec" | "gtm">().notNull(),
+  agentType: text("agent_type").$type<"orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "doc-orchestrator" | "transcription" | "doc-generator">().notNull(),
   status: text("status").$type<"pending" | "running" | "waiting_input" | "completed" | "failed">().default("pending").notNull(),
   output: jsonb("output"),
   logs: jsonb("logs").$type<Array<{ timestamp: string; content: string }>>().default([]),
@@ -46,6 +55,27 @@ export const outputs = pgTable("outputs", {
   content: text("content").notNull(),
   metadata: jsonb("metadata"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Documentation pieces for documentation mode sessions
+export const documentationPieces = pgTable("documentation_pieces", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  sessionId: uuid("session_id").references(() => sessions.id).notNull(),
+  pieceType: text("piece_type").$type<"feature" | "workflow" | "use-case" | "tutorial" | "reference">().notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  status: text("status").$type<"pending" | "accepted" | "declined" | "refined">().default("pending").notNull(),
+  order: integer("order").default(0).notNull(),
+  startTimestamp: integer("start_timestamp"),
+  endTimestamp: integer("end_timestamp"),
+  refinementHistory: jsonb("refinement_history").$type<Array<{
+    timestamp: string;
+    userMessage: string;
+    previousContent: string;
+    newContent: string;
+  }>>().default([]),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Chat messages for continuing conversations with agents

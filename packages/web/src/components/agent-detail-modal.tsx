@@ -15,6 +15,8 @@ import {
   MessageSquare,
   ArrowRight,
   Zap,
+  Video,
+  BookOpen,
 } from "lucide-react";
 
 interface AgentDetailModalProps {
@@ -78,6 +80,27 @@ const AGENT_CONFIG: Record<
     icon: Share2,
     color: "text-violet-500",
     gradient: "from-violet-500/20 to-purple-600/5",
+  },
+  "doc-orchestrator": {
+    name: "Doc Orchestrator",
+    description: "Coordinates documentation workflow",
+    icon: Compass,
+    color: "text-slate-500",
+    gradient: "from-slate-500/20 to-slate-600/5",
+  },
+  transcription: {
+    name: "Transcription",
+    description: "Extracts content from video",
+    icon: Video,
+    color: "text-blue-500",
+    gradient: "from-blue-500/20 to-indigo-600/5",
+  },
+  "doc-generator": {
+    name: "Doc Generator",
+    description: "Creates documentation pieces",
+    icon: BookOpen,
+    color: "text-emerald-500",
+    gradient: "from-emerald-500/20 to-teal-600/5",
   },
 };
 

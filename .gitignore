@@ -6,3 +6,7 @@ dist
 *.log
 .DS_Store
 .turbo
+
+# Video uploads (keep directory, ignore contents)
+packages/api/uploads/*
+!packages/api/uploads/.gitkeep

@@ -1,10 +1,42 @@
 import { eq } from "drizzle-orm";
 import { db } from "../db";
-import { sessions, agentRuns, outputs, messages } from "../db/schema";
+import { sessions, agentRuns, outputs, messages, documentationPieces } from "../db/schema";
 import { TypedEventEmitter } from "./event-emitter";
 
-export type AgentType = "orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "product-marketing";
+export type AgentType = "orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "product-marketing" | "doc-orchestrator" | "transcription" | "doc-generator";
 export type AgentStatus = "pending" | "running" | "waiting_input" | "completed" | "failed";
+export type SessionMode = "idea-to-spec" | "documentation";
+export type DocPieceType = "feature" | "workflow" | "use-case" | "tutorial" | "reference";
+export type DocPieceStatus = "pending" | "accepted" | "declined" | "refined";
+
+export interface VideoMetadata {
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  path: string;
+  duration?: number;
+}
+
+export interface DocumentationPieceRecord {
+  id: string;
+  sessionId: string;
+  pieceType: DocPieceType;
+  title: string;
+  content: string;
+  status: DocPieceStatus;
+  order: number;
+  startTimestamp?: number | null;
+  endTimestamp?: number | null;
+  refinementHistory: Array<{
+    timestamp: string;
+    userMessage: string;
+    previousContent: string;
+    newContent: string;
+  }>;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export interface AgentLog {
   timestamp: string;
@@ -38,6 +70,8 @@ export interface Session {
   context: SessionContext;
   status: "pending" | "running" | "waiting_input" | "completed" | "failed";
   promptCount: number;
+  mode: SessionMode;
+  videoMetadata?: VideoMetadata;
   agents: Map<AgentType, AgentState>;
   outputs: {
     spec?: string;
@@ -46,6 +80,7 @@ export interface Session {
     validation?: string;
     strategy?: string;
   };
+  documentationPieces?: DocumentationPieceRecord[];
   createdAt: Date;
 }
 
@@ -67,6 +102,8 @@ export interface SessionEvents {
   "agent:message": { sessionId: string; agentType: AgentType; message: ChatMessage };
   "session:status": { sessionId: string; status: Session["status"] };
   "session:output": { sessionId: string; type: keyof Session["outputs"]; content: string };
+  "documentation:piece": { sessionId: string; piece: DocumentationPieceRecord };
+  "documentation:piece:updated": { sessionId: string; pieceId: string; piece: DocumentationPieceRecord };
 }
 
 class SessionStore {
@@ -75,7 +112,14 @@ class SessionStore {
   public events = new TypedEventEmitter<SessionEvents>();
 
   // Create a new session
-  async create(id: string, idea: string, context: SessionContext, userId?: string): Promise<Session> {
+  async create(
+    id: string,
+    idea: string,
+    context: SessionContext,
+    userId?: string,
+    mode: SessionMode = "idea-to-spec",
+    videoMetadata?: VideoMetadata
+  ): Promise<Session> {
     // Insert into database
     await db.insert(sessions).values({
       id,
@@ -84,6 +128,8 @@ class SessionStore {
       context,
       status: "pending",
       promptCount: 1,
+      mode,
+      videoMetadata,
     });
 
     const session: Session = {
@@ -93,6 +139,8 @@ class SessionStore {
       context,
       status: "pending",
       promptCount: 1,
+      mode,
+      videoMetadata,
       agents: new Map(),
       outputs: {},
       createdAt: new Date(),
@@ -119,6 +167,11 @@ class SessionStore {
     // Load outputs
     const dbOutputs = await db.select().from(outputs).where(eq(outputs.sessionId, id));
 
+    // Load documentation pieces if documentation mode
+    const dbDocPieces = dbSession.mode === "documentation"
+      ? await db.select().from(documentationPieces).where(eq(documentationPieces.sessionId, id))
+      : [];
+
     // Build session object
     const session: Session = {
       id: dbSession.id,
@@ -127,8 +180,24 @@ class SessionStore {
       context: dbSession.context as SessionContext,
       status: dbSession.status,
       promptCount: dbSession.promptCount,
+      mode: dbSession.mode as SessionMode,
+      videoMetadata: dbSession.videoMetadata as VideoMetadata | undefined,
       agents: new Map(),
       outputs: {},
+      documentationPieces: dbDocPieces.map((p) => ({
+        id: p.id,
+        sessionId: p.sessionId,
+        pieceType: p.pieceType as DocPieceType,
+        title: p.title,
+        content: p.content,
+        status: p.status as DocPieceStatus,
+        order: p.order,
+        startTimestamp: p.startTimestamp,
+        endTimestamp: p.endTimestamp,
+        refinementHistory: (p.refinementHistory ?? []) as DocumentationPieceRecord["refinementHistory"],
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+      })),
       createdAt: dbSession.createdAt,
     };
 
@@ -173,13 +242,14 @@ class SessionStore {
   }
 
   // Get all sessions for a specific user
-  async getAllForUser(userId: string): Promise<Array<{ id: string; idea: string; status: string; promptCount: number; createdAt: Date }>> {
+  async getAllForUser(userId: string): Promise<Array<{ id: string; idea: string; status: string; promptCount: number; mode: SessionMode; createdAt: Date }>> {
     const dbSessions = await db
       .select({
         id: sessions.id,
         idea: sessions.idea,
         status: sessions.status,
         promptCount: sessions.promptCount,
+        mode: sessions.mode,
         createdAt: sessions.createdAt,
       })
       .from(sessions)
@@ -191,6 +261,7 @@ class SessionStore {
       idea: s.idea,
       status: s.status,
       promptCount: s.promptCount,
+      mode: s.mode as SessionMode,
       createdAt: s.createdAt,
     }));
   }
@@ -383,6 +454,7 @@ class SessionStore {
   // Delete a session and all related data
   async delete(sessionId: string): Promise<boolean> {
     // Delete from database (cascade will handle related tables if set up, otherwise delete manually)
+    await db.delete(documentationPieces).where(eq(documentationPieces.sessionId, sessionId));
     await db.delete(messages).where(eq(messages.sessionId, sessionId));
     await db.delete(outputs).where(eq(outputs.sessionId, sessionId));
     await db.delete(agentRuns).where(eq(agentRuns.sessionId, sessionId));
@@ -392,6 +464,203 @@ class SessionStore {
     this.cache.delete(sessionId);
 
     return true;
+  }
+
+  // Documentation pieces methods
+  async addDocumentationPiece(
+    sessionId: string,
+    piece: Omit<DocumentationPieceRecord, "id" | "sessionId" | "createdAt" | "updatedAt">
+  ): Promise<DocumentationPieceRecord> {
+    const [inserted] = await db
+      .insert(documentationPieces)
+      .values({
+        sessionId,
+        pieceType: piece.pieceType,
+        title: piece.title,
+        content: piece.content,
+        status: piece.status,
+        order: piece.order,
+        startTimestamp: piece.startTimestamp,
+        endTimestamp: piece.endTimestamp,
+        refinementHistory: piece.refinementHistory,
+      })
+      .returning();
+
+    const record: DocumentationPieceRecord = {
+      id: inserted.id,
+      sessionId: inserted.sessionId,
+      pieceType: inserted.pieceType as DocPieceType,
+      title: inserted.title,
+      content: inserted.content,
+      status: inserted.status as DocPieceStatus,
+      order: inserted.order,
+      startTimestamp: inserted.startTimestamp,
+      endTimestamp: inserted.endTimestamp,
+      refinementHistory: (inserted.refinementHistory ?? []) as DocumentationPieceRecord["refinementHistory"],
+      createdAt: inserted.createdAt,
+      updatedAt: inserted.updatedAt,
+    };
+
+    // Update cache
+    const session = this.cache.get(sessionId);
+    if (session) {
+      if (!session.documentationPieces) {
+        session.documentationPieces = [];
+      }
+      session.documentationPieces.push(record);
+    }
+
+    this.events.emit("documentation:piece", { sessionId, piece: record });
+    return record;
+  }
+
+  async getDocumentationPieces(sessionId: string): Promise<DocumentationPieceRecord[]> {
+    const dbPieces = await db
+      .select()
+      .from(documentationPieces)
+      .where(eq(documentationPieces.sessionId, sessionId))
+      .orderBy(documentationPieces.order);
+
+    return dbPieces.map((p) => ({
+      id: p.id,
+      sessionId: p.sessionId,
+      pieceType: p.pieceType as DocPieceType,
+      title: p.title,
+      content: p.content,
+      status: p.status as DocPieceStatus,
+      order: p.order,
+      startTimestamp: p.startTimestamp,
+      endTimestamp: p.endTimestamp,
+      refinementHistory: (p.refinementHistory ?? []) as DocumentationPieceRecord["refinementHistory"],
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+    }));
+  }
+
+  async getDocumentationPiece(sessionId: string, pieceId: string): Promise<DocumentationPieceRecord | undefined> {
+    const [piece] = await db
+      .select()
+      .from(documentationPieces)
+      .where(eq(documentationPieces.id, pieceId));
+
+    if (!piece || piece.sessionId !== sessionId) return undefined;
+
+    return {
+      id: piece.id,
+      sessionId: piece.sessionId,
+      pieceType: piece.pieceType as DocPieceType,
+      title: piece.title,
+      content: piece.content,
+      status: piece.status as DocPieceStatus,
+      order: piece.order,
+      startTimestamp: piece.startTimestamp,
+      endTimestamp: piece.endTimestamp,
+      refinementHistory: (piece.refinementHistory ?? []) as DocumentationPieceRecord["refinementHistory"],
+      createdAt: piece.createdAt,
+      updatedAt: piece.updatedAt,
+    };
+  }
+
+  async updateDocumentationPieceStatus(
+    sessionId: string,
+    pieceId: string,
+    status: DocPieceStatus
+  ): Promise<DocumentationPieceRecord | undefined> {
+    const [updated] = await db
+      .update(documentationPieces)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(documentationPieces.id, pieceId))
+      .returning();
+
+    if (!updated || updated.sessionId !== sessionId) return undefined;
+
+    const record: DocumentationPieceRecord = {
+      id: updated.id,
+      sessionId: updated.sessionId,
+      pieceType: updated.pieceType as DocPieceType,
+      title: updated.title,
+      content: updated.content,
+      status: updated.status as DocPieceStatus,
+      order: updated.order,
+      startTimestamp: updated.startTimestamp,
+      endTimestamp: updated.endTimestamp,
+      refinementHistory: (updated.refinementHistory ?? []) as DocumentationPieceRecord["refinementHistory"],
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+    };
+
+    // Update cache
+    const session = this.cache.get(sessionId);
+    if (session?.documentationPieces) {
+      const idx = session.documentationPieces.findIndex((p) => p.id === pieceId);
+      if (idx >= 0) {
+        session.documentationPieces[idx] = record;
+      }
+    }
+
+    this.events.emit("documentation:piece:updated", { sessionId, pieceId, piece: record });
+    return record;
+  }
+
+  async updateDocumentationPieceContent(
+    sessionId: string,
+    pieceId: string,
+    content: string,
+    userMessage: string
+  ): Promise<DocumentationPieceRecord | undefined> {
+    // Get current piece to preserve history
+    const current = await this.getDocumentationPiece(sessionId, pieceId);
+    if (!current) return undefined;
+
+    const newHistory = [
+      ...current.refinementHistory,
+      {
+        timestamp: new Date().toISOString(),
+        userMessage,
+        previousContent: current.content,
+        newContent: content,
+      },
+    ];
+
+    const [updated] = await db
+      .update(documentationPieces)
+      .set({
+        content,
+        status: "refined",
+        refinementHistory: newHistory,
+        updatedAt: new Date(),
+      })
+      .where(eq(documentationPieces.id, pieceId))
+      .returning();
+
+    if (!updated) return undefined;
+
+    const record: DocumentationPieceRecord = {
+      id: updated.id,
+      sessionId: updated.sessionId,
+      pieceType: updated.pieceType as DocPieceType,
+      title: updated.title,
+      content: updated.content,
+      status: updated.status as DocPieceStatus,
+      order: updated.order,
+      startTimestamp: updated.startTimestamp,
+      endTimestamp: updated.endTimestamp,
+      refinementHistory: (updated.refinementHistory ?? []) as DocumentationPieceRecord["refinementHistory"],
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+    };
+
+    // Update cache
+    const session = this.cache.get(sessionId);
+    if (session?.documentationPieces) {
+      const idx = session.documentationPieces.findIndex((p) => p.id === pieceId);
+      if (idx >= 0) {
+        session.documentationPieces[idx] = record;
+      }
+    }
+
+    this.events.emit("documentation:piece:updated", { sessionId, pieceId, piece: record });
+    return record;
   }
 
   // Legacy sync methods for backwards compatibility during migration

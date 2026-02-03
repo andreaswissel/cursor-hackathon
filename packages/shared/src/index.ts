@@ -1,6 +1,9 @@
-export type AgentType = "orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "product-marketing";
+export type AgentType = "orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "product-marketing" | "doc-orchestrator" | "transcription" | "doc-generator";
 export type AgentStatus = "pending" | "running" | "waiting_input" | "completed" | "failed";
 export type SessionStatus = "pending" | "running" | "waiting_input" | "completed" | "failed";
+export type SessionMode = "idea-to-spec" | "documentation";
+export type DocPieceType = "feature" | "workflow" | "use-case" | "tutorial" | "reference";
+export type DocPieceStatus = "pending" | "accepted" | "declined" | "refined";
 
 export interface AgentLog {
   timestamp: string;
@@ -27,12 +30,43 @@ export interface SessionContext {
   additionalDocs?: string;
 }
 
+export interface VideoMetadata {
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  path: string;
+  duration?: number;
+}
+
+export interface DocumentationPiece {
+  id: string;
+  sessionId: string;
+  pieceType: DocPieceType;
+  title: string;
+  content: string;
+  status: DocPieceStatus;
+  order: number;
+  startTimestamp?: number;
+  endTimestamp?: number;
+  refinementHistory: Array<{
+    timestamp: string;
+    userMessage: string;
+    previousContent: string;
+    newContent: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Session {
   id: string;
   idea: string;
   context: SessionContext;
   status: SessionStatus;
   promptCount?: number;
+  mode?: SessionMode;
+  videoMetadata?: VideoMetadata;
   agents: Record<AgentType, AgentState>;
   outputs: {
     spec?: string;
@@ -41,6 +75,7 @@ export interface Session {
     validation?: string;
     strategy?: string;
   };
+  documentationPieces?: DocumentationPiece[];
   createdAt: string;
 }
 
@@ -53,7 +88,9 @@ export interface SSEEvent {
     | "agent:question"
     | "agent:output"
     | "session:status"
-    | "session:output";
+    | "session:output"
+    | "documentation:piece"
+    | "documentation:piece:updated";
   payload: unknown;
 }
 

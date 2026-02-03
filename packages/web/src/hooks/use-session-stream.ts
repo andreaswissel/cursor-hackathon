@@ -167,6 +167,42 @@ export function useSessionStream(sessionId: string): UseSessionStreamResult {
             });
             break;
           }
+
+          case "agent:output": {
+            const payload = data.payload as {
+              sessionId: string;
+              agentType: AgentType;
+              output: unknown;
+            };
+            setSession((prev) => {
+              if (!prev) return prev;
+              const agent = prev.agents[payload.agentType];
+              if (!agent) return prev;
+              return {
+                ...prev,
+                agents: {
+                  ...prev.agents,
+                  [payload.agentType]: {
+                    ...agent,
+                    output: payload.output,
+                  },
+                },
+              };
+            });
+            break;
+          }
+
+          case "documentation:piece":
+          case "documentation:piece:updated": {
+            // These events are handled by the session page which polls for pieces
+            // We could add a documentationPieces array to Session and update it here
+            // but for simplicity, we just trigger a refresh by updating a timestamp
+            setSession((prev) => {
+              if (!prev) return prev;
+              return { ...prev };
+            });
+            break;
+          }
         }
       } catch (e) {
         console.error("Failed to parse SSE event:", e);

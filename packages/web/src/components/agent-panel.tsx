@@ -15,6 +15,8 @@ import {
   Compass,
   Share2,
   ChevronRight,
+  Video,
+  BookOpen,
 } from "lucide-react";
 
 interface AgentPanelProps {
@@ -58,6 +60,21 @@ const AGENT_CONFIG: Record<
     name: "Product Marketing",
     description: "Internal product update",
     icon: Share2,
+  },
+  "doc-orchestrator": {
+    name: "Doc Orchestrator",
+    description: "Coordinates documentation",
+    icon: Compass,
+  },
+  transcription: {
+    name: "Transcription",
+    description: "Extracts video content",
+    icon: Video,
+  },
+  "doc-generator": {
+    name: "Doc Generator",
+    description: "Creates documentation pieces",
+    icon: BookOpen,
   },
 };
 

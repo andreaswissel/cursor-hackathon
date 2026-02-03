@@ -3,7 +3,8 @@ import { useSessionStream } from "@/hooks/use-session-stream";
 import { AgentPanel } from "@/components/agent-panel";
 import { AgentDetailModal } from "@/components/agent-detail-modal";
 import { Sidebar } from "@/components/sidebar";
-import type { AgentType } from "@product-os/shared";
+import { DocumentationPieces } from "@/components/documentation-pieces";
+import type { AgentType, DocumentationPiece } from "@product-os/shared";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import {
@@ -20,9 +21,16 @@ import {
   Package,
   Presentation,
   Sparkles,
+  Video,
 } from "lucide-react";
-import { useState, useEffect } from "react";
-import { getAllSessions, type SessionSummary } from "@/lib/api";
+import { useState, useEffect, useCallback } from "react";
+import {
+  getAllSessions,
+  getDocumentationPieces,
+  updateDocumentationPieceStatus,
+  refineDocumentationPiece,
+  type SessionSummary,
+} from "@/lib/api";
 import { CursorHandoff } from "@/components/cursor-handoff";
 
 const AGENT_ORDER: AgentType[] = [
@@ -34,8 +42,15 @@ const AGENT_ORDER: AgentType[] = [
   "product-marketing",
 ];
 
+const DOC_AGENT_ORDER: AgentType[] = [
+  "doc-orchestrator",
+  "transcription",
+  "doc-generator",
+];
+
 // Agents that actually represent progress steps (excludes orchestrator which runs the whole time)
 const PROGRESS_AGENTS: AgentType[] = ["discovery", "strategy", "spec", "gtm", "product-marketing"];
+const DOC_PROGRESS_AGENTS: AgentType[] = ["transcription", "doc-generator"];
 
 // Human-friendly descriptions for each agent phase
 const AGENT_PROGRESS_INFO: Record<AgentType, { title: string; description: string }> = {
@@ -63,6 +78,18 @@ const AGENT_PROGRESS_INFO: Record<AgentType, { title: string; description: strin
     title: "Creating Product Update",
     description: "Writing internal announcement for Teams/Slack...",
   },
+  "doc-orchestrator": {
+    title: "Coordinating Documentation",
+    description: "Setting up the documentation generation pipeline...",
+  },
+  transcription: {
+    title: "Transcribing Video",
+    description: "Extracting spoken content and visual context from your video...",
+  },
+  "doc-generator": {
+    title: "Generating Documentation",
+    description: "Creating structured documentation pieces from the transcription...",
+  },
 };
 
 type TabType = "agents" | "outputs";
@@ -75,6 +102,10 @@ export function SessionPage() {
   const [allSessions, setAllSessions] = useState<SessionSummary[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<AgentType | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("agents");
+  const [documentationPieces, setDocumentationPieces] = useState<DocumentationPiece[]>([]);
+  const [refiningPieceId, setRefiningPieceId] = useState<string | null>(null);
+
+  const isDocumentationMode = session?.mode === "documentation";
 
   const refreshSessions = () => {
     getAllSessions()
@@ -82,16 +113,71 @@ export function SessionPage() {
       .catch(console.error);
   };
 
+  const refreshDocumentationPieces = useCallback(() => {
+    if (sessionId && isDocumentationMode) {
+      getDocumentationPieces(sessionId)
+        .then(({ pieces }) => setDocumentationPieces(pieces))
+        .catch(console.error);
+    }
+  }, [sessionId, isDocumentationMode]);
+
   useEffect(() => {
     refreshSessions();
   }, []);
 
+  // Load documentation pieces when in documentation mode
+  useEffect(() => {
+    refreshDocumentationPieces();
+  }, [refreshDocumentationPieces]);
+
   // Auto-switch to outputs tab when session completes
   useEffect(() => {
-    if (session?.status === "completed" && session?.outputs.spec) {
-      setActiveTab("outputs");
+    if (session?.status === "completed") {
+      if (isDocumentationMode) {
+        // Refresh pieces and switch to outputs
+        refreshDocumentationPieces();
+        setActiveTab("outputs");
+      } else if (session?.outputs.spec) {
+        setActiveTab("outputs");
+      }
     }
-  }, [session?.status, session?.outputs.spec]);
+  }, [session?.status, session?.outputs.spec, isDocumentationMode, refreshDocumentationPieces]);
+
+  // Handle documentation piece actions
+  const handleAcceptPiece = async (pieceId: string) => {
+    if (!sessionId) return;
+    await updateDocumentationPieceStatus(sessionId, pieceId, "accepted");
+    refreshDocumentationPieces();
+  };
+
+  const handleDeclinePiece = async (pieceId: string) => {
+    if (!sessionId) return;
+    await updateDocumentationPieceStatus(sessionId, pieceId, "declined");
+    refreshDocumentationPieces();
+  };
+
+  const handleRefinePiece = async (pieceId: string, message: string) => {
+    if (!sessionId) return;
+    setRefiningPieceId(pieceId);
+
+    return new Promise<void>((resolve, reject) => {
+      refineDocumentationPiece(
+        sessionId,
+        pieceId,
+        message,
+        () => {}, // onText - we don't need to show streaming for this
+        () => {
+          setRefiningPieceId(null);
+          refreshDocumentationPieces();
+          resolve();
+        },
+        (err) => {
+          setRefiningPieceId(null);
+          reject(new Error(err));
+        }
+      );
+    });
+  };
 
   const handleCopySpec = () => {
     if (session?.outputs.spec) {
@@ -146,16 +232,20 @@ export function SessionPage() {
     );
   }
 
-  const completedAgents = AGENT_ORDER.filter(
+  const currentAgentOrder = isDocumentationMode ? DOC_AGENT_ORDER : AGENT_ORDER;
+  const currentProgressAgents = isDocumentationMode ? DOC_PROGRESS_AGENTS : PROGRESS_AGENTS;
+
+  const completedAgents = currentAgentOrder.filter(
     (type) => session.agents[type]?.status === "completed"
   ).length;
 
-  const hasOutputs = !!session.outputs.spec;
-  const outputCount = [
-    session.outputs.spec,
-    session.outputs.productUpdate,
-    session.outputs.slidesUrl,
-  ].filter(Boolean).length;
+  const hasOutputs = isDocumentationMode
+    ? documentationPieces.length > 0
+    : !!session.outputs.spec;
+
+  const outputCount = isDocumentationMode
+    ? documentationPieces.length
+    : [session.outputs.spec, session.outputs.productUpdate, session.outputs.slidesUrl].filter(Boolean).length;
 
   return (
     <div className="flex h-screen">
@@ -182,8 +272,17 @@ export function SessionPage() {
                     </span>
                   </div>
                   <span className="text-xs text-muted-foreground">·</span>
+                  {isDocumentationMode && (
+                    <>
+                      <div className="flex items-center gap-1.5">
+                        <Video className="w-3 h-3 text-blue-500" />
+                        <span className="text-xs text-blue-500 font-medium">Documentation</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">·</span>
+                    </>
+                  )}
                   <span className="text-xs text-muted-foreground">
-                    {completedAgents}/{AGENT_ORDER.length} agents complete
+                    {completedAgents}/{currentAgentOrder.length} agents complete
                   </span>
                   {session.promptCount !== undefined && (
                     <>
@@ -234,7 +333,7 @@ export function SessionPage() {
                   "ml-1 px-1.5 py-0.5 rounded text-xs",
                   activeTab === "agents" ? "bg-background/20" : "bg-secondary"
                 )}>
-                  {completedAgents}/{AGENT_ORDER.length}
+                  {completedAgents}/{currentAgentOrder.length}
                 </span>
               </button>
               <button
@@ -268,16 +367,16 @@ export function SessionPage() {
             <>
               {/* Progress Indicator */}
               {session.status === "running" && (() => {
-                const runningAgentIndex = PROGRESS_AGENTS.findIndex(
+                const runningAgentIndex = currentProgressAgents.findIndex(
                   (type) => session.agents[type]?.status === "running"
                 );
-                const runningAgent = runningAgentIndex >= 0 ? PROGRESS_AGENTS[runningAgentIndex] : null;
-                const completedWorkerAgents = PROGRESS_AGENTS.filter(
+                const runningAgent = runningAgentIndex >= 0 ? currentProgressAgents[runningAgentIndex] : null;
+                const completedWorkerAgents = currentProgressAgents.filter(
                   (type) => session.agents[type]?.status === "completed"
                 ).length;
                 const progressPercent = runningAgentIndex >= 0
-                  ? ((runningAgentIndex + 1) / PROGRESS_AGENTS.length) * 100
-                  : (completedWorkerAgents / PROGRESS_AGENTS.length) * 100;
+                  ? ((runningAgentIndex + 1) / currentProgressAgents.length) * 100
+                  : (completedWorkerAgents / currentProgressAgents.length) * 100;
                 const info = runningAgent ? AGENT_PROGRESS_INFO[runningAgent] : null;
 
                 return (
@@ -311,7 +410,7 @@ export function SessionPage() {
               {/* Agents Grid */}
               <div className="p-4 md:p-6">
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                  {AGENT_ORDER.map((type) => (
+                  {currentAgentOrder.map((type) => (
                     <AgentPanel
                       key={type}
                       type={type}
@@ -325,7 +424,16 @@ export function SessionPage() {
           ) : (
             /* Outputs View */
             <div className="p-4 md:p-8 max-w-6xl mx-auto">
-              {hasOutputs ? (
+              {isDocumentationMode ? (
+                /* Documentation Mode Outputs */
+                <DocumentationPieces
+                  pieces={documentationPieces}
+                  onAccept={handleAcceptPiece}
+                  onDecline={handleDeclinePiece}
+                  onRefine={handleRefinePiece}
+                  isRefining={refiningPieceId ?? undefined}
+                />
+              ) : hasOutputs ? (
                 <div className="space-y-8">
                   {/* Hero: Cursor Handoff */}
                   <div className="relative rounded-2xl border bg-gradient-to-br from-violet-500/10 via-background to-indigo-500/10 p-6 md:p-8">
@@ -452,7 +560,9 @@ export function SessionPage() {
                   </div>
                   <h3 className="text-lg font-semibold mb-2">No outputs yet</h3>
                   <p className="text-muted-foreground text-center max-w-md">
-                    Outputs will appear here once the agents have finished processing your product idea.
+                    {isDocumentationMode
+                      ? "Documentation pieces will appear here once the video has been processed."
+                      : "Outputs will appear here once the agents have finished processing your product idea."}
                   </p>
                   <button
                     onClick={() => setActiveTab("agents")}
