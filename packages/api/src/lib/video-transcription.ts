@@ -271,7 +271,7 @@ async function transcribeWithGemini(
   onProgress?.(60, "Transcribing with Gemini Flash...");
 
   // Use Gemini Flash for fast, cheap transcription
-  const model = genAI.getGenerativeModel({ model: "gemini-3.0-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
   const result = await model.generateContent([
     {
