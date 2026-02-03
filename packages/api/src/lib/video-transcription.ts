@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleAIFileManager } from "@google/generative-ai/server";
 import fs from "fs";
 import path from "path";
 import { LLMConfig, Provider } from "./llm";
@@ -24,19 +26,22 @@ export interface TranscriptionCallbacks {
 // Max file size for Claude vision API (approximately 20MB after base64)
 const MAX_CLAUDE_VIDEO_SIZE = 15 * 1024 * 1024; // 15MB raw = ~20MB base64
 
+// Gemini supports much larger files (up to 2GB via File API)
+const MAX_GEMINI_INLINE_SIZE = 20 * 1024 * 1024; // 20MB for inline base64
+
 /**
  * Transcribe a video file using the configured LLM provider.
  *
  * Provider support:
- * - Anthropic: Uses Claude vision API with video support (files under 15MB)
- * - OpenAI: Uses Whisper API for audio transcription (preferred for large files)
- * - Gemini: Uses multimodal API (requires separate handling)
+ * - Anthropic: Uses Claude vision API (files under 15MB)
+ * - OpenAI: Uses Whisper API for audio transcription
+ * - Gemini: Uses Gemini Flash with File API (supports large files up to 2GB)
  */
 export async function transcribeVideo(
   videoPath: string,
   config: LLMConfig,
   callbacks: TranscriptionCallbacks = {},
-  openaiApiKey?: string // Optional fallback for large files
+  fallbackKeys?: { openaiApiKey?: string; geminiApiKey?: string }
 ): Promise<TranscriptionResult> {
   const { onProgress, onComplete, onError } = callbacks;
 
@@ -49,17 +54,27 @@ export async function transcribeVideo(
 
     let result: TranscriptionResult;
 
-    // For large files, prefer OpenAI Whisper if available
-    if (stats.size > MAX_CLAUDE_VIDEO_SIZE && (config.provider === "openai" || openaiApiKey)) {
-      const apiKey = config.provider === "openai" ? config.apiKey : openaiApiKey!;
-      onProgress?.(15, `File is ${fileSizeMB.toFixed(1)}MB - using Whisper for transcription...`);
-      result = await transcribeWithOpenAI(videoPath, apiKey, onProgress);
-    } else if (stats.size > MAX_CLAUDE_VIDEO_SIZE) {
-      throw new Error(
-        `Video file (${fileSizeMB.toFixed(1)}MB) is too large for Claude vision API. ` +
-        `Maximum size is ~15MB. Please configure an OpenAI API key in Settings for larger files, ` +
-        `or upload a shorter/compressed video.`
-      );
+    // For large files, prefer Gemini (best for video) or OpenAI Whisper
+    if (stats.size > MAX_CLAUDE_VIDEO_SIZE) {
+      // Try Gemini first (best for large videos with visual context)
+      if (config.provider === "gemini" || fallbackKeys?.geminiApiKey) {
+        const apiKey = config.provider === "gemini" ? config.apiKey : fallbackKeys!.geminiApiKey!;
+        onProgress?.(15, `File is ${fileSizeMB.toFixed(1)}MB - using Gemini Flash for transcription...`);
+        result = await transcribeWithGemini(videoPath, apiKey, onProgress);
+      }
+      // Fall back to OpenAI Whisper (audio only, but handles large files)
+      else if (config.provider === "openai" || fallbackKeys?.openaiApiKey) {
+        const apiKey = config.provider === "openai" ? config.apiKey : fallbackKeys!.openaiApiKey!;
+        onProgress?.(15, `File is ${fileSizeMB.toFixed(1)}MB - using Whisper for transcription...`);
+        result = await transcribeWithOpenAI(videoPath, apiKey, onProgress);
+      }
+      else {
+        throw new Error(
+          `Video file (${fileSizeMB.toFixed(1)}MB) is too large for Claude vision API. ` +
+          `Maximum size is ~15MB. Please configure a Gemini or OpenAI API key in Settings for larger files, ` +
+          `or upload a shorter/compressed video.`
+        );
+      }
     } else {
       switch (config.provider) {
         case "anthropic":
@@ -69,9 +84,7 @@ export async function transcribeVideo(
           result = await transcribeWithOpenAI(videoPath, config.apiKey, onProgress);
           break;
         case "gemini":
-          // For now, fall back to Anthropic-style approach for Gemini
-          // In production, would use Gemini's video API
-          result = await transcribeWithAnthropic(videoPath, config.apiKey, onProgress);
+          result = await transcribeWithGemini(videoPath, config.apiKey, onProgress);
           break;
         default:
           throw new Error(`Unsupported provider: ${config.provider}`);
@@ -209,6 +222,100 @@ async function transcribeWithOpenAI(
   return {
     text: transcription.text,
     segments,
+  };
+}
+
+/**
+ * Transcribe using Google Gemini with video understanding
+ * Supports large files via File API
+ */
+async function transcribeWithGemini(
+  videoPath: string,
+  apiKey: string,
+  onProgress?: (progress: number, message: string) => void
+): Promise<TranscriptionResult> {
+  const fileManager = new GoogleAIFileManager(apiKey);
+  const genAI = new GoogleGenerativeAI(apiKey);
+
+  onProgress?.(20, "Uploading video to Gemini...");
+
+  // Get file info
+  const ext = path.extname(videoPath).toLowerCase();
+  const mimeTypeMap: Record<string, string> = {
+    ".mp4": "video/mp4",
+    ".webm": "video/webm",
+    ".mov": "video/quicktime",
+    ".avi": "video/x-msvideo",
+  };
+  const mimeType = mimeTypeMap[ext] || "video/mp4";
+
+  // Upload file to Gemini
+  const uploadResult = await fileManager.uploadFile(videoPath, {
+    mimeType,
+    displayName: path.basename(videoPath),
+  });
+
+  onProgress?.(40, "Waiting for video processing...");
+
+  // Wait for file to be processed
+  let file = await fileManager.getFile(uploadResult.file.name);
+  while (file.state === "PROCESSING") {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    file = await fileManager.getFile(uploadResult.file.name);
+  }
+
+  if (file.state === "FAILED") {
+    throw new Error("Gemini failed to process the video file");
+  }
+
+  onProgress?.(60, "Transcribing with Gemini Flash...");
+
+  // Use Gemini Flash for fast, cheap transcription
+  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+  const result = await model.generateContent([
+    {
+      fileData: {
+        mimeType: file.mimeType,
+        fileUri: file.uri,
+      },
+    },
+    {
+      text: `Please transcribe all spoken content in this video. Include:
+1. A complete text transcription of everything said
+2. Note any visual elements that provide important context (like UI demonstrations, code being shown, diagrams)
+3. If there are distinct sections or topics, indicate where they begin
+
+Format your response as:
+## Transcription
+[Full transcription here]
+
+## Visual Context
+[Description of visual elements that add context]
+
+## Key Sections
+[List of distinct sections/topics with approximate timestamps if visible]`,
+    },
+  ]);
+
+  onProgress?.(80, "Processing transcription...");
+
+  const fullText = result.response.text();
+
+  // Extract just the transcription portion
+  const transcriptionMatch = fullText.match(/## Transcription\s*([\s\S]*?)(?=## Visual Context|## Key Sections|$)/i);
+  const transcriptionText = transcriptionMatch?.[1]?.trim() || fullText;
+
+  // Clean up - delete the uploaded file
+  try {
+    await fileManager.deleteFile(uploadResult.file.name);
+  } catch {
+    // Ignore cleanup errors
+  }
+
+  return {
+    text: transcriptionText,
+    segments: undefined,
   };
 }
 
