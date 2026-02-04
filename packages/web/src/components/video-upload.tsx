@@ -166,6 +166,13 @@ export function VideoUpload({ onFileSelect, selectedFile, disabled }: VideoUploa
         </div>
       )}
 
+      {/* Hint when file is selected */}
+      {selectedFile && (
+        <p className="text-xs text-muted-foreground/60 text-center">
+          MP4, WebM, MOV, AVI · Max 5 minutes · Max {MAX_SIZE_MB}MB
+        </p>
+      )}
+
       {/* Error message */}
       {error && (
         <div className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
