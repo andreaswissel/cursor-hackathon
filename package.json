@@ -7,6 +7,10 @@
     "dev:api": "bun run --filter @product-os/api dev",
     "dev:web": "bun run --filter @product-os/web dev",
     "build": "bun run --filter '*' build",
+    "build:api": "cd packages/shared && bun run build && cd ../api && bun run build",
+    "build:web": "cd packages/shared && bun run build && cd ../web && bun run build",
+    "start:api": "cd packages/api && bun src/index.ts",
+    "start:web": "cd packages/web && bun run start",
     "db:generate": "bun run --filter @product-os/api db:generate",
     "db:migrate": "bun run --filter @product-os/api db:migrate",
     "db:studio": "bun run --filter @product-os/api db:studio"
