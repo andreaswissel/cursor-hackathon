@@ -84,6 +84,7 @@ export class DocOrchestratorAgent {
         text: transcription.text.substring(0, 500) + "...", // Truncate for output display
         hasSegments: !!transcription.segments,
         segmentCount: transcription.segments?.length || 0,
+        visualProvider: transcription.visualProvider,
       });
       await sessionStore.setAgentStatus(sessionId, "transcription", "completed");
       await this.log(`\n✓ Transcription complete (${transcription.text.length} characters)\n\n`);

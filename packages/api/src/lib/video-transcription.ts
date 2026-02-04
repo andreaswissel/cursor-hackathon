@@ -17,10 +17,13 @@ export interface TranscriptionSegment {
   text: string;
 }
 
+export type VisualAnalysisProvider = "claude-haiku" | "gpt-5-mini" | "claude-haiku-env";
+
 export interface TranscriptionResult {
   text: string;
   segments?: TranscriptionSegment[];
   visualContext?: string;
+  visualProvider?: VisualAnalysisProvider;
 }
 
 export interface TranscriptionCallbacks {
@@ -42,7 +45,10 @@ export interface TranscriptionKeys {
  * 2. Transcribe: Use Whisper for audio transcription
  * 3. Analyze: Use Claude Haiku or GPT-5 mini to analyze frames with transcription context
  *
- * This approach works with any video size and provides both audio and visual context.
+ * Fallback chain for visual analysis:
+ * 1. Claude Haiku (user's anthropic key)
+ * 2. GPT-5 mini (user's openai key)
+ * 3. Claude Haiku (env ANTHROPIC_API_KEY)
  */
 export async function transcribeVideo(
   videoPath: string,
@@ -67,11 +73,15 @@ export async function transcribeVideo(
       );
     }
 
-    // Get API keys
-    const openaiKey = config.provider === "openai" ? config.apiKey : fallbackKeys?.openaiApiKey;
-    const anthropicKey = config.provider === "anthropic" ? config.apiKey : fallbackKeys?.anthropicApiKey;
+    // Get API keys - collect all available keys
+    const userAnthropicKey = config.provider === "anthropic" ? config.apiKey : fallbackKeys?.anthropicApiKey;
+    const userOpenaiKey = config.provider === "openai" ? config.apiKey : fallbackKeys?.openaiApiKey;
+    const envAnthropicKey = process.env.ANTHROPIC_API_KEY;
+    const envOpenaiKey = process.env.OPENAI_API_KEY;
 
-    if (!openaiKey) {
+    // Need at least one OpenAI key for Whisper
+    const whisperKey = userOpenaiKey || envOpenaiKey;
+    if (!whisperKey) {
       throw new Error(
         "OpenAI API key is required for video transcription (Whisper).\n" +
         "Please add your OpenAI API key in Settings."
@@ -96,39 +106,23 @@ export async function transcribeVideo(
     // Step 2: Transcribe audio with Whisper
     const audioTranscription = await transcribeAudioWithWhisper(
       preprocessed.audioPath,
-      openaiKey,
+      whisperKey,
       onProgress
     );
 
     onProgress?.(60, "Analyzing video frames with visual context...");
 
-    // Step 3: Analyze frames with vision model (optional - continues if fails)
-    let visualAnalysis: string | undefined;
-
-    try {
-      if (anthropicKey) {
-        // Use Claude Haiku for visual analysis
-        visualAnalysis = await analyzeFramesWithClaude(
-          preprocessed.frames,
-          audioTranscription.text,
-          anthropicKey,
-          onProgress
-        );
-      } else if (openaiKey) {
-        // Fall back to GPT-5 mini for visual analysis
-        visualAnalysis = await analyzeFramesWithOpenAI(
-          preprocessed.frames,
-          audioTranscription.text,
-          openaiKey,
-          onProgress
-        );
-      }
-    } catch (visualError) {
-      // Visual analysis failed, but we can continue with just audio transcription
-      const errorMsg = (visualError as Error).message;
-      onProgress?.(85, `Visual analysis failed (${errorMsg.slice(0, 50)}...), continuing with audio only`);
-      console.error("Visual analysis failed:", visualError);
-    }
+    // Step 3: Analyze frames with vision model (with fallback chain)
+    const { visualAnalysis, provider } = await analyzeFramesWithFallback(
+      preprocessed.frames,
+      audioTranscription.text,
+      {
+        userAnthropicKey,
+        userOpenaiKey,
+        envAnthropicKey,
+      },
+      onProgress
+    );
 
     onProgress?.(95, "Finalizing transcription...");
 
@@ -137,9 +131,10 @@ export async function transcribeVideo(
       text: audioTranscription.text,
       segments: audioTranscription.segments,
       visualContext: visualAnalysis,
+      visualProvider: provider,
     };
 
-    onProgress?.(100, "Transcription complete");
+    onProgress?.(100, `Transcription complete (visual analysis: ${provider})`);
     onComplete?.(result);
 
     return result;
@@ -153,6 +148,88 @@ export async function transcribeVideo(
       await cleanupPreprocessedVideo(preprocessed);
     }
   }
+}
+
+interface AnalysisKeys {
+  userAnthropicKey?: string;
+  userOpenaiKey?: string;
+  envAnthropicKey?: string;
+}
+
+/**
+ * Analyze frames with fallback chain:
+ * 1. Claude Haiku (user key)
+ * 2. GPT-5 mini (user key)
+ * 3. Claude Haiku (env key)
+ */
+async function analyzeFramesWithFallback(
+  framePaths: string[],
+  transcription: string,
+  keys: AnalysisKeys,
+  onProgress?: (progress: number, message: string) => void
+): Promise<{ visualAnalysis: string; provider: VisualAnalysisProvider }> {
+  const errors: string[] = [];
+
+  // Try 1: Claude Haiku with user's key
+  if (keys.userAnthropicKey) {
+    try {
+      onProgress?.(65, "Trying Claude 4.5 Haiku (user key)...");
+      const result = await analyzeFramesWithClaude(
+        framePaths,
+        transcription,
+        keys.userAnthropicKey,
+        onProgress
+      );
+      return { visualAnalysis: result, provider: "claude-haiku" };
+    } catch (error) {
+      const msg = (error as Error).message;
+      errors.push(`Claude Haiku (user): ${msg.slice(0, 100)}`);
+      console.error("Claude Haiku (user key) failed:", error);
+    }
+  }
+
+  // Try 2: GPT-5 mini with user's key
+  if (keys.userOpenaiKey) {
+    try {
+      onProgress?.(65, "Trying GPT-5 mini (user key)...");
+      const result = await analyzeFramesWithOpenAI(
+        framePaths,
+        transcription,
+        keys.userOpenaiKey,
+        onProgress
+      );
+      return { visualAnalysis: result, provider: "gpt-5-mini" };
+    } catch (error) {
+      const msg = (error as Error).message;
+      errors.push(`GPT-5 mini (user): ${msg.slice(0, 100)}`);
+      console.error("GPT-5 mini (user key) failed:", error);
+    }
+  }
+
+  // Try 3: Claude Haiku with env key
+  if (keys.envAnthropicKey) {
+    try {
+      onProgress?.(65, "Trying Claude 4.5 Haiku (system key)...");
+      const result = await analyzeFramesWithClaude(
+        framePaths,
+        transcription,
+        keys.envAnthropicKey,
+        onProgress
+      );
+      return { visualAnalysis: result, provider: "claude-haiku-env" };
+    } catch (error) {
+      const msg = (error as Error).message;
+      errors.push(`Claude Haiku (env): ${msg.slice(0, 100)}`);
+      console.error("Claude Haiku (env key) failed:", error);
+    }
+  }
+
+  // All attempts failed
+  throw new Error(
+    "Visual analysis failed with all available providers:\n" +
+    errors.map((e) => `  - ${e}`).join("\n") +
+    "\n\nPlease check your API keys in Settings."
+  );
 }
 
 /**
@@ -202,7 +279,7 @@ async function analyzeFramesWithClaude(
 ): Promise<string> {
   const client = new Anthropic({ apiKey });
 
-  onProgress?.(65, "Reading frames for analysis...");
+  onProgress?.(70, "Reading frames for analysis...");
 
   // Sample frames (max 60 for ~5 sec intervals on a 5-min video)
   const frames = await readFramesAsBase64(framePaths, 60);
@@ -269,7 +346,7 @@ async function analyzeFramesWithOpenAI(
 ): Promise<string> {
   const client = new OpenAI({ apiKey });
 
-  onProgress?.(65, "Reading frames for analysis...");
+  onProgress?.(70, "Reading frames for analysis...");
 
   // Sample frames (max 60 for ~5 sec intervals on a 5-min video)
   const frames = await readFramesAsBase64(framePaths, 60);

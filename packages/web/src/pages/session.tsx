@@ -279,6 +279,21 @@ export function SessionPage() {
                         <span className="text-xs text-blue-500 font-medium">Documentation</span>
                       </div>
                       <span className="text-xs text-muted-foreground">·</span>
+                      {(session.agents["transcription"]?.output as { visualProvider?: string })?.visualProvider && (
+                        <>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-muted-foreground">Vision:</span>
+                            <span className="text-xs font-medium text-purple-500">
+                              {(session.agents["transcription"]?.output as { visualProvider?: string }).visualProvider === "claude-haiku"
+                                ? "Claude Haiku (user)"
+                                : (session.agents["transcription"]?.output as { visualProvider?: string }).visualProvider === "gpt-5-mini"
+                                ? "GPT-5 mini (user)"
+                                : "Claude Haiku (system)"}
+                            </span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">·</span>
+                        </>
+                      )}
                     </>
                   )}
                   <span className="text-xs text-muted-foreground">
