@@ -102,25 +102,32 @@ export async function transcribeVideo(
 
     onProgress?.(60, "Analyzing video frames with visual context...");
 
-    // Step 3: Analyze frames with vision model
+    // Step 3: Analyze frames with vision model (optional - continues if fails)
     let visualAnalysis: string | undefined;
 
-    if (anthropicKey) {
-      // Use Claude Haiku for visual analysis
-      visualAnalysis = await analyzeFramesWithClaude(
-        preprocessed.frames,
-        audioTranscription.text,
-        anthropicKey,
-        onProgress
-      );
-    } else if (openaiKey) {
-      // Fall back to GPT-5 mini for visual analysis
-      visualAnalysis = await analyzeFramesWithOpenAI(
-        preprocessed.frames,
-        audioTranscription.text,
-        openaiKey,
-        onProgress
-      );
+    try {
+      if (anthropicKey) {
+        // Use Claude Haiku for visual analysis
+        visualAnalysis = await analyzeFramesWithClaude(
+          preprocessed.frames,
+          audioTranscription.text,
+          anthropicKey,
+          onProgress
+        );
+      } else if (openaiKey) {
+        // Fall back to GPT-5 mini for visual analysis
+        visualAnalysis = await analyzeFramesWithOpenAI(
+          preprocessed.frames,
+          audioTranscription.text,
+          openaiKey,
+          onProgress
+        );
+      }
+    } catch (visualError) {
+      // Visual analysis failed, but we can continue with just audio transcription
+      const errorMsg = (visualError as Error).message;
+      onProgress?.(85, `Visual analysis failed (${errorMsg.slice(0, 50)}...), continuing with audio only`);
+      console.error("Visual analysis failed:", visualError);
     }
 
     onProgress?.(95, "Finalizing transcription...");
