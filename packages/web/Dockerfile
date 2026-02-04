@@ -34,6 +34,9 @@ RUN bun add -g serve
 # Copy built assets from builder
 COPY --from=builder /app/packages/web/dist ./dist
 
+# Railway injects PORT env var
+ENV PORT=3000
 EXPOSE 3000
 
-CMD ["serve", "dist", "-s", "-l", "tcp://0.0.0.0:3000"]
+# Use shell form to expand $PORT
+CMD serve dist -s -l tcp://0.0.0.0:$PORT
