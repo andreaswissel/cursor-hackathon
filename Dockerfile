@@ -8,8 +8,8 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# Copy root package files
-COPY package.json bun.lock ./
+# Copy root package files and tsconfig
+COPY package.json bun.lock tsconfig.base.json ./
 
 # Copy workspace package.json files
 COPY packages/shared/package.json ./packages/shared/
