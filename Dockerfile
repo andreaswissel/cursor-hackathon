@@ -22,9 +22,8 @@ RUN bun install
 COPY packages/shared ./packages/shared
 COPY packages/api ./packages/api
 
-# Build shared first, then api
+# Build shared types (api imports from shared)
 RUN cd packages/shared && bun run build
-RUN cd packages/api && bun run build
 
 # Set working directory to api
 WORKDIR /app/packages/api
@@ -32,5 +31,5 @@ WORKDIR /app/packages/api
 # Expose port
 EXPOSE 3001
 
-# Start the server (run built output)
-CMD ["bun", "dist/index.js"]
+# Run TypeScript directly (Bun handles it natively)
+CMD ["bun", "src/index.ts"]
