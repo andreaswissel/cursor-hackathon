@@ -43,8 +43,12 @@ export class DocOrchestratorAgent {
       .from(users)
       .where(eq(users.id, userId));
 
+    // getUserLLMConfig now validates keys and falls back to env automatically
+    const config = getUserLLMConfig(user || {});
+
     return {
-      config: getUserLLMConfig(user || {}),
+      config,
+      // These are for video transcription which needs both keys for Whisper + vision
       openaiApiKey: user?.openaiApiKey?.trim() || process.env.OPENAI_API_KEY || undefined,
       anthropicApiKey: user?.anthropicApiKey?.trim() || process.env.ANTHROPIC_API_KEY || undefined,
     };

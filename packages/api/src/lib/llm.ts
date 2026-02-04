@@ -238,6 +238,22 @@ async function completionGemini(
   return result.response.text();
 }
 
+// Validate API key format
+function isValidApiKey(key: string | undefined | null, provider: Provider): boolean {
+  if (!key?.trim()) return false;
+  const trimmed = key.trim();
+  switch (provider) {
+    case "anthropic":
+      return trimmed.startsWith("sk-ant-");
+    case "openai":
+      return trimmed.startsWith("sk-");
+    case "gemini":
+      return trimmed.length > 20; // Gemini keys are long strings
+    default:
+      return false;
+  }
+}
+
 // Helper to get user's LLM config
 export function getUserLLMConfig(user: {
   activeProvider?: Provider | null;
@@ -249,16 +265,22 @@ export function getUserLLMConfig(user: {
 
   let apiKey: string;
   switch (provider) {
-    case "openai":
-      apiKey = user.openaiApiKey?.trim() || process.env.OPENAI_API_KEY || "";
+    case "openai": {
+      const userKey = user.openaiApiKey?.trim();
+      apiKey = isValidApiKey(userKey, "openai") ? userKey! : (process.env.OPENAI_API_KEY || "");
       break;
-    case "gemini":
-      apiKey = user.geminiApiKey?.trim() || process.env.GEMINI_API_KEY || "";
+    }
+    case "gemini": {
+      const userKey = user.geminiApiKey?.trim();
+      apiKey = isValidApiKey(userKey, "gemini") ? userKey! : (process.env.GEMINI_API_KEY || "");
       break;
+    }
     case "anthropic":
-    default:
-      apiKey = user.anthropicApiKey?.trim() || process.env.ANTHROPIC_API_KEY || "";
+    default: {
+      const userKey = user.anthropicApiKey?.trim();
+      apiKey = isValidApiKey(userKey, "anthropic") ? userKey! : (process.env.ANTHROPIC_API_KEY || "");
       break;
+    }
   }
 
   return { provider, apiKey };
