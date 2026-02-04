@@ -281,8 +281,8 @@ async function analyzeFramesWithClaude(
 
   onProgress?.(70, "Reading frames for analysis...");
 
-  // Sample frames (max 60 for ~5 sec intervals on a 5-min video)
-  const frames = await readFramesAsBase64(framePaths, 60);
+  // Sample frames (max 20 - Claude has ~20 image limit per request)
+  const frames = await readFramesAsBase64(framePaths, 20);
 
   onProgress?.(75, `Analyzing ${frames.length} frames with Claude 4.5 Haiku...`);
 
@@ -348,8 +348,8 @@ async function analyzeFramesWithOpenAI(
 
   onProgress?.(70, "Reading frames for analysis...");
 
-  // Sample frames (max 60 for ~5 sec intervals on a 5-min video)
-  const frames = await readFramesAsBase64(framePaths, 60);
+  // Sample frames (max 20 for consistency with Claude)
+  const frames = await readFramesAsBase64(framePaths, 20);
 
   onProgress?.(75, `Analyzing ${frames.length} frames with GPT-5 mini...`);
 
@@ -386,7 +386,7 @@ Focus on visual elements that add context beyond what's in the transcription.`,
 
   const response = await client.chat.completions.create({
     model: "gpt-5-mini",
-    max_tokens: 4096,
+    max_completion_tokens: 4096,
     messages: [
       {
         role: "user",
