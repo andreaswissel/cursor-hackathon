@@ -1,7 +1,8 @@
 import type { SessionContext, Session, AgentType, DocumentationPiece, DocPieceStatus, SessionMode } from "@product-os/shared";
 
 // In production, use the full API URL; in dev, proxy through Vite
-const API_BASE = import.meta.env.VITE_API_URL || "/api";
+const API_BASE = import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? "/api" : "https://api.product-os.ai");
 
 function getAuthHeaders(): HeadersInit {
   const token = localStorage.getItem("auth_token");

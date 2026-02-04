@@ -1,6 +1,10 @@
 # Dockerfile for Railway - Web frontend
 FROM oven/bun:1 AS builder
 
+# Build args for Vite (must be set before build)
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 WORKDIR /app
 
 # Copy root package files
@@ -20,7 +24,7 @@ COPY packages/web ./packages/web
 # Build shared types first
 RUN cd packages/shared && bun run build
 
-# Build web app
+# Build web app (VITE_API_URL is baked in at build time)
 RUN cd packages/web && bun run build
 
 # Production stage - serve static files
