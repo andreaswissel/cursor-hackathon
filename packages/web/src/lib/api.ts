@@ -19,7 +19,7 @@ export interface SessionSummary {
 
 export interface UsageStats {
   sessionCount: number;
-  maxSessions: number;
+  maxSessions: number | null; // null means unlimited
   canCreateSession: boolean;
 }
 

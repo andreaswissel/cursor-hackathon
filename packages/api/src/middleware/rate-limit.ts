@@ -3,7 +3,7 @@ import { eq, and } from "drizzle-orm";
 import { db } from "../db";
 import { sessions, users } from "../db/schema";
 
-const MAX_SESSIONS_PER_USER = 1;
+const MAX_SESSIONS_PER_USER = 5;
 const MAX_PROMPTS_PER_SESSION = 5;
 
 // Check if user has any API key configured (bypass limits)
@@ -146,7 +146,7 @@ export async function incrementPromptCount(sessionId: string): Promise<void> {
 // Get user's usage stats
 export async function getUserUsageStats(userId: string, isAdmin?: boolean): Promise<{
   sessionCount: number;
-  maxSessions: number;
+  maxSessions: number | null; // null means unlimited
   canCreateSession: boolean;
   hasApiKey: boolean;
   unlimited: boolean;
@@ -160,7 +160,7 @@ export async function getUserUsageStats(userId: string, isAdmin?: boolean): Prom
 
   return {
     sessionCount: userSessions.length,
-    maxSessions: unlimited ? Infinity : MAX_SESSIONS_PER_USER,
+    maxSessions: unlimited ? null : MAX_SESSIONS_PER_USER, // null = unlimited
     canCreateSession: unlimited || userSessions.length < MAX_SESSIONS_PER_USER,
     hasApiKey: hasKey,
     unlimited,

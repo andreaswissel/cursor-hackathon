@@ -151,7 +151,7 @@ export function HomePage() {
                 />
                 <div className="flex items-center justify-between px-3 py-2 border-t">
                   <span className="text-xs text-muted-foreground">
-                    {usageStats ? `${usageStats.sessionCount}/${usageStats.maxSessions} sessions used` : "Press Enter to submit"}
+                    {usageStats ? `${usageStats.sessionCount}/${usageStats.maxSessions === null ? "unlimited" : usageStats.maxSessions} sessions used` : "Press Enter to submit"}
                   </span>
                   <button
                     type="submit"
@@ -187,7 +187,7 @@ export function HomePage() {
                   />
                   <div className="flex items-center justify-between px-3 py-2 border-t">
                     <span className="text-xs text-muted-foreground">
-                      {usageStats ? `${usageStats.sessionCount}/${usageStats.maxSessions} sessions used` : "Add a description for context"}
+                      {usageStats ? `${usageStats.sessionCount}/${usageStats.maxSessions === null ? "unlimited" : usageStats.maxSessions} sessions used` : "Add a description for context"}
                     </span>
                     <button
                       type="submit"
