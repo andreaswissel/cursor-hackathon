@@ -6,7 +6,8 @@ import { getAllSessions, type SessionSummary } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { IntegrationsPanel } from "@/components/integrations-panel";
 
-const API_BASE = import.meta.env.VITE_API_URL || "/api";
+const API_BASE = import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? "/api" : "https://api.product-os.ai/api");
 
 type Provider = "anthropic" | "openai" | "gemini";
 

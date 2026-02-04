@@ -2,7 +2,8 @@ import { useEffect, useState, useRef } from "react";
 import type { Session, AgentType, AgentLog, AgentStatus, AgentState, SSEEvent } from "@product-os/shared";
 import { getAuthToken } from "@/lib/api";
 
-const API_BASE = import.meta.env.VITE_API_URL || "/api";
+const API_BASE = import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? "/api" : "https://api.product-os.ai/api");
 
 interface UseSessionStreamResult {
   session: Session | null;
