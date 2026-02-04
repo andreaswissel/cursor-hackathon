@@ -45,8 +45,8 @@ export class DocOrchestratorAgent {
 
     return {
       config: getUserLLMConfig(user || {}),
-      openaiApiKey: user?.openaiApiKey || undefined,
-      anthropicApiKey: user?.anthropicApiKey || undefined,
+      openaiApiKey: user?.openaiApiKey?.trim() || process.env.OPENAI_API_KEY || undefined,
+      anthropicApiKey: user?.anthropicApiKey?.trim() || process.env.ANTHROPIC_API_KEY || undefined,
     };
   }
 

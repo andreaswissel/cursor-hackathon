@@ -250,14 +250,14 @@ export function getUserLLMConfig(user: {
   let apiKey: string;
   switch (provider) {
     case "openai":
-      apiKey = user.openaiApiKey || "";
+      apiKey = user.openaiApiKey?.trim() || process.env.OPENAI_API_KEY || "";
       break;
     case "gemini":
-      apiKey = user.geminiApiKey || "";
+      apiKey = user.geminiApiKey?.trim() || process.env.GEMINI_API_KEY || "";
       break;
     case "anthropic":
     default:
-      apiKey = user.anthropicApiKey || process.env.ANTHROPIC_API_KEY || "";
+      apiKey = user.anthropicApiKey?.trim() || process.env.ANTHROPIC_API_KEY || "";
       break;
   }
 
