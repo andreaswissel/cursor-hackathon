@@ -83,7 +83,7 @@ export async function transcribeVideo(
     preprocessed = await preprocessVideo(videoPath, {
       fps: 1, // 1 frame per second
       audioFormat: "mp3",
-      maxFrames: 300, // Max 5 minutes at 1fps
+      maxFrames: 300, // Max 5 minutes at 1fps (hard limit)
       onProgress: (p, msg) => {
         // Map preprocessing progress to 10-40%
         const mappedProgress = 10 + Math.floor(p * 0.3);
@@ -197,10 +197,10 @@ async function analyzeFramesWithClaude(
 
   onProgress?.(65, "Reading frames for analysis...");
 
-  // Sample frames (max 20 to stay within token limits)
-  const frames = await readFramesAsBase64(framePaths, 20);
+  // Sample frames (max 60 for ~5 sec intervals on a 5-min video)
+  const frames = await readFramesAsBase64(framePaths, 60);
 
-  onProgress?.(75, `Analyzing ${frames.length} frames with Claude Haiku...`);
+  onProgress?.(75, `Analyzing ${frames.length} frames with Claude 4.5 Haiku...`);
 
   // Build content array with frames
   const content: Anthropic.Messages.ContentBlockParam[] = [];
@@ -264,8 +264,8 @@ async function analyzeFramesWithOpenAI(
 
   onProgress?.(65, "Reading frames for analysis...");
 
-  // Sample frames (max 20 to stay within token limits)
-  const frames = await readFramesAsBase64(framePaths, 20);
+  // Sample frames (max 60 for ~5 sec intervals on a 5-min video)
+  const frames = await readFramesAsBase64(framePaths, 60);
 
   onProgress?.(75, `Analyzing ${frames.length} frames with GPT-5 mini...`);
 
@@ -278,7 +278,7 @@ async function analyzeFramesWithOpenAI(
       type: "image_url",
       image_url: {
         url: `data:image/jpeg;base64,${frame.base64}`,
-        detail: "low", // Use low detail to reduce tokens
+        detail: "high", // High detail to read UI text and code
       },
     });
   }

@@ -160,7 +160,7 @@ export function VideoUpload({ onFileSelect, selectedFile, disabled }: VideoUploa
               </p>
             </div>
             <p className="text-xs text-muted-foreground/60">
-              MP4, WebM, MOV, AVI · Max {MAX_SIZE_MB}MB
+              MP4, WebM, MOV, AVI · Max 5 minutes · Max {MAX_SIZE_MB}MB
             </p>
           </div>
         </div>

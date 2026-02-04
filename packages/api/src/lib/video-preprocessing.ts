@@ -237,7 +237,7 @@ export async function cleanupPreprocessedVideo(preprocessed: PreprocessedVideo):
  */
 export async function readFramesAsBase64(
   frames: string[],
-  maxFrames: number = 30
+  maxFrames: number = 60
 ): Promise<Array<{ base64: string; timestamp: number }>> {
   // Sample frames evenly if we have too many
   let selectedFrames = frames;
