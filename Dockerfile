@@ -32,5 +32,5 @@ WORKDIR /app/packages/api
 # Expose port
 EXPOSE 3001
 
-# Start the server
-CMD ["bun", "run", "start"]
+# Start the server (run built output)
+CMD ["bun", "dist/index.js"]
