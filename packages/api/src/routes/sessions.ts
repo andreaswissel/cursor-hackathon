@@ -288,6 +288,57 @@ Please refine the documentation based on the user's feedback. Output only the up
   }
 );
 
+// Answer an agent question (e.g., proceed despite strategy rejection)
+router.post("/:sessionId/answer", checkSessionOwnership, async (req: Request, res: Response) => {
+  const { sessionId } = req.params;
+  const { agentType, questionId, answer } = req.body as {
+    agentType: AgentType;
+    questionId: string;
+    answer: string;
+  };
+
+  if (!agentType || !questionId || answer === undefined) {
+    res.status(400).json({ error: "Missing agentType, questionId, or answer" });
+    return;
+  }
+
+  const session = await sessionStore.get(sessionId);
+  if (!session) {
+    res.status(404).json({ error: "Session not found" });
+    return;
+  }
+
+  // Verify the question exists
+  const currentQuestion = sessionStore.getAgentQuestion(sessionId, agentType);
+  if (!currentQuestion || currentQuestion.id !== questionId) {
+    res.status(400).json({ error: "No matching question found" });
+    return;
+  }
+
+  // Handle strategy rejection question
+  if (questionId === "strategy-rejection-proceed" && agentType === "orchestrator") {
+    const proceed = answer.toLowerCase() === "yes" || answer.toLowerCase() === "true" || answer === "proceed";
+
+    // Resume orchestrator in background
+    const orchestrator = new OrchestratorAgent();
+    orchestrator.resumeFromRejection({
+      sessionId,
+      userId: req.user!.id,
+      idea: session.idea,
+      context: session.context,
+    }, proceed).catch((error) => {
+      console.error("Orchestrator resume error:", error);
+      sessionStore.setSessionStatus(sessionId, "failed");
+    });
+
+    res.json({ success: true, proceeding: proceed });
+    return;
+  }
+
+  // Unknown question type
+  res.status(400).json({ error: "Unknown question type" });
+});
+
 // Get session state
 router.get("/:sessionId", checkSessionOwnership, async (req: Request, res: Response) => {
   const { sessionId } = req.params;

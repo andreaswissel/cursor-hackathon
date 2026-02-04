@@ -430,6 +430,7 @@ export function SessionPage() {
                       key={type}
                       type={type}
                       agent={session.agents[type]}
+                      sessionId={sessionId}
                       onClick={() => setSelectedAgent(type)}
                     />
                   ))}

@@ -1,7 +1,8 @@
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, useMemo, useState } from "react";
 import type { AgentState, AgentType } from "@product-os/shared";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
+import { answerQuestion } from "@/lib/api";
 import {
   Loader2,
   CheckCircle2,
@@ -22,6 +23,7 @@ import {
 interface AgentPanelProps {
   agent: AgentState | undefined;
   type: AgentType;
+  sessionId?: string;
   expanded?: boolean;
   onToggle?: () => void;
   onClick?: () => void;
@@ -111,13 +113,30 @@ const STATUS_CONFIG = {
   },
 };
 
-export function AgentPanel({ agent, type, expanded = true, onClick }: AgentPanelProps) {
+export function AgentPanel({ agent, type, sessionId, expanded = true, onClick }: AgentPanelProps) {
   const logRef = useRef<HTMLDivElement>(null);
+  const [isAnswering, setIsAnswering] = useState(false);
+  const [answerInput, setAnswerInput] = useState("");
   const agentConfig = AGENT_CONFIG[type];
   const status = agent?.status ?? "pending";
   const statusConfig = STATUS_CONFIG[status];
   const StatusIcon = statusConfig.icon;
   const AgentIcon = agentConfig.icon;
+
+  const handleAnswer = async (answer: string) => {
+    if (!sessionId || !agent?.currentQuestion) return;
+    setIsAnswering(true);
+    try {
+      await answerQuestion(sessionId, type, agent.currentQuestion.id, answer);
+    } catch (error) {
+      console.error("Failed to answer question:", error);
+    }
+    setIsAnswering(false);
+    setAnswerInput("");
+  };
+
+  // Check if this is the strategy rejection question
+  const isStrategyRejection = agent?.currentQuestion?.id === "strategy-rejection-proceed";
 
   // Auto-scroll to bottom when logs update
   useEffect(() => {
@@ -271,16 +290,42 @@ export function AgentPanel({ agent, type, expanded = true, onClick }: AgentPanel
           <p className="text-sm font-medium mb-3">
             {agent.currentQuestion.question}
           </p>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20"
-              placeholder="Your answer..."
-            />
-            <button className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors">
-              Submit
-            </button>
-          </div>
+          {isStrategyRejection ? (
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleAnswer("yes")}
+                disabled={isAnswering}
+                className="flex-1 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 transition-colors disabled:opacity-50"
+              >
+                {isAnswering ? "Processing..." : "Yes, proceed anyway"}
+              </button>
+              <button
+                onClick={() => handleAnswer("no")}
+                disabled={isAnswering}
+                className="flex-1 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600 transition-colors disabled:opacity-50"
+              >
+                {isAnswering ? "Processing..." : "No, stop here"}
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={answerInput}
+                onChange={(e) => setAnswerInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAnswer(answerInput)}
+                className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                placeholder="Your answer..."
+              />
+              <button
+                onClick={() => handleAnswer(answerInput)}
+                disabled={isAnswering || !answerInput}
+                className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors disabled:opacity-50"
+              >
+                {isAnswering ? "..." : "Submit"}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

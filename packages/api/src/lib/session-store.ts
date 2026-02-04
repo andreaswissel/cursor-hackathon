@@ -63,6 +63,11 @@ export interface SessionContext {
   additionalDocs?: string;
 }
 
+export interface PendingContinuation {
+  phase: "strategy_rejected";
+  previousOutputs: Record<string, unknown>;
+}
+
 export interface Session {
   id: string;
   userId?: string;
@@ -81,6 +86,7 @@ export interface Session {
     strategy?: string;
   };
   documentationPieces?: DocumentationPieceRecord[];
+  pendingContinuation?: PendingContinuation;
   createdAt: Date;
 }
 
@@ -687,6 +693,30 @@ class SessionStore {
     if (!agent) return;
 
     agent.currentQuestion = undefined;
+  }
+
+  setPendingContinuation(sessionId: string, continuation: PendingContinuation): void {
+    const session = this.cache.get(sessionId);
+    if (!session) return;
+    session.pendingContinuation = continuation;
+  }
+
+  getPendingContinuation(sessionId: string): PendingContinuation | undefined {
+    const session = this.cache.get(sessionId);
+    return session?.pendingContinuation;
+  }
+
+  clearPendingContinuation(sessionId: string): void {
+    const session = this.cache.get(sessionId);
+    if (!session) return;
+    session.pendingContinuation = undefined;
+  }
+
+  getAgentQuestion(sessionId: string, agentType: AgentType): { id: string; question: string } | undefined {
+    const session = this.cache.get(sessionId);
+    if (!session) return undefined;
+    const agent = session.agents.get(agentType);
+    return agent?.currentQuestion;
   }
 }
 
