@@ -1,10 +1,15 @@
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { GoogleAIFileManager } from "@google/generative-ai/server";
 import fs from "fs";
 import path from "path";
-import { LLMConfig, Provider } from "./llm";
+import { LLMConfig } from "./llm";
+import {
+  preprocessVideo,
+  cleanupPreprocessedVideo,
+  readFramesAsBase64,
+  checkFfmpegAvailable,
+  PreprocessedVideo,
+} from "./video-preprocessing";
 
 export interface TranscriptionSegment {
   start: number;
@@ -15,6 +20,7 @@ export interface TranscriptionSegment {
 export interface TranscriptionResult {
   text: string;
   segments?: TranscriptionSegment[];
+  visualContext?: string;
 }
 
 export interface TranscriptionCallbacks {
@@ -23,193 +29,146 @@ export interface TranscriptionCallbacks {
   onError?: (error: Error) => void;
 }
 
-// Max file size for Claude vision API (approximately 20MB after base64)
-const MAX_CLAUDE_VIDEO_SIZE = 15 * 1024 * 1024; // 15MB raw = ~20MB base64
-
-// Gemini supports much larger files (up to 2GB via File API)
-const MAX_GEMINI_INLINE_SIZE = 20 * 1024 * 1024; // 20MB for inline base64
+export interface TranscriptionKeys {
+  openaiApiKey?: string;
+  anthropicApiKey?: string;
+}
 
 /**
- * Transcribe a video file using the configured LLM provider.
+ * Transcribe a video file using preprocessing + vision models.
  *
- * Provider support:
- * - Anthropic: Uses Claude vision API (files under 15MB)
- * - OpenAI: Uses Whisper API for audio transcription
- * - Gemini: Uses Gemini Flash with File API (supports large files up to 2GB)
+ * Pipeline:
+ * 1. Preprocess: Extract frames (1fps) + audio using ffmpeg
+ * 2. Transcribe: Use Whisper for audio transcription
+ * 3. Analyze: Use Claude Haiku or GPT-5 mini to analyze frames with transcription context
+ *
+ * This approach works with any video size and provides both audio and visual context.
  */
 export async function transcribeVideo(
   videoPath: string,
   config: LLMConfig,
   callbacks: TranscriptionCallbacks = {},
-  fallbackKeys?: { openaiApiKey?: string; geminiApiKey?: string }
+  fallbackKeys?: TranscriptionKeys
 ): Promise<TranscriptionResult> {
   const { onProgress, onComplete, onError } = callbacks;
 
+  let preprocessed: PreprocessedVideo | null = null;
+
   try {
-    onProgress?.(10, "Starting transcription...");
+    onProgress?.(5, "Checking ffmpeg availability...");
 
-    // Check file size
-    const stats = await fs.promises.stat(videoPath);
-    const fileSizeMB = stats.size / (1024 * 1024);
-
-    let result: TranscriptionResult;
-
-    // For large files, prefer Gemini (best for video) or OpenAI Whisper
-    if (stats.size > MAX_CLAUDE_VIDEO_SIZE) {
-      // Try Gemini first (best for large videos with visual context)
-      if (config.provider === "gemini" || fallbackKeys?.geminiApiKey) {
-        const apiKey = config.provider === "gemini" ? config.apiKey : fallbackKeys!.geminiApiKey!;
-        onProgress?.(15, `File is ${fileSizeMB.toFixed(1)}MB - using Gemini Flash for transcription...`);
-        result = await transcribeWithGemini(videoPath, apiKey, onProgress);
-      }
-      // Fall back to OpenAI Whisper (audio only, but handles large files)
-      else if (config.provider === "openai" || fallbackKeys?.openaiApiKey) {
-        const apiKey = config.provider === "openai" ? config.apiKey : fallbackKeys!.openaiApiKey!;
-        onProgress?.(15, `File is ${fileSizeMB.toFixed(1)}MB - using Whisper for transcription...`);
-        result = await transcribeWithOpenAI(videoPath, apiKey, onProgress);
-      }
-      else {
-        throw new Error(
-          `Video file (${fileSizeMB.toFixed(1)}MB) is too large for Claude vision API. ` +
-          `Maximum size is ~15MB. Please configure a Gemini or OpenAI API key in Settings for larger files, ` +
-          `or upload a shorter/compressed video.`
-        );
-      }
-    } else {
-      switch (config.provider) {
-        case "anthropic":
-          result = await transcribeWithAnthropic(videoPath, config.apiKey, onProgress);
-          break;
-        case "openai":
-          result = await transcribeWithOpenAI(videoPath, config.apiKey, onProgress);
-          break;
-        case "gemini":
-          result = await transcribeWithGemini(videoPath, config.apiKey, onProgress);
-          break;
-        default:
-          throw new Error(`Unsupported provider: ${config.provider}`);
-      }
+    const ffmpegAvailable = await checkFfmpegAvailable();
+    if (!ffmpegAvailable) {
+      throw new Error(
+        "ffmpeg is not installed. Please install ffmpeg to process videos.\n" +
+        "On macOS: brew install ffmpeg\n" +
+        "On Ubuntu: apt install ffmpeg\n" +
+        "On Railway: Add ffmpeg to your nixpacks.toml"
+      );
     }
+
+    // Get API keys
+    const openaiKey = config.provider === "openai" ? config.apiKey : fallbackKeys?.openaiApiKey;
+    const anthropicKey = config.provider === "anthropic" ? config.apiKey : fallbackKeys?.anthropicApiKey;
+
+    if (!openaiKey) {
+      throw new Error(
+        "OpenAI API key is required for video transcription (Whisper).\n" +
+        "Please add your OpenAI API key in Settings."
+      );
+    }
+
+    // Step 1: Preprocess video
+    onProgress?.(10, "Preprocessing video (extracting frames and audio)...");
+    preprocessed = await preprocessVideo(videoPath, {
+      fps: 1, // 1 frame per second
+      audioFormat: "mp3",
+      maxFrames: 300, // Max 5 minutes at 1fps
+      onProgress: (p, msg) => {
+        // Map preprocessing progress to 10-40%
+        const mappedProgress = 10 + Math.floor(p * 0.3);
+        onProgress?.(mappedProgress, msg);
+      },
+    });
+
+    onProgress?.(40, `Extracted ${preprocessed.frames.length} frames, transcribing audio...`);
+
+    // Step 2: Transcribe audio with Whisper
+    const audioTranscription = await transcribeAudioWithWhisper(
+      preprocessed.audioPath,
+      openaiKey,
+      onProgress
+    );
+
+    onProgress?.(60, "Analyzing video frames with visual context...");
+
+    // Step 3: Analyze frames with vision model
+    let visualAnalysis: string | undefined;
+
+    if (anthropicKey) {
+      // Use Claude Haiku for visual analysis
+      visualAnalysis = await analyzeFramesWithClaude(
+        preprocessed.frames,
+        audioTranscription.text,
+        anthropicKey,
+        onProgress
+      );
+    } else if (openaiKey) {
+      // Fall back to GPT-5 mini for visual analysis
+      visualAnalysis = await analyzeFramesWithOpenAI(
+        preprocessed.frames,
+        audioTranscription.text,
+        openaiKey,
+        onProgress
+      );
+    }
+
+    onProgress?.(95, "Finalizing transcription...");
+
+    // Combine results
+    const result: TranscriptionResult = {
+      text: audioTranscription.text,
+      segments: audioTranscription.segments,
+      visualContext: visualAnalysis,
+    };
 
     onProgress?.(100, "Transcription complete");
     onComplete?.(result);
+
     return result;
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     onError?.(err);
     throw err;
+  } finally {
+    // Always cleanup preprocessed files
+    if (preprocessed) {
+      await cleanupPreprocessedVideo(preprocessed);
+    }
   }
 }
 
 /**
- * Transcribe using Anthropic Claude with video/vision capabilities
+ * Transcribe audio using OpenAI Whisper
  */
-async function transcribeWithAnthropic(
-  videoPath: string,
+async function transcribeAudioWithWhisper(
+  audioPath: string,
   apiKey: string,
   onProgress?: (progress: number, message: string) => void
-): Promise<TranscriptionResult> {
-  const client = new Anthropic({ apiKey });
-
-  onProgress?.(20, "Reading video file...");
-
-  // Read the video file and convert to base64
-  const videoBuffer = await fs.promises.readFile(videoPath);
-  const base64Video = videoBuffer.toString("base64");
-  const ext = path.extname(videoPath).toLowerCase();
-
-  // Map extension to media type
-  const mediaTypeMap: Record<string, string> = {
-    ".mp4": "video/mp4",
-    ".webm": "video/webm",
-    ".mov": "video/quicktime",
-    ".avi": "video/x-msvideo",
-  };
-  const mediaType = mediaTypeMap[ext] || "video/mp4";
-
-  onProgress?.(40, "Sending to Claude for analysis...");
-
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 8192,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "document",
-            source: {
-              type: "base64",
-              media_type: mediaType,
-              data: base64Video,
-            },
-          },
-          {
-            type: "text",
-            text: `Please transcribe all spoken content in this video. Include:
-1. A complete text transcription of everything said
-2. Note any visual elements that provide important context (like UI demonstrations, code being shown, diagrams)
-3. If there are distinct sections or topics, indicate where they begin
-
-Format your response as:
-## Transcription
-[Full transcription here]
-
-## Visual Context
-[Description of visual elements that add context]
-
-## Key Sections
-[List of distinct sections/topics with approximate timestamps if visible]`,
-          },
-        ],
-      },
-    ],
-  });
-
-  onProgress?.(80, "Processing transcription...");
-
-  const textBlock = response.content.find((block) => block.type === "text");
-  const fullText = textBlock?.text ?? "";
-
-  // Extract just the transcription portion
-  const transcriptionMatch = fullText.match(/## Transcription\s*([\s\S]*?)(?=## Visual Context|## Key Sections|$)/i);
-  const transcriptionText = transcriptionMatch?.[1]?.trim() || fullText;
-
-  return {
-    text: transcriptionText,
-    // Note: Claude doesn't provide precise timestamps, but we preserve the full analysis
-    segments: undefined,
-  };
-}
-
-/**
- * Transcribe using OpenAI Whisper API
- * Note: This extracts audio from video and sends to Whisper
- */
-async function transcribeWithOpenAI(
-  videoPath: string,
-  apiKey: string,
-  onProgress?: (progress: number, message: string) => void
-): Promise<TranscriptionResult> {
+): Promise<{ text: string; segments?: TranscriptionSegment[] }> {
   const client = new OpenAI({ apiKey });
 
-  onProgress?.(20, "Preparing video for transcription...");
+  onProgress?.(45, "Sending audio to Whisper...");
 
-  // Read the video file
-  const videoFile = fs.createReadStream(videoPath);
-  const ext = path.extname(videoPath).toLowerCase();
-  const filename = `video${ext}`;
+  const audioFile = fs.createReadStream(audioPath);
 
-  onProgress?.(40, "Sending to Whisper for transcription...");
-
-  // Whisper can handle video files directly (it extracts the audio)
   const transcription = await client.audio.transcriptions.create({
-    file: videoFile,
+    file: audioFile,
     model: "whisper-1",
     response_format: "verbose_json",
   });
 
-  onProgress?.(80, "Processing transcription...");
+  onProgress?.(55, "Audio transcription complete");
 
   // Extract segments if available
   const segments: TranscriptionSegment[] | undefined =
@@ -226,97 +185,135 @@ async function transcribeWithOpenAI(
 }
 
 /**
- * Transcribe using Google Gemini with video understanding
- * Supports large files via File API
+ * Analyze video frames with Claude Haiku
  */
-async function transcribeWithGemini(
-  videoPath: string,
+async function analyzeFramesWithClaude(
+  framePaths: string[],
+  transcription: string,
   apiKey: string,
   onProgress?: (progress: number, message: string) => void
-): Promise<TranscriptionResult> {
-  const fileManager = new GoogleAIFileManager(apiKey);
-  const genAI = new GoogleGenerativeAI(apiKey);
+): Promise<string> {
+  const client = new Anthropic({ apiKey });
 
-  onProgress?.(20, "Uploading video to Gemini...");
+  onProgress?.(65, "Reading frames for analysis...");
 
-  // Get file info
-  const ext = path.extname(videoPath).toLowerCase();
-  const mimeTypeMap: Record<string, string> = {
-    ".mp4": "video/mp4",
-    ".webm": "video/webm",
-    ".mov": "video/quicktime",
-    ".avi": "video/x-msvideo",
-  };
-  const mimeType = mimeTypeMap[ext] || "video/mp4";
+  // Sample frames (max 20 to stay within token limits)
+  const frames = await readFramesAsBase64(framePaths, 20);
 
-  // Upload file to Gemini
-  const uploadResult = await fileManager.uploadFile(videoPath, {
-    mimeType,
-    displayName: path.basename(videoPath),
+  onProgress?.(75, `Analyzing ${frames.length} frames with Claude Haiku...`);
+
+  // Build content array with frames
+  const content: Anthropic.Messages.ContentBlockParam[] = [];
+
+  // Add frames as images
+  for (const frame of frames) {
+    content.push({
+      type: "image",
+      source: {
+        type: "base64",
+        media_type: "image/jpeg",
+        data: frame.base64,
+      },
+    });
+  }
+
+  // Add the analysis prompt with transcription context
+  content.push({
+    type: "text",
+    text: `These are frames extracted from a video at 1 frame per second. The audio transcription is:
+
+---
+${transcription}
+---
+
+Please analyze the visual content and provide:
+1. A description of what's shown on screen throughout the video
+2. Any UI elements, code, diagrams, or text visible on screen
+3. How the visual content relates to what's being said
+
+Focus on visual elements that add context beyond what's in the transcription.`,
   });
 
-  onProgress?.(40, "Waiting for video processing...");
-
-  // Wait for file to be processed
-  let file = await fileManager.getFile(uploadResult.file.name);
-  while (file.state === "PROCESSING") {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    file = await fileManager.getFile(uploadResult.file.name);
-  }
-
-  if (file.state === "FAILED") {
-    throw new Error("Gemini failed to process the video file");
-  }
-
-  onProgress?.(60, "Transcribing with Gemini Flash...");
-
-  // Use Gemini Flash for fast, cheap transcription
-  const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
-
-  const result = await model.generateContent([
-    {
-      fileData: {
-        mimeType: file.mimeType,
-        fileUri: file.uri,
+  const response = await client.messages.create({
+    model: "claude-4-5-haiku-20250514",
+    max_tokens: 4096,
+    messages: [
+      {
+        role: "user",
+        content,
       },
-    },
-    {
-      text: `Please transcribe all spoken content in this video. Include:
-1. A complete text transcription of everything said
-2. Note any visual elements that provide important context (like UI demonstrations, code being shown, diagrams)
-3. If there are distinct sections or topics, indicate where they begin
+    ],
+  });
 
-Format your response as:
-## Transcription
-[Full transcription here]
+  onProgress?.(90, "Visual analysis complete");
 
-## Visual Context
-[Description of visual elements that add context]
+  const textBlock = response.content.find((block) => block.type === "text");
+  return textBlock?.text ?? "";
+}
 
-## Key Sections
-[List of distinct sections/topics with approximate timestamps if visible]`,
-    },
-  ]);
+/**
+ * Analyze video frames with GPT-5 mini
+ */
+async function analyzeFramesWithOpenAI(
+  framePaths: string[],
+  transcription: string,
+  apiKey: string,
+  onProgress?: (progress: number, message: string) => void
+): Promise<string> {
+  const client = new OpenAI({ apiKey });
 
-  onProgress?.(80, "Processing transcription...");
+  onProgress?.(65, "Reading frames for analysis...");
 
-  const fullText = result.response.text();
+  // Sample frames (max 20 to stay within token limits)
+  const frames = await readFramesAsBase64(framePaths, 20);
 
-  // Extract just the transcription portion
-  const transcriptionMatch = fullText.match(/## Transcription\s*([\s\S]*?)(?=## Visual Context|## Key Sections|$)/i);
-  const transcriptionText = transcriptionMatch?.[1]?.trim() || fullText;
+  onProgress?.(75, `Analyzing ${frames.length} frames with GPT-5 mini...`);
 
-  // Clean up - delete the uploaded file
-  try {
-    await fileManager.deleteFile(uploadResult.file.name);
-  } catch {
-    // Ignore cleanup errors
+  // Build content array with frames
+  const content: OpenAI.Chat.Completions.ChatCompletionContentPart[] = [];
+
+  // Add frames as images
+  for (const frame of frames) {
+    content.push({
+      type: "image_url",
+      image_url: {
+        url: `data:image/jpeg;base64,${frame.base64}`,
+        detail: "low", // Use low detail to reduce tokens
+      },
+    });
   }
 
-  return {
-    text: transcriptionText,
-    segments: undefined,
-  };
+  // Add the analysis prompt with transcription context
+  content.push({
+    type: "text",
+    text: `These are frames extracted from a video at 1 frame per second. The audio transcription is:
+
+---
+${transcription}
+---
+
+Please analyze the visual content and provide:
+1. A description of what's shown on screen throughout the video
+2. Any UI elements, code, diagrams, or text visible on screen
+3. How the visual content relates to what's being said
+
+Focus on visual elements that add context beyond what's in the transcription.`,
+  });
+
+  const response = await client.chat.completions.create({
+    model: "gpt-5-mini",
+    max_tokens: 4096,
+    messages: [
+      {
+        role: "user",
+        content,
+      },
+    ],
+  });
+
+  onProgress?.(90, "Visual analysis complete");
+
+  return response.choices[0]?.message?.content ?? "";
 }
 
 /**
@@ -324,7 +321,7 @@ Format your response as:
  * Returns estimate in seconds
  */
 export function estimateTranscriptionTime(fileSizeBytes: number): number {
-  // Rough estimate: 1MB takes about 3-5 seconds to process
+  // Rough estimate: 1MB takes about 5-8 seconds with preprocessing
   const fileSizeMB = fileSizeBytes / (1024 * 1024);
-  return Math.ceil(fileSizeMB * 4);
+  return Math.ceil(fileSizeMB * 6);
 }

@@ -32,7 +32,7 @@ export class DocOrchestratorAgent {
     await sessionStore.appendLog(this.sessionId, this.type, content);
   }
 
-  private async getLLMConfig(userId: string): Promise<{ config: LLMConfig; openaiApiKey?: string; geminiApiKey?: string }> {
+  private async getLLMConfig(userId: string): Promise<{ config: LLMConfig; openaiApiKey?: string; anthropicApiKey?: string }> {
     const [user] = await db
       .select({
         activeProvider: users.activeProvider,
@@ -46,7 +46,7 @@ export class DocOrchestratorAgent {
     return {
       config: getUserLLMConfig(user || {}),
       openaiApiKey: user?.openaiApiKey || undefined,
-      geminiApiKey: user?.geminiApiKey || undefined,
+      anthropicApiKey: user?.anthropicApiKey || undefined,
     };
   }
 
@@ -63,7 +63,7 @@ export class DocOrchestratorAgent {
     await this.log(`Video: ${videoMetadata.originalName} (${(videoMetadata.size / 1024 / 1024).toFixed(1)} MB)\n\n`);
 
     // Get user's LLM configuration
-    const { config: llmConfig, openaiApiKey, geminiApiKey } = await this.getLLMConfig(userId);
+    const { config: llmConfig, openaiApiKey, anthropicApiKey } = await this.getLLMConfig(userId);
 
     // Phase 1: Transcription
     await this.log("Phase 1: Transcribing video...\n");
@@ -78,7 +78,7 @@ export class DocOrchestratorAgent {
         onProgress: (progress, message) => {
           sessionStore.appendLog(sessionId, "transcription", `[${progress}%] ${message}\n`);
         },
-      }, { openaiApiKey, geminiApiKey });
+      }, { openaiApiKey, anthropicApiKey });
 
       await sessionStore.setAgentOutput(sessionId, "transcription", {
         text: transcription.text.substring(0, 500) + "...", // Truncate for output display
@@ -105,6 +105,7 @@ export class DocOrchestratorAgent {
         transcription: transcription.text,
         description,
         segments: transcription.segments,
+        visualContext: transcription.visualContext,
       },
       llmConfig
     );

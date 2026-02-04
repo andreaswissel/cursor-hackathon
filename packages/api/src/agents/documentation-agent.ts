@@ -16,6 +16,7 @@ export interface DocumentationAgentInput {
   transcription: string;
   description: string;
   segments?: Array<{ start: number; end: number; text: string }>;
+  visualContext?: string;
 }
 
 export interface DocumentationAgentResult {
@@ -83,6 +84,11 @@ Be thorough but focused. Each documentation piece should be:
         .join("\n")}`;
     }
 
+    let visualSection = "";
+    if (input.visualContext) {
+      visualSection = `\n\n## Visual Context\nThe following visual elements were identified in the video:\n${input.visualContext}`;
+    }
+
     return [
       {
         role: "user",
@@ -90,7 +96,7 @@ Be thorough but focused. Each documentation piece should be:
 ${input.description}
 
 ## Video Transcription
-${input.transcription}${contextSection}
+${input.transcription}${contextSection}${visualSection}
 
 Please analyze this content and generate documentation pieces. Output as a JSON array as specified in your instructions.`,
       },
