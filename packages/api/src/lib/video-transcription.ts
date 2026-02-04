@@ -235,7 +235,7 @@ Focus on visual elements that add context beyond what's in the transcription.`,
   });
 
   const response = await client.messages.create({
-    model: "claude-4-5-haiku-20250514",
+    model: "claude-haiku-4-5-20251001",
     max_tokens: 4096,
     messages: [
       {
