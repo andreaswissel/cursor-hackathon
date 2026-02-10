@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { getIntegrationData, type IntegrationDataItem } from "@/lib/api";
+import { getIntegrationData, getProjectKnowledge, resolveProjectKnowledge, type IntegrationDataItem } from "@/lib/api";
 import { MOCK_OKRS, MOCK_CUSTOMER_FEEDBACK, MOCK_INTERNAL_FEEDBACK, MOCK_METRICS } from "@product-os/shared";
+import type { KnowledgeSource } from "@product-os/shared";
 import { cn } from "@/lib/utils";
 import {
   Target,
@@ -19,15 +20,23 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  BookOpen,
+  Eye,
+  EyeOff,
+  Link as LinkIcon,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface DataSourceSelectorProps {
+  projectId?: string;
   onContextChange: (context: {
     okrs: Array<{ objective: string; keyResults: string[] }>;
     customerFeedback: string[];
     internalFeedback?: Array<{ channel: string; author: string; message: string }>;
     metrics?: Array<{ name: string; value: string; trend: string; delta: string; source: string; description: string }>;
   }) => void;
+  /** If true, skip sending context (let the backend resolve from knowledge) */
+  onUseProjectKnowledge?: (useIt: boolean) => void;
 }
 
 const DATA_TYPE_ICONS: Record<string, typeof Target> = {
@@ -83,28 +92,58 @@ function getContentPreview(item: IntegrationDataItem): string[] {
   return previews;
 }
 
-export function DataSourceSelector({ onContextChange }: DataSourceSelectorProps) {
-  const [useMockData, setUseMockData] = useState(true);
+type DataMode = "mock" | "knowledge" | "live";
+
+export function DataSourceSelector({ projectId, onContextChange, onUseProjectKnowledge }: DataSourceSelectorProps) {
+  const [mode, setMode] = useState<DataMode>("mock");
   const [integrationData, setIntegrationData] = useState<IntegrationDataItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Knowledge mode state
+  const [knowledgeSources, setKnowledgeSources] = useState<KnowledgeSource[]>([]);
+  const [knowledgeItems, setKnowledgeItems] = useState<IntegrationDataItem[]>([]);
+  const [disabledSourceIds, setDisabledSourceIds] = useState<Set<string>>(new Set());
+  const [hasProjectKnowledge, setHasProjectKnowledge] = useState(false);
+  const [knowledgeLoading, setKnowledgeLoading] = useState(false);
+
+  // Check for project knowledge on mount
+  useEffect(() => {
+    if (projectId) {
+      loadProjectKnowledge();
+    }
+  }, [projectId]);
 
   // Fetch integration data on mount
   useEffect(() => {
     fetchIntegrationData();
   }, []);
 
+  // Auto-switch to knowledge mode if project has sources
+  useEffect(() => {
+    if (hasProjectKnowledge && mode === "mock") {
+      setMode("knowledge");
+    }
+  }, [hasProjectKnowledge]);
+
   // Update context when selection or mode changes
   useEffect(() => {
-    if (useMockData) {
+    if (mode === "mock") {
+      onUseProjectKnowledge?.(false);
       onContextChange({
         okrs: MOCK_OKRS,
         customerFeedback: MOCK_CUSTOMER_FEEDBACK,
         internalFeedback: MOCK_INTERNAL_FEEDBACK,
         metrics: MOCK_METRICS,
       });
+    } else if (mode === "knowledge") {
+      // Signal to parent that backend should resolve context from project knowledge
+      onUseProjectKnowledge?.(true);
+      // Still pass a minimal context — the backend will resolve the real one
+      onContextChange({ okrs: [], customerFeedback: [] });
     } else {
+      onUseProjectKnowledge?.(false);
       // Convert selected integration data to context format
       const selectedData = integrationData.filter((d) => selectedIds.has(d.id));
 
@@ -114,7 +153,6 @@ export function DataSourceSelector({ onContextChange }: DataSourceSelectorProps)
 
       for (const item of selectedData) {
         if (item.dataType === "okrs" && Array.isArray(item.content)) {
-          // Try to parse OKR format from content
           for (const record of item.content as Array<Record<string, unknown>>) {
             const objective = record.Objective || record.objective || record.Name || record.name;
             const keyResults = record["Key Results"] || record.keyResults || record.KRs || [];
@@ -126,7 +164,6 @@ export function DataSourceSelector({ onContextChange }: DataSourceSelectorProps)
             }
           }
         } else if (item.dataType === "feedback" && Array.isArray(item.content)) {
-          // Extract feedback strings
           for (const record of item.content as Array<Record<string, unknown>>) {
             const text = record.Feedback || record.feedback || record.Comment || record.comment || record.Text || record.text;
             if (text) {
@@ -134,7 +171,6 @@ export function DataSourceSelector({ onContextChange }: DataSourceSelectorProps)
             }
           }
         } else if (item.dataType === "tickets" && Array.isArray(item.content)) {
-          // Treat ticket summaries as feedback
           for (const record of item.content as Array<Record<string, unknown>>) {
             const summary = record.Summary || record.summary || record.Title || record.title;
             if (summary) {
@@ -149,7 +185,26 @@ export function DataSourceSelector({ onContextChange }: DataSourceSelectorProps)
         customerFeedback: feedback.length > 0 ? feedback : MOCK_CUSTOMER_FEEDBACK,
       });
     }
-  }, [useMockData, selectedIds, integrationData, onContextChange]);
+  }, [mode, selectedIds, integrationData, onContextChange]);
+
+  const loadProjectKnowledge = async () => {
+    if (!projectId) return;
+    setKnowledgeLoading(true);
+    try {
+      const [knowledgeRes, resolveRes] = await Promise.all([
+        getProjectKnowledge(projectId),
+        resolveProjectKnowledge(projectId),
+      ]);
+      const enabledSources = knowledgeRes.sources.filter(s => s.enabled);
+      setKnowledgeSources(enabledSources);
+      setKnowledgeItems(resolveRes.items);
+      setHasProjectKnowledge(enabledSources.length > 0);
+    } catch {
+      // No knowledge configured — that's fine
+    } finally {
+      setKnowledgeLoading(false);
+    }
+  };
 
   const fetchIntegrationData = async () => {
     setIsLoading(true);
@@ -178,7 +233,36 @@ export function DataSourceSelector({ onContextChange }: DataSourceSelectorProps)
     });
   };
 
-  const hasIntegrationData = integrationData.length > 0;
+  const toggleSourceDisabled = (sourceId: string) => {
+    setDisabledSourceIds(prev => {
+      const next = new Set(prev);
+      if (next.has(sourceId)) next.delete(sourceId);
+      else next.add(sourceId);
+      return next;
+    });
+  };
+
+  const cycleMode = () => {
+    if (mode === "mock") {
+      setMode(hasProjectKnowledge ? "knowledge" : "live");
+    } else if (mode === "knowledge") {
+      setMode("live");
+    } else {
+      setMode("mock");
+    }
+  };
+
+  const getModeLabel = () => {
+    if (mode === "mock") return "Demo";
+    if (mode === "knowledge") return "Project";
+    return "Live";
+  };
+
+  const getModeDescription = () => {
+    if (mode === "mock") return "Using demo data";
+    if (mode === "knowledge") return "Using project knowledge";
+    return "Using live integrations";
+  };
 
   return (
     <div className="space-y-4">
@@ -186,28 +270,39 @@ export function DataSourceSelector({ onContextChange }: DataSourceSelectorProps)
       <div className="flex items-center justify-between p-4 rounded-xl border bg-card">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
-            <Table className="w-4 h-4 text-muted-foreground" />
+            {mode === "knowledge" ? (
+              <BookOpen className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <Table className="w-4 h-4 text-muted-foreground" />
+            )}
           </div>
           <div>
             <h3 className="font-medium text-sm">Data Source</h3>
             <p className="text-xs text-muted-foreground">
-              {useMockData ? "Using demo data" : "Using live integrations"}
+              {getModeDescription()}
             </p>
           </div>
         </div>
         <button
-          onClick={() => setUseMockData(!useMockData)}
+          onClick={cycleMode}
           className={cn(
             "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
-            useMockData
+            mode === "mock"
               ? "bg-secondary text-muted-foreground"
+              : mode === "knowledge"
+              ? "bg-primary/10 text-primary"
               : "bg-primary text-primary-foreground"
           )}
         >
-          {useMockData ? (
+          {mode === "mock" ? (
             <>
               <ToggleLeft className="w-4 h-4" />
               Demo
+            </>
+          ) : mode === "knowledge" ? (
+            <>
+              <BookOpen className="w-4 h-4" />
+              Project
             </>
           ) : (
             <>
@@ -218,9 +313,105 @@ export function DataSourceSelector({ onContextChange }: DataSourceSelectorProps)
         </button>
       </div>
 
-      {/* Content based on mode */}
-      {useMockData ? (
-        // Mock Data Display
+      {/* Knowledge Mode */}
+      {mode === "knowledge" && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Project Knowledge Sources
+            </h3>
+            {projectId && (
+              <Link
+                to={`/project/${projectId}/knowledge`}
+                className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
+              >
+                <LinkIcon className="w-3 h-3" />
+                Configure
+              </Link>
+            )}
+          </div>
+
+          {knowledgeLoading && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
+
+          {!knowledgeLoading && knowledgeSources.length === 0 && (
+            <div className="p-6 rounded-xl border border-dashed text-center">
+              <BookOpen className="w-8 h-8 text-muted-foreground/40 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground mb-1">
+                No knowledge sources configured
+              </p>
+              <p className="text-xs text-muted-foreground/60 mb-3">
+                Add knowledge sources to this project to filter data automatically
+              </p>
+              {projectId && (
+                <Link
+                  to={`/project/${projectId}/knowledge`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+                >
+                  Configure Knowledge
+                </Link>
+              )}
+            </div>
+          )}
+
+          {!knowledgeLoading && knowledgeSources.length > 0 && (
+            <>
+              {/* Knowledge source cards */}
+              <div className="space-y-2">
+                {knowledgeSources.map(source => (
+                  <div
+                    key={source.id}
+                    className={cn(
+                      "rounded-lg border p-3 transition-opacity",
+                      disabledSourceIds.has(source.id) && "opacity-50"
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{source.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {source.provider ? `${source.provider} · ` : ""}
+                          {source.dataTypes?.join(", ") || "All types"}
+                          {source.filters.keywords?.length
+                            ? ` · ${source.filters.keywords.length} keywords`
+                            : ""}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => toggleSourceDisabled(source.id)}
+                        className={cn(
+                          "p-1.5 rounded-lg transition-colors",
+                          disabledSourceIds.has(source.id)
+                            ? "text-muted-foreground hover:bg-secondary"
+                            : "text-emerald-500 hover:bg-emerald-500/10"
+                        )}
+                        title={disabledSourceIds.has(source.id) ? "Enable" : "Disable for this session"}
+                      >
+                        {disabledSourceIds.has(source.id) ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Matched items count */}
+              <p className="text-xs text-muted-foreground text-center">
+                {knowledgeItems.length} items matched from {knowledgeSources.length - disabledSourceIds.size} active sources
+              </p>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Mock Data Mode */}
+      {mode === "mock" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* OKRs Card */}
           <div className="rounded-xl border bg-card p-5">
@@ -333,8 +524,10 @@ export function DataSourceSelector({ onContextChange }: DataSourceSelectorProps)
             </ul>
           </div>
         </div>
-      ) : (
-        // Live Integration Data
+      )}
+
+      {/* Live Integration Data Mode */}
+      {mode === "live" && (
         <div className="space-y-3">
           {/* Header with refresh */}
           <div className="flex items-center justify-between">

@@ -168,6 +168,44 @@ export interface SSEEvent {
   payload: unknown;
 }
 
+// Knowledge types
+export type KnowledgeVisibility = "team" | "private";
+
+export interface KnowledgeFilter {
+  keywords?: string[];
+  channels?: string[];
+  sourceIds?: string[];
+  integrationDataIds?: string[];
+  dateRange?: { from?: string; to?: string };
+}
+
+export interface KnowledgeSource {
+  id: string;
+  projectId: string;
+  createdByUserId: string;
+  name: string;
+  description?: string | null;
+  provider?: string | null;
+  dataTypes?: string[] | null;
+  filters: KnowledgeFilter;
+  visibility: KnowledgeVisibility;
+  aiSummary?: string | null;
+  aiSummaryGeneratedAt?: string | null;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+  matchedItemCount?: number;
+}
+
+export interface SessionKnowledgeOverride {
+  id: string;
+  sessionId: string;
+  knowledgeSourceId?: string | null;
+  integrationDataId?: string | null;
+  action: "add" | "remove";
+  createdAt: string;
+}
+
 // Discovery mode types
 export type DiscoveryRunStatus = "pending" | "running" | "completed" | "failed";
 

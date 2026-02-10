@@ -1,5 +1,5 @@
 import { pgTable, text, timestamp, jsonb, uuid, integer, real, unique } from "drizzle-orm/pg-core";
-import type { UserPreferences } from "@product-os/shared";
+import type { UserPreferences, KnowledgeFilter, KnowledgeVisibility } from "@product-os/shared";
 
 // Users table for demo auth
 export const users = pgTable("users", {
@@ -211,5 +211,33 @@ export const discoveryClusters = pgTable("discovery_clusters", {
   moneyQuotes: jsonb("money_quotes").$type<string[]>().default([]),
   sampleSignals: jsonb("sample_signals").$type<string[]>().default([]),
   sources: jsonb("sources").$type<string[]>().default([]),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Knowledge sources — filter specifications attached to projects
+export const knowledgeSources = pgTable("knowledge_sources", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  projectId: uuid("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
+  createdByUserId: uuid("created_by_user_id").references(() => users.id).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  provider: text("provider"),
+  dataTypes: jsonb("data_types").$type<string[]>(),
+  filters: jsonb("filters").$type<KnowledgeFilter>().notNull(),
+  visibility: text("visibility").$type<KnowledgeVisibility>().default("team").notNull(),
+  aiSummary: text("ai_summary"),
+  aiSummaryGeneratedAt: timestamp("ai_summary_generated_at"),
+  enabled: integer("enabled").default(1).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Session knowledge overrides — per-session add/remove relative to project
+export const sessionKnowledgeOverrides = pgTable("session_knowledge_overrides", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  sessionId: uuid("session_id").references(() => sessions.id, { onDelete: "cascade" }).notNull(),
+  knowledgeSourceId: uuid("knowledge_source_id").references(() => knowledgeSources.id, { onDelete: "cascade" }),
+  integrationDataId: uuid("integration_data_id").references(() => integrationData.id),
+  action: text("action").$type<"add" | "remove">().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

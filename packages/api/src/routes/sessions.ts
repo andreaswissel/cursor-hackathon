@@ -18,6 +18,8 @@ import {
 } from "../middleware/rate-limit";
 import { videoUpload, deleteUploadedFile } from "../lib/upload";
 import { ensureDefaultProject } from "../lib/project-helpers";
+import { resolveKnowledge, toSessionContext } from "../lib/knowledge-resolver";
+import { knowledgeSources } from "../db/schema";
 
 const router = Router();
 
@@ -43,23 +45,50 @@ router.get("/", async (req: Request, res: Response) => {
 router.post("/", checkSessionLimit, async (req: Request, res: Response) => {
   const { idea, context, projectId } = req.body as {
     idea: string;
-    context: SessionContext;
+    context?: SessionContext;
     projectId?: string;
   };
 
-  if (!idea || !context) {
-    res.status(400).json({ error: "Missing idea or context" });
+  if (!idea) {
+    res.status(400).json({ error: "Missing idea" });
     return;
   }
 
   const userId = req.user!.id;
   const resolvedProjectId = projectId || await ensureDefaultProject(userId);
+
+  // If no context provided, try to auto-resolve from project knowledge
+  let resolvedContext: SessionContext;
+  if (context) {
+    resolvedContext = context;
+  } else {
+    // Check if project has knowledge sources
+    const sources = await db
+      .select({ id: knowledgeSources.id })
+      .from(knowledgeSources)
+      .where(eq(knowledgeSources.projectId, resolvedProjectId));
+
+    if (sources.length > 0) {
+      const knowledgeItems = await resolveKnowledge(resolvedProjectId, userId);
+      const aiSummaries = (await db
+        .select({ name: knowledgeSources.name, aiSummary: knowledgeSources.aiSummary })
+        .from(knowledgeSources)
+        .where(eq(knowledgeSources.projectId, resolvedProjectId)))
+        .filter(s => s.aiSummary)
+        .map(s => ({ name: s.name, summary: s.aiSummary! }));
+
+      resolvedContext = toSessionContext(knowledgeItems, aiSummaries);
+    } else {
+      resolvedContext = { okrs: [], customerFeedback: [] };
+    }
+  }
+
   const sessionId = uuid();
-  await sessionStore.create(sessionId, idea, context, userId, "idea-to-spec", undefined, resolvedProjectId);
+  await sessionStore.create(sessionId, idea, resolvedContext, userId, "idea-to-spec", undefined, resolvedProjectId);
 
   // Start orchestrator in background (pass userId for slides generation)
   const orchestrator = new OrchestratorAgent();
-  orchestrator.run({ sessionId, userId, idea, context }).catch((error) => {
+  orchestrator.run({ sessionId, userId, idea, context: resolvedContext }).catch((error) => {
     console.error("Orchestrator error:", error);
     sessionStore.setSessionStatus(sessionId, "failed");
   });

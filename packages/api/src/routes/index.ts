@@ -7,6 +7,7 @@ import discoveryRouter from "./discovery";
 import projectsRouter from "./projects";
 import adminRouter from "./admin";
 import teamsRouter, { inviteRouter } from "./teams";
+import knowledgeRouter from "./knowledge";
 
 const router = Router();
 
@@ -19,6 +20,7 @@ router.use("/settings", settingsRouter);
 router.use("/integrations", integrationsRouter);
 router.use("/discovery", discoveryRouter);
 router.use("/admin", adminRouter);
+router.use(knowledgeRouter);
 
 // Health check
 router.get("/health", (_, res) => {

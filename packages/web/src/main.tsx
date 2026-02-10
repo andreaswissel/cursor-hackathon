@@ -17,6 +17,7 @@ import { RestrictedDataPage } from "./pages/restricted-data";
 import { OnboardingPage } from "./pages/onboarding";
 import { TeamSettingsPage } from "./pages/team-settings";
 import { InvitePage } from "./pages/invite";
+import { ProjectKnowledgePage } from "./pages/project-knowledge";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -81,6 +82,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             element={
               <ProtectedRoute>
                 <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/project/:projectId/knowledge"
+            element={
+              <ProtectedRoute>
+                <ProjectKnowledgePage />
               </ProtectedRoute>
             }
           />

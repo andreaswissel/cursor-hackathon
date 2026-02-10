@@ -17,6 +17,8 @@ export function ImaginePage() {
   const [projects, setProjects] = useState<ProjectWithSessions[]>([]);
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [useProjectKnowledge, setUseProjectKnowledge] = useState(false);
   const [context, setContext] = useState<{
     okrs: Array<{ objective: string; keyResults: string[] }>;
     customerFeedback: string[];
@@ -31,6 +33,10 @@ export function ImaginePage() {
 
   const handleContextChange = useCallback((newContext: typeof context) => {
     setContext(newContext);
+  }, []);
+
+  const handleUseProjectKnowledge = useCallback((useIt: boolean) => {
+    setUseProjectKnowledge(useIt);
   }, []);
 
   const refreshProjects = () => {
@@ -74,7 +80,10 @@ export function ImaginePage() {
     setIsLoading(true);
     setError(null);
     try {
-      const { sessionId } = await createSession(idea, context);
+      // When using project knowledge, pass undefined context so backend resolves it
+      const sessionContext = useProjectKnowledge ? undefined : context;
+      const projectId = selectedProjectId || undefined;
+      const { sessionId } = await createSession(idea, sessionContext as any, projectId);
       navigate(`/session/${sessionId}`);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create session";
@@ -169,8 +178,29 @@ export function ImaginePage() {
             </p>
           </form>
 
+          {/* Project Selector */}
+          {projects.length > 0 && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-1.5">Project</label>
+              <select
+                value={selectedProjectId}
+                onChange={e => setSelectedProjectId(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">Default project</option>
+                {projects.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Data Source Selector */}
-          <DataSourceSelector onContextChange={handleContextChange} />
+          <DataSourceSelector
+            projectId={selectedProjectId || undefined}
+            onContextChange={handleContextChange}
+            onUseProjectKnowledge={handleUseProjectKnowledge}
+          />
         </div>
       </main>
     </div>

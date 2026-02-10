@@ -1,4 +1,4 @@
-import type { SessionContext, Session, AgentType, DocumentationPiece, DocPieceStatus, SessionMode, DiscoveryDashboard, DiscoveryRun, ProjectWithSessions, UserPreferences } from "@product-os/shared";
+import type { SessionContext, Session, AgentType, DocumentationPiece, DocPieceStatus, SessionMode, DiscoveryDashboard, DiscoveryRun, ProjectWithSessions, UserPreferences, KnowledgeSource, KnowledgeFilter, KnowledgeVisibility, SessionKnowledgeOverride } from "@product-os/shared";
 
 // In production, use the full API URL; in dev, proxy through Vite
 const API_BASE = import.meta.env.VITE_API_URL ||
@@ -668,4 +668,117 @@ export async function declineInvite(token: string): Promise<void> {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error("Failed to decline invite");
+}
+
+// ============================================================
+// Knowledge API
+// ============================================================
+
+export async function getProjectKnowledge(projectId: string): Promise<{ sources: KnowledgeSource[] }> {
+  const res = await fetch(`${API_BASE}/projects/${projectId}/knowledge`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to fetch knowledge sources");
+  return res.json();
+}
+
+export async function createKnowledgeSource(
+  projectId: string,
+  data: { name: string; description?: string; provider?: string; dataTypes?: string[]; filters?: KnowledgeFilter; visibility?: KnowledgeVisibility }
+): Promise<KnowledgeSource> {
+  const res = await fetch(`${API_BASE}/projects/${projectId}/knowledge`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to create knowledge source" }));
+    throw new Error(error.error || "Failed to create knowledge source");
+  }
+  return res.json();
+}
+
+export async function updateKnowledgeSource(
+  projectId: string,
+  id: string,
+  data: Partial<{ name: string; description: string; provider: string | null; dataTypes: string[] | null; filters: KnowledgeFilter; visibility: KnowledgeVisibility; enabled: boolean }>
+): Promise<KnowledgeSource> {
+  const res = await fetch(`${API_BASE}/projects/${projectId}/knowledge/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to update knowledge source" }));
+    throw new Error(error.error || "Failed to update knowledge source");
+  }
+  return res.json();
+}
+
+export async function deleteKnowledgeSource(projectId: string, id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/projects/${projectId}/knowledge/${id}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to delete knowledge source" }));
+    throw new Error(error.error || "Failed to delete knowledge source");
+  }
+}
+
+export async function resolveProjectKnowledge(projectId: string): Promise<{ items: IntegrationDataItem[]; count: number }> {
+  const res = await fetch(`${API_BASE}/projects/${projectId}/knowledge/resolve`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to resolve knowledge");
+  return res.json();
+}
+
+export async function summarizeKnowledgeSource(projectId: string, id: string): Promise<{ summary: string; generatedAt: string; itemCount: number }> {
+  const res = await fetch(`${API_BASE}/projects/${projectId}/knowledge/${id}/summarize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to summarize" }));
+    throw new Error(error.error || "Failed to summarize");
+  }
+  return res.json();
+}
+
+export async function getSessionKnowledge(sessionId: string): Promise<{
+  items: IntegrationDataItem[];
+  sources: Array<{ id: string; name: string; enabled: boolean; visibility: string }>;
+  overrides: SessionKnowledgeOverride[];
+  context: SessionContext;
+}> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/knowledge`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to get session knowledge");
+  return res.json();
+}
+
+export async function addSessionKnowledgeOverride(
+  sessionId: string,
+  data: { knowledgeSourceId?: string; integrationDataId?: string; action: "add" | "remove" }
+): Promise<SessionKnowledgeOverride> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/knowledge/overrides`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to add override" }));
+    throw new Error(error.error || "Failed to add override");
+  }
+  return res.json();
+}
+
+export async function removeSessionKnowledgeOverride(sessionId: string, id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/knowledge/overrides/${id}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to remove override");
 }
