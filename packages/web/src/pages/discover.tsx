@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/sidebar";
 import { DiscoveryCard } from "@/components/discovery-card";
+import { DataSourceSelector } from "@/components/data-source-selector";
 import {
   getDiscoveryDashboard,
   triggerDiscoveryRun,
@@ -9,6 +10,7 @@ import {
   getAllProjects,
 } from "@/lib/api";
 import type { DiscoveryCluster, DiscoveryRun, ProjectWithSessions } from "@product-os/shared";
+import { MOCK_OKRS, MOCK_CUSTOMER_FEEDBACK, MOCK_INTERNAL_FEEDBACK, MOCK_METRICS } from "@product-os/shared";
 import { Compass, Play, Loader2, Info, Clock } from "lucide-react";
 
 export function DiscoverPage() {
@@ -16,11 +18,27 @@ export function DiscoverPage() {
   const [clusters, setClusters] = useState<DiscoveryCluster[]>([]);
   const [run, setRun] = useState<DiscoveryRun | null>(null);
   const [isMockData, setIsMockData] = useState(true);
+  const [isDemoData, setIsDemoData] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [projects, setProjects] = useState<ProjectWithSessions[]>([]);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [context, setContext] = useState<{
+    okrs: Array<{ objective: string; keyResults: string[] }>;
+    customerFeedback: string[];
+    internalFeedback?: Array<{ channel: string; author: string; message: string }>;
+    metrics?: Array<{ name: string; value: string; trend: string; delta: string; source: string; description: string }>;
+  }>({
+    okrs: MOCK_OKRS,
+    customerFeedback: MOCK_CUSTOMER_FEEDBACK,
+    internalFeedback: MOCK_INTERNAL_FEEDBACK,
+    metrics: MOCK_METRICS,
+  });
+
+  const handleContextChange = useCallback((newContext: typeof context) => {
+    setContext(newContext);
+  }, []);
 
   const loadDashboard = useCallback(async () => {
     try {
@@ -28,6 +46,7 @@ export function DiscoverPage() {
       setClusters(data.clusters);
       setRun(data.run);
       setIsMockData(data.isMockData);
+      setIsDemoData(data.isDemoData ?? false);
 
       // If a run is currently in progress, start polling
       if (data.run?.status === "running" || data.run?.status === "pending") {
@@ -58,6 +77,7 @@ export function DiscoverPage() {
           setClusters(data.clusters);
           setRun(data.run);
           setIsMockData(data.isMockData);
+          setIsDemoData(data.isDemoData ?? false);
         }
       } catch {
         // Ignore polling errors
@@ -80,7 +100,7 @@ export function DiscoverPage() {
     setIsRunning(true);
     setError(null);
     try {
-      const { runId } = await triggerDiscoveryRun();
+      const { runId } = await triggerDiscoveryRun(context);
       startPolling(runId);
     } catch (err) {
       setError((err as Error).message);
@@ -95,7 +115,7 @@ export function DiscoverPage() {
   };
 
   const handleStartSession = (cluster: DiscoveryCluster) => {
-    navigate("/", { state: { cluster } });
+    navigate("/imagine", { state: { cluster } });
   };
 
   const formatTimestamp = (ts: string) => {
@@ -160,8 +180,8 @@ export function DiscoverPage() {
             </div>
           </div>
 
-          {/* Mock data banner */}
-          {isMockData && !isLoading && (
+          {/* Sample / demo data banners */}
+          {isMockData && !isDemoData && !isLoading && (
             <div className="mb-6 p-4 rounded-xl border border-blue-500/20 bg-blue-500/10 flex items-start gap-3">
               <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
               <div>
@@ -169,8 +189,22 @@ export function DiscoverPage() {
                   Sample data
                 </p>
                 <p className="text-sm text-blue-600/80 mt-0.5">
-                  This is sample data based on mock feedback. Connect your tools
-                  in Settings and run an analysis to see real insights.
+                  This is sample data based on mock feedback. Select a data
+                  source below and run an analysis to see real insights.
+                </p>
+              </div>
+            </div>
+          )}
+          {isDemoData && !isMockData && !isLoading && (
+            <div className="mb-6 p-4 rounded-xl border border-amber-500/20 bg-amber-500/10 flex items-start gap-3">
+              <Info className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-amber-600">
+                  Analysis based on sample data
+                </p>
+                <p className="text-sm text-amber-600/80 mt-0.5">
+                  Connect and sync integrations in Settings for real signals, or
+                  switch to Live mode below.
                 </p>
               </div>
             </div>
@@ -229,6 +263,13 @@ export function DiscoverPage() {
                 Connect your tools in Settings and run an analysis to discover
                 opportunities.
               </p>
+            </div>
+          )}
+
+          {/* Data Source Selector */}
+          {!isLoading && (
+            <div className="mt-8">
+              <DataSourceSelector onContextChange={handleContextChange} />
             </div>
           )}
 

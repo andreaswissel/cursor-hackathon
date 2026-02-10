@@ -3,7 +3,6 @@ import { v4 as uuid } from "uuid";
 import { db } from "../db";
 import { users, integrations, integrationData, discoveryRuns, discoveryClusters } from "../db/schema";
 import { completion, getUserLLMConfig } from "./llm";
-
 // Guard against concurrent runs per user
 const runningUsers = new Set<string>();
 
@@ -15,6 +14,71 @@ interface LLMCluster {
   moneyQuotes: string[];
   sampleSignals: string[];
   sources: string[];
+}
+
+interface DiscoveryContext {
+  okrs: Array<{ objective: string; keyResults: string[] }>;
+  customerFeedback: string[];
+  internalFeedback?: Array<{ channel: string; author: string; message: string }>;
+  metrics?: Array<{ name: string; value: string; trend: string; delta: string; source: string; description: string }>;
+}
+
+function buildContextSignals(context: DiscoveryContext): string[] {
+  const signals: string[] = [];
+
+  for (const okr of context.okrs) {
+    signals.push(`[okrs] Objective: ${okr.objective} | Key Results: ${okr.keyResults.join(", ")}`);
+  }
+
+  for (const feedback of context.customerFeedback) {
+    signals.push(`[feedback] "${feedback}"`);
+  }
+
+  if (context.internalFeedback) {
+    for (const item of context.internalFeedback) {
+      signals.push(`[internal] ${item.channel} - ${item.author}: "${item.message}"`);
+    }
+  }
+
+  if (context.metrics) {
+    for (const metric of context.metrics) {
+      signals.push(`[metrics] ${metric.name}: ${metric.value} (${metric.trend} ${metric.delta}) - ${metric.description}`);
+    }
+  }
+
+  return signals;
+}
+
+function getDemoContext(): DiscoveryContext {
+  return {
+    okrs: [
+      { objective: "Increase user engagement", keyResults: ["Increase daily active usage by 20%", "Reduce time-to-insight by 40%"] },
+      { objective: "Reduce support burden", keyResults: ["Decrease support tickets by 30%", "Self-service resolution rate → 60%"] },
+    ],
+    customerFeedback: [
+      "I can never find the report I need. Search is completely broken. - Enterprise PM",
+      "Would love to just ASK questions about my data instead of clicking around. - Startup founder",
+      "Spent 20 minutes looking for last quarter's revenue breakdown. Gave up. - Sales lead",
+      "Too many clicks to get anywhere. Navigation is a maze. - Power user, 2yr customer",
+      "Your competitors have AI features now. When are you catching up? - Churned customer exit interview",
+      "The dashboard is powerful but I only use 10% because I can't find the rest. - Mid-market ops manager",
+    ],
+    internalFeedback: [
+      { channel: "#product", author: "Sarah (PM)", message: "Sales team keeps asking for better search. Lost 2 deals this quarter because prospects couldn't find features during demos." },
+      { channel: "#engineering", author: "Mike (Tech Lead)", message: "We've had 3 escalations this week about search performance. Current implementation won't scale." },
+      { channel: "#customer-success", author: "Lisa (CS Manager)", message: "NPS comments are brutal this month. 'Can't find anything' is the top complaint." },
+      { channel: "#leadership", author: "CEO", message: "Board is asking about our AI strategy. Competitors are shipping AI features monthly. We need to move faster." },
+      { channel: "#support", author: "Jake (Support Lead)", message: "40% of tickets this week are 'how do I find X'. We need better discoverability ASAP." },
+    ],
+    metrics: [
+      { name: "Search Usage", value: "12%", trend: "down", delta: "-3% MoM", source: "Mixpanel", description: "Users who use search at least once per session" },
+      { name: "Search Success Rate", value: "34%", trend: "down", delta: "-8% MoM", source: "Mixpanel", description: "Searches that result in a click within 30s" },
+      { name: "Avg. Time to Find Report", value: "4.2 min", trend: "up", delta: "+45s MoM", source: "Segment", description: "Time from login to opening first report" },
+      { name: "Feature Discovery Rate", value: "23%", trend: "flat", delta: "0% MoM", source: "Amplitude", description: "% of features used by average user" },
+      { name: "Support Tickets (Search)", value: "847", trend: "up", delta: "+22% MoM", source: "Zendesk", description: "Tickets mentioning search or navigation" },
+      { name: "User Retention (30d)", value: "61%", trend: "down", delta: "-4% MoM", source: "Mixpanel", description: "Users returning within 30 days" },
+    ],
+  };
 }
 
 const SYSTEM_PROMPT = `You are a product discovery analyst. You analyze customer signals (feedback, support tickets, Slack messages, etc.) to identify clustered pain points and generate value-framed feature suggestions.
@@ -94,7 +158,7 @@ function computeCompositeScore(cluster: LLMCluster, totalSignals: number): numbe
   );
 }
 
-export async function runDiscoveryAnalysis(userId: string): Promise<string> {
+export async function runDiscoveryAnalysis(userId: string, context?: DiscoveryContext): Promise<string> {
   if (runningUsers.has(userId)) {
     throw new Error("Analysis already in progress");
   }
@@ -114,42 +178,36 @@ export async function runDiscoveryAnalysis(userId: string): Promise<string> {
     const [user] = await db.select().from(users).where(eq(users.id, userId));
     if (!user) throw new Error("User not found");
 
-    // Get all integration data for this user
-    const userIntegrations = await db
-      .select({ id: integrations.id })
-      .from(integrations)
-      .where(eq(integrations.userId, userId));
+    let signals: string[];
 
-    if (userIntegrations.length === 0) {
-      await db.update(discoveryRuns).set({
-        status: "completed",
-        signalCount: 0,
-        clusterCount: 0,
-        completedAt: new Date(),
-      }).where(eq(discoveryRuns.id, runId));
-      return runId;
-    }
+    if (context) {
+      // Context provided from frontend — use it directly
+      signals = buildContextSignals(context);
+    } else {
+      // No context (backward compat, e.g. auto-triggered after integration sync)
+      // Try to read from integrationData DB table
+      const userIntegrations = await db
+        .select({ id: integrations.id })
+        .from(integrations)
+        .where(eq(integrations.userId, userId));
 
-    const integrationIds = userIntegrations.map(i => i.id);
-    const filteredData = await db
-      .select({
-        content: integrationData.content,
-        dataType: integrationData.dataType,
-        sourceName: integrationData.sourceName,
-      })
-      .from(integrationData)
-      .where(inArray(integrationData.integrationId, integrationIds));
+      let dbSignals: string[] = [];
+      if (userIntegrations.length > 0) {
+        const integrationIds = userIntegrations.map(i => i.id);
+        const filteredData = await db
+          .select({
+            content: integrationData.content,
+            dataType: integrationData.dataType,
+            sourceName: integrationData.sourceName,
+          })
+          .from(integrationData)
+          .where(inArray(integrationData.integrationId, integrationIds));
 
-    const signals = flattenSignals(filteredData);
+        dbSignals = flattenSignals(filteredData);
+      }
 
-    if (signals.length === 0) {
-      await db.update(discoveryRuns).set({
-        status: "completed",
-        signalCount: 0,
-        clusterCount: 0,
-        completedAt: new Date(),
-      }).where(eq(discoveryRuns.id, runId));
-      return runId;
+      // Fall back to demo data if no DB signals
+      signals = dbSignals.length > 0 ? dbSignals : buildContextSignals(getDemoContext());
     }
 
     // Call LLM

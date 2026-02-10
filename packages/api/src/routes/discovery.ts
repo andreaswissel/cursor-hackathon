@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { eq, desc } from "drizzle-orm";
 import { db } from "../db";
-import { discoveryRuns, discoveryClusters } from "../db/schema";
+import { discoveryRuns, discoveryClusters, integrations } from "../db/schema";
 import { requireAuth } from "../middleware/auth";
 import { runDiscoveryAnalysis, isRunning } from "../lib/discovery-analyzer";
 import { MOCK_DISCOVERY_CLUSTERS } from "../lib/mock-discovery";
@@ -14,6 +14,13 @@ router.use(requireAuth);
 router.get("/", async (req: Request, res: Response) => {
   const userId = req.user!.id;
 
+  // Check if user has any integrations (used for isDemoData flag)
+  const userIntegrations = await db
+    .select({ id: integrations.id })
+    .from(integrations)
+    .where(eq(integrations.userId, userId));
+  const hasIntegrations = userIntegrations.length > 0;
+
   // Find the latest completed run
   const [latestRun] = await db
     .select()
@@ -24,12 +31,12 @@ router.get("/", async (req: Request, res: Response) => {
 
   // If no run exists, return mock data
   if (!latestRun || latestRun.status === "failed") {
-    const hasAnyCompleted = latestRun ? false : true; // no runs at all
     if (!latestRun) {
       res.json({
         run: null,
         clusters: MOCK_DISCOVERY_CLUSTERS,
         isMockData: true,
+        isDemoData: false,
       });
       return;
     }
@@ -72,6 +79,7 @@ router.get("/", async (req: Request, res: Response) => {
         createdAt: c.createdAt.toISOString(),
       })),
       isMockData: false,
+      isDemoData: !hasIntegrations,
     });
     return;
   }
@@ -91,6 +99,7 @@ router.get("/", async (req: Request, res: Response) => {
       },
       clusters: MOCK_DISCOVERY_CLUSTERS,
       isMockData: true,
+      isDemoData: false,
     });
     return;
   }
@@ -109,6 +118,7 @@ router.get("/", async (req: Request, res: Response) => {
     },
     clusters: MOCK_DISCOVERY_CLUSTERS,
     isMockData: true,
+    isDemoData: false,
   });
 });
 
@@ -122,8 +132,8 @@ router.post("/run", async (req: Request, res: Response) => {
   }
 
   try {
-    // Start analysis in background (don't await)
-    const runId = await runDiscoveryAnalysis(userId);
+    const context = req.body?.context ?? undefined;
+    const runId = await runDiscoveryAnalysis(userId, context);
     res.json({ runId });
   } catch (error) {
     res.status(500).json({ error: (error as Error).message });

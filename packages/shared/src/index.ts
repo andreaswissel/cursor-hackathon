@@ -143,6 +143,7 @@ export interface DiscoveryDashboard {
   run: DiscoveryRun | null;
   clusters: DiscoveryCluster[];
   isMockData: boolean;
+  isDemoData: boolean;
 }
 
 // Mock data for demo

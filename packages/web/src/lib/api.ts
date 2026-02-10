@@ -417,10 +417,16 @@ export async function getDiscoveryDashboard(): Promise<DiscoveryDashboard> {
   return res.json();
 }
 
-export async function triggerDiscoveryRun(): Promise<{ runId: string }> {
+export async function triggerDiscoveryRun(context?: {
+  okrs: Array<{ objective: string; keyResults: string[] }>;
+  customerFeedback: string[];
+  internalFeedback?: Array<{ channel: string; author: string; message: string }>;
+  metrics?: Array<{ name: string; value: string; trend: string; delta: string; source: string; description: string }>;
+}): Promise<{ runId: string }> {
   const res = await fetch(`${API_BASE}/discovery/run`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(context ? { context } : {}),
   });
 
   if (!res.ok) {
