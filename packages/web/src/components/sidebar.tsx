@@ -17,6 +17,8 @@ import {
   X,
   Settings,
   Trash2,
+  Compass,
+  Lightbulb,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -164,6 +166,36 @@ export function Sidebar({ sessions = [], onSessionDeleted }: SidebarProps) {
 
         {/* Spacer for mobile header */}
         <div className="h-14 md:hidden" />
+
+      {/* Nav Links */}
+      <div className="px-3 pt-3 space-y-1 flex-shrink-0">
+        <Link
+          to="/"
+          onClick={() => setIsOpen(false)}
+          className={cn(
+            "flex items-center gap-2 px-3 py-2 w-full text-sm font-medium rounded-lg transition-colors",
+            location.pathname === "/"
+              ? "bg-secondary text-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+          )}
+        >
+          <Lightbulb className="w-4 h-4" />
+          Imagine
+        </Link>
+        <Link
+          to="/discover"
+          onClick={() => setIsOpen(false)}
+          className={cn(
+            "flex items-center gap-2 px-3 py-2 w-full text-sm font-medium rounded-lg transition-colors",
+            location.pathname === "/discover"
+              ? "bg-secondary text-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+          )}
+        >
+          <Compass className="w-4 h-4" />
+          Discover
+        </Link>
+      </div>
 
       {/* New Session Button */}
       <div className="p-3 flex-shrink-0">

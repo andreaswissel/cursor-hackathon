@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { FileText, Video } from "lucide-react";
+import { FileText, Video, Compass } from "lucide-react";
 import type { SessionMode } from "@product-os/shared";
 
 interface ModeSwitcherProps {
@@ -38,6 +38,20 @@ export function ModeSwitcher({ mode, onModeChange, disabled }: ModeSwitcherProps
       >
         <Video className="w-4 h-4" />
         Documentation
+      </button>
+      <button
+        onClick={() => onModeChange("discover")}
+        disabled={disabled}
+        className={cn(
+          "flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
+          mode === "discover"
+            ? "bg-background text-foreground shadow-sm"
+            : "text-muted-foreground hover:text-foreground",
+          disabled && "opacity-50 cursor-not-allowed"
+        )}
+      >
+        <Compass className="w-4 h-4" />
+        Discover
       </button>
     </div>
   );

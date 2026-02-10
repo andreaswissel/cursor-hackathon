@@ -1,7 +1,7 @@
 export type AgentType = "orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "product-marketing" | "doc-orchestrator" | "transcription" | "doc-generator";
 export type AgentStatus = "pending" | "running" | "waiting_input" | "completed" | "failed";
 export type SessionStatus = "pending" | "running" | "waiting_input" | "completed" | "failed";
-export type SessionMode = "idea-to-spec" | "documentation";
+export type SessionMode = "idea-to-spec" | "documentation" | "discover";
 export type DocPieceType = "feature" | "workflow" | "use-case" | "tutorial" | "reference";
 export type DocPieceStatus = "pending" | "accepted" | "declined" | "refined";
 
@@ -94,6 +94,44 @@ export interface SSEEvent {
   payload: unknown;
 }
 
+// Discovery mode types
+export type DiscoveryRunStatus = "pending" | "running" | "completed" | "failed";
+
+export interface DiscoveryRun {
+  id: string;
+  userId: string;
+  status: DiscoveryRunStatus;
+  signalCount: number;
+  clusterCount: number;
+  error?: string | null;
+  createdAt: string;
+  completedAt?: string | null;
+}
+
+export interface DiscoveryCluster {
+  id: string;
+  runId: string;
+  userId: string;
+  title: string;
+  summary: string;
+  featureSuggestion: string;
+  compositeScore: number;
+  signalCount: number;
+  painSeverity: number;
+  hasMoneyQuotes: boolean;
+  recencyScore: number;
+  moneyQuotes: string[];
+  sampleSignals: string[];
+  sources: string[];
+  createdAt: string;
+}
+
+export interface DiscoveryDashboard {
+  run: DiscoveryRun | null;
+  clusters: DiscoveryCluster[];
+  isMockData: boolean;
+}
+
 // Mock data for demo
 export const MOCK_OKRS = [
   {
@@ -136,4 +174,75 @@ export const MOCK_METRICS = [
   { name: "Feature Discovery Rate", value: "23%", trend: "flat", delta: "0% MoM", source: "Amplitude", description: "% of features used by average user" },
   { name: "Support Tickets (Search)", value: "847", trend: "up", delta: "+22% MoM", source: "Zendesk", description: "Tickets mentioning search or navigation" },
   { name: "User Retention (30d)", value: "61%", trend: "down", delta: "-4% MoM", source: "Mixpanel", description: "Users returning within 30 days" },
+];
+
+export const MOCK_DISCOVERY_CLUSTERS: DiscoveryCluster[] = [
+  {
+    id: "mock-1",
+    runId: "mock-run",
+    userId: "",
+    title: "Search is broken — users can't find reports or features",
+    summary: "Multiple signals from customers, support, and internal teams converge on a critical search/navigation failure. Users spend excessive time finding content, leading to churn risk and deal losses.",
+    featureSuggestion: "Enable users to find any report, feature, or data point instantly through AI-powered semantic search with natural language queries",
+    compositeScore: 92,
+    signalCount: 8,
+    painSeverity: 9,
+    hasMoneyQuotes: true,
+    recencyScore: 95,
+    moneyQuotes: [
+      "Your competitors have AI features now. When are you catching up? - Churned customer exit interview",
+      "Sales team keeps asking for better search. Lost 2 deals this quarter because prospects couldn't find features during demos.",
+    ],
+    sampleSignals: [
+      "I can never find the report I need. Search is completely broken. - Enterprise PM",
+      "Spent 20 minutes looking for last quarter's revenue breakdown. Gave up. - Sales lead",
+      "40% of tickets this week are 'how do I find X'. We need better discoverability ASAP.",
+    ],
+    sources: ["Customer Feedback", "Internal Slack", "Support Tickets"],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "mock-2",
+    runId: "mock-run",
+    userId: "",
+    title: "Users want conversational data access instead of click-heavy UI",
+    summary: "Users express desire to ask questions about their data naturally rather than navigating complex dashboard interfaces. Current UI only exposes 10% of capabilities to average users.",
+    featureSuggestion: "Enable users to ask natural language questions about their data and receive instant, contextual answers with supporting visualizations",
+    compositeScore: 78,
+    signalCount: 4,
+    painSeverity: 7,
+    hasMoneyQuotes: true,
+    recencyScore: 80,
+    moneyQuotes: [
+      "Board is asking about our AI strategy. Competitors are shipping AI features monthly. We need to move faster.",
+    ],
+    sampleSignals: [
+      "Would love to just ASK questions about my data instead of clicking around. - Startup founder",
+      "The dashboard is powerful but I only use 10% because I can't find the rest. - Mid-market ops manager",
+      "Too many clicks to get anywhere. Navigation is a maze. - Power user, 2yr customer",
+    ],
+    sources: ["Customer Feedback", "Internal Slack"],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "mock-3",
+    runId: "mock-run",
+    userId: "",
+    title: "Declining user retention linked to poor feature discoverability",
+    summary: "Product metrics show a concerning trend: search success rate is dropping, time-to-find is increasing, and 30-day retention is declining. Feature discovery rate is stuck at 23%, meaning users miss most of the product's value.",
+    featureSuggestion: "Enable users to discover relevant features through contextual, proactive suggestions based on their usage patterns and goals",
+    compositeScore: 65,
+    signalCount: 3,
+    painSeverity: 6,
+    hasMoneyQuotes: false,
+    recencyScore: 70,
+    moneyQuotes: [],
+    sampleSignals: [
+      "Search Success Rate: 34%, down -8% MoM",
+      "Feature Discovery Rate: 23%, flat",
+      "User Retention (30d): 61%, down -4% MoM",
+    ],
+    sources: ["Product Metrics"],
+    createdAt: new Date().toISOString(),
+  },
 ];
