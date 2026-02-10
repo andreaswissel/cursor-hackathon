@@ -14,9 +14,20 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Projects — organizational unit grouping sessions
+export const projects = pgTable("projects", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  name: text("name").default("Untitled Project").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const sessions = pgTable("sessions", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").references(() => users.id),
+  projectId: uuid("project_id").references(() => projects.id),
   idea: text("idea").notNull(),
   context: jsonb("context").$type<{
     okrs: Array<{ objective: string; keyResults: string[] }>;

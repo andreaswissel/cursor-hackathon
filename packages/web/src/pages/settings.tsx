@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/sidebar";
 import { useAuth } from "@/contexts/auth-context";
 import { Key, Loader2, Check, Trash2, Eye, EyeOff, Sparkles, Link2 } from "lucide-react";
-import { getAllSessions, type SessionSummary } from "@/lib/api";
+import { getAllProjects } from "@/lib/api";
+import type { ProjectWithSessions } from "@product-os/shared";
 import { cn } from "@/lib/utils";
 import { IntegrationsPanel } from "@/components/integrations-panel";
 
@@ -48,7 +49,7 @@ const PROVIDER_INFO: Record<Provider, { name: string; color: string; placeholder
 
 export function SettingsPage() {
   const { token } = useAuth();
-  const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [projects, setProjects] = useState<ProjectWithSessions[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [savingProvider, setSavingProvider] = useState<Provider | null>(null);
@@ -67,21 +68,21 @@ export function SettingsPage() {
     gemini: false,
   });
 
-  const refreshSessions = () => {
-    getAllSessions()
-      .then(({ sessions }) => setSessions(sessions))
+  const refreshProjects = () => {
+    getAllProjects()
+      .then(({ projects }) => setProjects(projects))
       .catch(console.error);
   };
 
   useEffect(() => {
     Promise.all([
-      getAllSessions(),
+      getAllProjects(),
       fetch(`${API_BASE}/settings`, {
         headers: { Authorization: `Bearer ${token}` },
       }).then((r) => r.json()),
     ])
-      .then(([{ sessions }, settingsData]) => {
-        setSessions(sessions);
+      .then(([{ projects: p }, settingsData]) => {
+        setProjects(p);
         setSettings(settingsData);
       })
       .catch(console.error)
@@ -187,7 +188,7 @@ export function SettingsPage() {
 
   return (
     <div className="flex h-screen">
-      <Sidebar sessions={sessions} onSessionDeleted={refreshSessions} />
+      <Sidebar projects={projects} onProjectCreated={refreshProjects} onProjectDeleted={refreshProjects} onSessionDeleted={refreshProjects} />
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-4 md:px-8 py-8 md:py-16 pt-20 md:pt-16">

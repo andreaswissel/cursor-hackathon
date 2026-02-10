@@ -1,4 +1,4 @@
-import type { SessionContext, Session, AgentType, DocumentationPiece, DocPieceStatus, SessionMode, DiscoveryDashboard, DiscoveryRun } from "@product-os/shared";
+import type { SessionContext, Session, AgentType, DocumentationPiece, DocPieceStatus, SessionMode, DiscoveryDashboard, DiscoveryRun, ProjectWithSessions } from "@product-os/shared";
 
 // In production, use the full API URL; in dev, proxy through Vite
 const API_BASE = import.meta.env.VITE_API_URL ||
@@ -47,14 +47,77 @@ export async function getAllSessions(): Promise<{ sessions: SessionSummary[] }> 
   return res.json();
 }
 
+// Project API functions
+
+export async function getAllProjects(): Promise<{ projects: ProjectWithSessions[] }> {
+  const res = await fetch(`${API_BASE}/projects`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to get projects");
+  }
+
+  return res.json();
+}
+
+export async function createProject(
+  name: string,
+  description?: string
+): Promise<ProjectWithSessions> {
+  const res = await fetch(`${API_BASE}/projects`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({ name, description }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to create project" }));
+    throw new Error(error.message || error.error || "Failed to create project");
+  }
+
+  return res.json();
+}
+
+export async function updateProject(
+  id: string,
+  data: { name?: string; description?: string }
+): Promise<ProjectWithSessions> {
+  const res = await fetch(`${API_BASE}/projects/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to update project" }));
+    throw new Error(error.message || error.error || "Failed to update project");
+  }
+
+  return res.json();
+}
+
+export async function deleteProject(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/projects/${id}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to delete project" }));
+    throw new Error(error.message || error.error || "Failed to delete project");
+  }
+}
+
 export async function createSession(
   idea: string,
-  context: SessionContext
+  context: SessionContext,
+  projectId?: string
 ): Promise<{ sessionId: string }> {
   const res = await fetch(`${API_BASE}/sessions`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-    body: JSON.stringify({ idea, context }),
+    body: JSON.stringify({ idea, context, projectId }),
   });
 
   if (!res.ok) {

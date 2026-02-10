@@ -1,8 +1,9 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
-import { deleteSession } from "@/lib/api";
+import { deleteSession, deleteProject, updateProject, createProject } from "@/lib/api";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import type { ProjectWithSessions } from "@product-os/shared";
 import {
   Zap,
   Plus,
@@ -19,16 +20,18 @@ import {
   Trash2,
   Compass,
   Lightbulb,
+  FolderOpen,
+  Folder,
+  ChevronRight,
+  ChevronDown,
+  Pencil,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface SidebarProps {
-  sessions?: Array<{
-    id: string;
-    idea: string;
-    status: string;
-    createdAt: string;
-  }>;
+  projects?: ProjectWithSessions[];
+  onProjectCreated?: () => void;
+  onProjectDeleted?: () => void;
   onSessionDeleted?: () => void;
 }
 
@@ -65,32 +68,79 @@ const STATUS_CONFIG = {
   },
 };
 
-export function Sidebar({ sessions = [], onSessionDeleted }: SidebarProps) {
+export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onSessionDeleted }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; idea: string } | null>(null);
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
+  const [deleteSessionConfirm, setDeleteSessionConfirm] = useState<{ id: string; idea: string } | null>(null);
+  const [deleteProjectConfirm, setDeleteProjectConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [renamingProjectId, setRenamingProjectId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [creatingProject, setCreatingProject] = useState(false);
   const [errorDialog, setErrorDialog] = useState<string | null>(null);
 
-  const handleDeleteClick = (e: React.MouseEvent, sessionId: string, idea: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDeleteConfirm({ id: sessionId, idea });
+  // Auto-expand project containing the current session
+  useEffect(() => {
+    const match = location.pathname.match(/^\/session\/(.+)$/);
+    if (match) {
+      const currentSessionId = match[1];
+      for (const project of projects) {
+        if (project.sessions.some((s) => s.id === currentSessionId)) {
+          setExpandedProjects((prev) => {
+            const next = new Set(prev);
+            next.add(project.id);
+            return next;
+          });
+          break;
+        }
+      }
+    }
+  }, [location.pathname, projects]);
+
+  const toggleProject = (projectId: string) => {
+    setExpandedProjects((prev) => {
+      const next = new Set(prev);
+      if (next.has(projectId)) {
+        next.delete(projectId);
+      } else {
+        next.add(projectId);
+      }
+      return next;
+    });
   };
 
-  const handleDeleteConfirm = async () => {
-    if (!deleteConfirm) return;
+  const handleNewProject = async () => {
+    setCreatingProject(true);
+    try {
+      await createProject("Untitled Project");
+      onProjectCreated?.();
+    } catch (error) {
+      console.error("Failed to create project:", error);
+      setErrorDialog("Failed to create project. Please try again.");
+    } finally {
+      setCreatingProject(false);
+    }
+  };
 
-    const sessionId = deleteConfirm.id;
-    setDeleteConfirm(null);
-    setDeletingId(sessionId);
+  const handleDeleteSessionClick = (e: React.MouseEvent, sessionId: string, idea: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDeleteSessionConfirm({ id: sessionId, idea });
+  };
+
+  const handleDeleteSessionConfirm = async () => {
+    if (!deleteSessionConfirm) return;
+
+    const sessionId = deleteSessionConfirm.id;
+    setDeleteSessionConfirm(null);
+    setDeletingSessionId(sessionId);
 
     try {
       await deleteSession(sessionId);
       onSessionDeleted?.();
-      // If we're on the deleted session's page, navigate home
       if (location.pathname === `/session/${sessionId}`) {
         navigate("/");
       }
@@ -98,22 +148,53 @@ export function Sidebar({ sessions = [], onSessionDeleted }: SidebarProps) {
       console.error("Failed to delete session:", error);
       setErrorDialog("Failed to delete session. Please try again.");
     } finally {
-      setDeletingId(null);
+      setDeletingSessionId(null);
     }
   };
 
-  // Group sessions by status
-  const groupedSessions = sessions.reduce(
-    (acc, session) => {
-      const status = session.status as keyof typeof STATUS_CONFIG;
-      if (!acc[status]) acc[status] = [];
-      acc[status].push(session);
-      return acc;
-    },
-    {} as Record<string, typeof sessions>
-  );
+  const handleDeleteProjectClick = (e: React.MouseEvent, projectId: string, name: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDeleteProjectConfirm({ id: projectId, name });
+  };
 
-  const statusOrder = ["running", "pending", "waiting_input", "completed", "failed"];
+  const handleDeleteProjectConfirm = async () => {
+    if (!deleteProjectConfirm) return;
+
+    const projectId = deleteProjectConfirm.id;
+    setDeleteProjectConfirm(null);
+
+    try {
+      await deleteProject(projectId);
+      onProjectDeleted?.();
+    } catch (error) {
+      console.error("Failed to delete project:", error);
+      setErrorDialog((error as Error).message || "Failed to delete project. Please try again.");
+    }
+  };
+
+  const handleRenameStart = (e: React.MouseEvent, projectId: string, currentName: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setRenamingProjectId(projectId);
+    setRenameValue(currentName);
+  };
+
+  const handleRenameSubmit = async (projectId: string) => {
+    const name = renameValue.trim();
+    setRenamingProjectId(null);
+    if (!name) return;
+
+    try {
+      await updateProject(projectId, { name });
+      onProjectCreated?.(); // reuse refresh callback
+    } catch (error) {
+      console.error("Failed to rename project:", error);
+      setErrorDialog("Failed to rename project. Please try again.");
+    }
+  };
+
+  const totalSessions = projects.reduce((sum, p) => sum + p.sessions.length, 0);
 
   return (
     <>
@@ -197,91 +278,161 @@ export function Sidebar({ sessions = [], onSessionDeleted }: SidebarProps) {
         </Link>
       </div>
 
-      {/* New Session Button */}
+      {/* New Project Button */}
       <div className="p-3 flex-shrink-0">
-        <Link
-          to="/"
-          className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium border rounded-lg hover:bg-secondary transition-colors"
+        <button
+          onClick={handleNewProject}
+          disabled={creatingProject}
+          className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium border rounded-lg hover:bg-secondary transition-colors disabled:opacity-50"
         >
-          New Session
+          {creatingProject ? "Creating..." : "New Project"}
           <Plus className="w-4 h-4" />
-        </Link>
+        </button>
       </div>
 
-      {/* Sessions List */}
+      {/* Projects List */}
       <div className="flex-1 overflow-y-auto">
         <div className="px-3 py-2">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Sessions
+            Projects
           </span>
         </div>
 
-        {statusOrder.map((status) => {
-          const sessionsInStatus = groupedSessions[status];
-          if (!sessionsInStatus?.length) return null;
-
-          const config = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG];
-          const Icon = config.icon;
+        {projects.map((project) => {
+          const isExpanded = expandedProjects.has(project.id);
+          const isDefault = project.name === "Untitled Project";
 
           return (
-            <div key={status} className="mb-2">
-              <div className="flex items-center gap-2 px-4 py-1.5">
-                <div className={cn("w-2 h-2 rounded-full", config.bgColor)} />
-                <span className="text-sm font-medium">{config.label}</span>
-                <span className="text-xs text-muted-foreground ml-auto bg-secondary px-1.5 py-0.5 rounded">
-                  {sessionsInStatus.length}
-                </span>
-              </div>
-              {sessionsInStatus.map((session) => (
-                <div key={session.id} className="group relative">
-                  <Link
-                    to={`/session/${session.id}`}
-                    onClick={() => setIsOpen(false)}
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-2 text-sm hover:bg-secondary transition-colors pr-10",
-                      location.pathname === `/session/${session.id}` &&
-                        "bg-secondary"
-                    )}
-                  >
-                    <Icon
-                      className={cn(
-                        "w-4 h-4 flex-shrink-0",
-                        config.color,
-                        status === "running" && "animate-spin-slow"
-                      )}
+            <div key={project.id} className="mb-1">
+              {/* Project header */}
+              <div className="group flex items-center gap-1 px-3 py-1.5 hover:bg-secondary/50 transition-colors rounded-md mx-1">
+                <button
+                  onClick={() => toggleProject(project.id)}
+                  className="flex items-center gap-1.5 flex-1 min-w-0 text-left"
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                  )}
+                  {isExpanded ? (
+                    <FolderOpen className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  ) : (
+                    <Folder className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  )}
+
+                  {renamingProjectId === project.id ? (
+                    <input
+                      type="text"
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onBlur={() => handleRenameSubmit(project.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleRenameSubmit(project.id);
+                        if (e.key === "Escape") setRenamingProjectId(null);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-sm font-medium bg-secondary border border-border rounded px-1 py-0 w-full min-w-0 focus:outline-none focus:ring-1 focus:ring-ring"
+                      autoFocus
                     />
-                    <span className="truncate text-muted-foreground">
-                      {session.idea.slice(0, 30)}
-                      {session.idea.length > 30 && "..."}
-                    </span>
-                  </Link>
-                  <button
-                    onClick={(e) => handleDeleteClick(e, session.id, session.idea)}
-                    disabled={deletingId === session.id}
-                    className={cn(
-                      "absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded",
-                      "text-muted-foreground hover:text-red-500 hover:bg-red-500/10",
-                      "opacity-0 group-hover:opacity-100 transition-opacity",
-                      deletingId === session.id && "opacity-100"
+                  ) : (
+                    <span className="text-sm font-medium truncate">{project.name}</span>
+                  )}
+                </button>
+
+                <span className="text-xs text-muted-foreground bg-secondary px-1.5 py-0.5 rounded flex-shrink-0">
+                  {project.sessions.length}
+                </span>
+
+                {/* Project actions (hover) */}
+                {renamingProjectId !== project.id && (
+                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                    <button
+                      onClick={(e) => handleRenameStart(e, project.id, project.name)}
+                      className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-secondary"
+                      title="Rename project"
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                    {!isDefault && (
+                      <button
+                        onClick={(e) => handleDeleteProjectClick(e, project.id, project.name)}
+                        className="p-1 rounded text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
+                        title="Delete project"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     )}
-                    title="Delete session"
-                  >
-                    {deletingId === session.id ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-3.5 h-3.5" />
-                    )}
-                  </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Nested sessions */}
+              {isExpanded && (
+                <div className="ml-3">
+                  {project.sessions.length === 0 ? (
+                    <div className="px-6 py-2 text-xs text-muted-foreground italic">
+                      No sessions yet
+                    </div>
+                  ) : (
+                    project.sessions.map((session) => {
+                      const config = STATUS_CONFIG[session.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.pending;
+                      const Icon = config.icon;
+                      const isActive = location.pathname === `/session/${session.id}`;
+
+                      return (
+                        <div key={session.id} className="group/session relative">
+                          <Link
+                            to={`/session/${session.id}`}
+                            onClick={() => setIsOpen(false)}
+                            className={cn(
+                              "flex items-center gap-2 pl-6 pr-10 py-1.5 text-sm hover:bg-secondary transition-colors rounded-md mx-1",
+                              isActive && "bg-secondary"
+                            )}
+                          >
+                            <Icon
+                              className={cn(
+                                "w-3.5 h-3.5 flex-shrink-0",
+                                config.color,
+                                session.status === "running" && "animate-spin-slow"
+                              )}
+                            />
+                            <span className="truncate text-muted-foreground text-xs">
+                              {session.idea.slice(0, 35)}
+                              {session.idea.length > 35 && "..."}
+                            </span>
+                          </Link>
+                          <button
+                            onClick={(e) => handleDeleteSessionClick(e, session.id, session.idea)}
+                            disabled={deletingSessionId === session.id}
+                            className={cn(
+                              "absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded",
+                              "text-muted-foreground hover:text-red-500 hover:bg-red-500/10",
+                              "opacity-0 group-hover/session:opacity-100 transition-opacity",
+                              deletingSessionId === session.id && "opacity-100"
+                            )}
+                            title="Delete session"
+                          >
+                            {deletingSessionId === session.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3 h-3" />
+                            )}
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
-              ))}
+              )}
             </div>
           );
         })}
 
-        {sessions.length === 0 && (
+        {projects.length === 0 && totalSessions === 0 && (
           <div className="px-4 py-8 text-center">
             <FileText className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">No sessions yet</p>
+            <p className="text-sm text-muted-foreground">No projects yet</p>
           </div>
         )}
       </div>
@@ -324,13 +475,25 @@ export function Sidebar({ sessions = [], onSessionDeleted }: SidebarProps) {
       </div>
     </aside>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Session Confirmation Dialog */}
       <ConfirmDialog
-        isOpen={!!deleteConfirm}
-        onClose={() => setDeleteConfirm(null)}
-        onConfirm={handleDeleteConfirm}
+        isOpen={!!deleteSessionConfirm}
+        onClose={() => setDeleteSessionConfirm(null)}
+        onConfirm={handleDeleteSessionConfirm}
         title="Delete session?"
-        description={`This will permanently delete "${deleteConfirm?.idea.slice(0, 40)}${(deleteConfirm?.idea.length ?? 0) > 40 ? "..." : ""}". This action cannot be undone.`}
+        description={`This will permanently delete "${deleteSessionConfirm?.idea.slice(0, 40)}${(deleteSessionConfirm?.idea.length ?? 0) > 40 ? "..." : ""}". This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+      />
+
+      {/* Delete Project Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={!!deleteProjectConfirm}
+        onClose={() => setDeleteProjectConfirm(null)}
+        onConfirm={handleDeleteProjectConfirm}
+        title="Delete project?"
+        description={`This will delete "${deleteProjectConfirm?.name}". All sessions will be moved to "Untitled Project". This action cannot be undone.`}
         confirmLabel="Delete"
         cancelLabel="Cancel"
         variant="destructive"

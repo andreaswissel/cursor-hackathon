@@ -17,6 +17,7 @@ import {
   getSessionUsageStats,
 } from "../middleware/rate-limit";
 import { videoUpload, deleteUploadedFile } from "../lib/upload";
+import { ensureDefaultProject } from "../lib/project-helpers";
 
 const router = Router();
 
@@ -35,14 +36,15 @@ router.get("/usage", async (req: Request, res: Response) => {
 router.get("/", async (req: Request, res: Response) => {
   const userId = req.user!.id;
   const sessions = await sessionStore.getAllForUser(userId);
-  res.json({ sessions });
+  res.json({ sessions: sessions.map((s) => ({ ...s, projectId: s.projectId })) });
 });
 
 // Create a new session
 router.post("/", checkSessionLimit, async (req: Request, res: Response) => {
-  const { idea, context } = req.body as {
+  const { idea, context, projectId } = req.body as {
     idea: string;
     context: SessionContext;
+    projectId?: string;
   };
 
   if (!idea || !context) {
@@ -51,8 +53,9 @@ router.post("/", checkSessionLimit, async (req: Request, res: Response) => {
   }
 
   const userId = req.user!.id;
+  const resolvedProjectId = projectId || await ensureDefaultProject(userId);
   const sessionId = uuid();
-  await sessionStore.create(sessionId, idea, context, userId);
+  await sessionStore.create(sessionId, idea, context, userId, "idea-to-spec", undefined, resolvedProjectId);
 
   // Start orchestrator in background (pass userId for slides generation)
   const orchestrator = new OrchestratorAgent();
@@ -70,7 +73,7 @@ router.post(
   checkSessionLimit,
   videoUpload.single("video"),
   async (req: Request, res: Response) => {
-    const { description } = req.body;
+    const { description, projectId } = req.body;
     const videoFile = req.file;
 
     if (!description) {
@@ -88,6 +91,7 @@ router.post(
 
     const userId = req.user!.id;
     const sessionId = uuid();
+    const resolvedProjectId = projectId || await ensureDefaultProject(userId);
 
     // Create video metadata
     const videoMetadata: VideoMetadata = {
@@ -104,7 +108,7 @@ router.post(
       customerFeedback: [],
     };
 
-    await sessionStore.create(sessionId, description, context, userId, "documentation", videoMetadata);
+    await sessionStore.create(sessionId, description, context, userId, "documentation", videoMetadata, resolvedProjectId);
 
     // Start doc orchestrator in background
     const docOrchestrator = new DocOrchestratorAgent();

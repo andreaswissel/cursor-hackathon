@@ -71,6 +71,7 @@ export interface PendingContinuation {
 export interface Session {
   id: string;
   userId?: string;
+  projectId?: string;
   idea: string;
   context: SessionContext;
   status: "pending" | "running" | "waiting_input" | "completed" | "failed";
@@ -139,12 +140,14 @@ class SessionStore {
     context: SessionContext,
     userId?: string,
     mode: SessionMode = "idea-to-spec",
-    videoMetadata?: VideoMetadata
+    videoMetadata?: VideoMetadata,
+    projectId?: string
   ): Promise<Session> {
     // Insert into database
     await db.insert(sessions).values({
       id,
       userId,
+      projectId,
       idea,
       context,
       status: "pending",
@@ -156,6 +159,7 @@ class SessionStore {
     const session: Session = {
       id,
       userId,
+      projectId,
       idea,
       context,
       status: "pending",
@@ -197,6 +201,7 @@ class SessionStore {
     const session: Session = {
       id: dbSession.id,
       userId: dbSession.userId ?? undefined,
+      projectId: dbSession.projectId ?? undefined,
       idea: dbSession.idea,
       context: dbSession.context as SessionContext,
       status: dbSession.status,
@@ -263,7 +268,7 @@ class SessionStore {
   }
 
   // Get all sessions for a specific user
-  async getAllForUser(userId: string): Promise<Array<{ id: string; idea: string; status: string; promptCount: number; mode: SessionMode; createdAt: Date }>> {
+  async getAllForUser(userId: string): Promise<Array<{ id: string; idea: string; status: string; promptCount: number; mode: SessionMode; projectId?: string; createdAt: Date }>> {
     const dbSessions = await db
       .select({
         id: sessions.id,
@@ -271,6 +276,7 @@ class SessionStore {
         status: sessions.status,
         promptCount: sessions.promptCount,
         mode: sessions.mode,
+        projectId: sessions.projectId,
         createdAt: sessions.createdAt,
       })
       .from(sessions)
@@ -283,6 +289,7 @@ class SessionStore {
       status: s.status,
       promptCount: s.promptCount,
       mode: s.mode as SessionMode,
+      projectId: s.projectId ?? undefined,
       createdAt: s.createdAt,
     }));
   }

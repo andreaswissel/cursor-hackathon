@@ -25,12 +25,12 @@ import {
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import {
-  getAllSessions,
+  getAllProjects,
   getDocumentationPieces,
   updateDocumentationPieceStatus,
   refineDocumentationPiece,
-  type SessionSummary,
 } from "@/lib/api";
+import type { ProjectWithSessions } from "@product-os/shared";
 import { CursorHandoff } from "@/components/cursor-handoff";
 
 const AGENT_ORDER: AgentType[] = [
@@ -99,7 +99,7 @@ export function SessionPage() {
   const { session, isConnected, error } = useSessionStream(sessionId ?? "");
   const [copied, setCopied] = useState(false);
   const [copiedUpdate, setCopiedUpdate] = useState(false);
-  const [allSessions, setAllSessions] = useState<SessionSummary[]>([]);
+  const [projects, setProjects] = useState<ProjectWithSessions[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<AgentType | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>("agents");
   const [documentationPieces, setDocumentationPieces] = useState<DocumentationPiece[]>([]);
@@ -107,9 +107,9 @@ export function SessionPage() {
 
   const isDocumentationMode = session?.mode === "documentation";
 
-  const refreshSessions = () => {
-    getAllSessions()
-      .then(({ sessions }) => setAllSessions(sessions))
+  const refreshProjects = () => {
+    getAllProjects()
+      .then(({ projects }) => setProjects(projects))
       .catch(console.error);
   };
 
@@ -122,7 +122,7 @@ export function SessionPage() {
   }, [sessionId, isDocumentationMode]);
 
   useEffect(() => {
-    refreshSessions();
+    refreshProjects();
   }, []);
 
   // Load documentation pieces when in documentation mode
@@ -198,7 +198,7 @@ export function SessionPage() {
   if (!sessionId) {
     return (
       <div className="flex h-screen">
-        <Sidebar />
+        <Sidebar projects={projects} onProjectCreated={refreshProjects} onProjectDeleted={refreshProjects} onSessionDeleted={refreshProjects} />
         <div className="flex-1 flex items-center justify-center pt-14 md:pt-0">
           <p className="text-muted-foreground">Invalid session</p>
         </div>
@@ -209,7 +209,7 @@ export function SessionPage() {
   if (error) {
     return (
       <div className="flex h-screen">
-        <Sidebar />
+        <Sidebar projects={projects} onProjectCreated={refreshProjects} onProjectDeleted={refreshProjects} onSessionDeleted={refreshProjects} />
         <div className="flex-1 flex items-center justify-center pt-14 md:pt-0">
           <div className="text-center space-y-2">
             <XCircle className="h-10 w-10 text-red-500 mx-auto" />
@@ -224,7 +224,7 @@ export function SessionPage() {
   if (!session) {
     return (
       <div className="flex h-screen">
-        <Sidebar />
+        <Sidebar projects={projects} onProjectCreated={refreshProjects} onProjectDeleted={refreshProjects} onSessionDeleted={refreshProjects} />
         <div className="flex-1 flex items-center justify-center pt-14 md:pt-0">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
@@ -249,7 +249,7 @@ export function SessionPage() {
 
   return (
     <div className="flex h-screen">
-      <Sidebar sessions={allSessions} onSessionDeleted={refreshSessions} />
+      <Sidebar projects={projects} onProjectCreated={refreshProjects} onProjectDeleted={refreshProjects} onSessionDeleted={refreshProjects} />
 
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Header with tabs */}
@@ -600,7 +600,7 @@ export function SessionPage() {
             sessionId={sessionId}
             agentType={selectedAgent}
             agent={session.agents[selectedAgent]}
-            onMessageSent={refreshSessions}
+            onMessageSent={refreshProjects}
           />
         )}
       </main>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { createSession, createDocumentationSession, getAllSessions, getUsageStats, getDiscoveryDashboard, triggerDiscoveryRun, getDiscoveryRunStatus, type SessionSummary, type UsageStats } from "@/lib/api";
-import { MOCK_OKRS, MOCK_CUSTOMER_FEEDBACK, MOCK_INTERNAL_FEEDBACK, MOCK_METRICS, type SessionMode, type DiscoveryCluster, type DiscoveryRun } from "@product-os/shared";
+import { createSession, createDocumentationSession, getAllProjects, getUsageStats, getDiscoveryDashboard, triggerDiscoveryRun, getDiscoveryRunStatus, type UsageStats } from "@/lib/api";
+import { MOCK_OKRS, MOCK_CUSTOMER_FEEDBACK, MOCK_INTERNAL_FEEDBACK, MOCK_METRICS, type SessionMode, type DiscoveryCluster, type DiscoveryRun, type ProjectWithSessions } from "@product-os/shared";
 import { Sidebar } from "@/components/sidebar";
 import { DataSourceSelector } from "@/components/data-source-selector";
 import { ModeSwitcher } from "@/components/mode-switcher";
@@ -19,7 +19,7 @@ export function HomePage() {
   const [description, setDescription] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [projects, setProjects] = useState<ProjectWithSessions[]>([]);
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [context, setContext] = useState<{
@@ -46,9 +46,9 @@ export function HomePage() {
     setContext(newContext);
   }, []);
 
-  const refreshSessions = () => {
-    getAllSessions()
-      .then(({ sessions }) => setSessions(sessions))
+  const refreshProjects = () => {
+    getAllProjects()
+      .then(({ projects }) => setProjects(projects))
       .catch(console.error);
 
     getUsageStats()
@@ -132,7 +132,7 @@ export function HomePage() {
   };
 
   useEffect(() => {
-    refreshSessions();
+    refreshProjects();
     loadDiscoveryDashboard();
 
     return () => {
@@ -190,7 +190,7 @@ export function HomePage() {
 
   return (
     <div className="flex h-screen">
-      <Sidebar sessions={sessions} onSessionDeleted={refreshSessions} />
+      <Sidebar projects={projects} onProjectCreated={refreshProjects} onProjectDeleted={refreshProjects} onSessionDeleted={refreshProjects} />
 
       <main className="flex-1 overflow-y-auto">
         {/* Add top padding on mobile for fixed header */}

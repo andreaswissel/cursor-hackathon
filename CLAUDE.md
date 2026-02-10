@@ -4,6 +4,8 @@
 
 Product OS is a multi-agent AI product management platform. Users submit product ideas which are processed through a pipeline of specialized AI agents (Discovery → Strategy → Spec → GTM → Product Marketing). It also supports video-driven documentation generation.
 
+**Projects** are the primary organizational unit. A project groups related sessions (idea-to-spec chats, docs, discovery research). Every user gets an automatic "Untitled Project" for ungrouped work.
+
 ## Architecture
 
 **Monorepo** using Bun workspaces with three packages:
@@ -65,6 +67,7 @@ docker compose up -d     # Start local PostgreSQL if needed (port 5434)
 | Database columns | snake_case | `created_at`, `user_id` |
 | Types/interfaces | PascalCase | `AgentInput`, `SessionContext` |
 | Agent classes | PascalCase with suffix | `DiscoveryAgent`, `BaseAgent` |
+| Project helpers | camelCase | `ensureDefaultProject()` |
 
 ### Frontend (packages/web)
 
@@ -105,6 +108,7 @@ docker compose up -d     # Start local PostgreSQL if needed (port 5434)
 - **ORM:** Drizzle with PostgreSQL dialect
 - **Schema location:** `packages/api/src/db/schema.ts`
 - **Migrations:** `packages/api/drizzle/` — generated via `bun run db:generate`
+- **Key tables:** `users`, `projects` (org unit), `sessions` (has `project_id` FK), `agent_runs`, `outputs`, `messages`, `documentation_pieces`
 - **JSONB columns** for flexible nested data (context, metadata, logs, refinementHistory)
 - **Config:** `packages/api/drizzle.config.ts` — reads `DATABASE_URL` from env
 - **Hosted:** Neon PostgreSQL — no Docker needed for local dev. `DATABASE_URL` in `.env` points to Neon.

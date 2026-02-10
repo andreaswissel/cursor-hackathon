@@ -57,6 +57,13 @@
       "when": 1770713623148,
       "tag": "0007_misty_vivisector",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1770716639182,
+      "tag": "0008_charming_fat_cobra",
+      "breakpoints": true
     }
   ]
 }

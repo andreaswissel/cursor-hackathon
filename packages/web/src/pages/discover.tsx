@@ -6,10 +6,9 @@ import {
   getDiscoveryDashboard,
   triggerDiscoveryRun,
   getDiscoveryRunStatus,
-  getAllSessions,
-  type SessionSummary,
+  getAllProjects,
 } from "@/lib/api";
-import type { DiscoveryCluster, DiscoveryRun } from "@product-os/shared";
+import type { DiscoveryCluster, DiscoveryRun, ProjectWithSessions } from "@product-os/shared";
 import { Compass, Play, Loader2, Info, Clock } from "lucide-react";
 
 export function DiscoverPage() {
@@ -20,7 +19,7 @@ export function DiscoverPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sessions, setSessions] = useState<SessionSummary[]>([]);
+  const [projects, setProjects] = useState<ProjectWithSessions[]>([]);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadDashboard = useCallback(async () => {
@@ -68,8 +67,8 @@ export function DiscoverPage() {
 
   useEffect(() => {
     loadDashboard();
-    getAllSessions()
-      .then(({ sessions }) => setSessions(sessions))
+    getAllProjects()
+      .then(({ projects }) => setProjects(projects))
       .catch(console.error);
 
     return () => {
@@ -89,9 +88,9 @@ export function DiscoverPage() {
     }
   };
 
-  const refreshSessions = () => {
-    getAllSessions()
-      .then(({ sessions }) => setSessions(sessions))
+  const refreshProjects = () => {
+    getAllProjects()
+      .then(({ projects }) => setProjects(projects))
       .catch(console.error);
   };
 
@@ -114,7 +113,7 @@ export function DiscoverPage() {
 
   return (
     <div className="flex h-screen">
-      <Sidebar sessions={sessions} onSessionDeleted={refreshSessions} />
+      <Sidebar projects={projects} onProjectCreated={refreshProjects} onProjectDeleted={refreshProjects} onSessionDeleted={refreshProjects} />
 
       <main className="flex-1 overflow-y-auto">
         {/* Add top padding on mobile for fixed header */}

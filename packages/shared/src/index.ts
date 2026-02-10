@@ -66,6 +66,7 @@ export interface Session {
   status: SessionStatus;
   promptCount?: number;
   mode?: SessionMode;
+  projectId?: string;
   videoMetadata?: VideoMetadata;
   agents: Record<AgentType, AgentState>;
   outputs: {
@@ -77,6 +78,18 @@ export interface Session {
   };
   documentationPieces?: DocumentationPiece[];
   createdAt: string;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  description?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectWithSessions extends Project {
+  sessions: Array<{ id: string; idea: string; status: string; mode?: SessionMode; createdAt: string }>;
 }
 
 export interface SSEEvent {
