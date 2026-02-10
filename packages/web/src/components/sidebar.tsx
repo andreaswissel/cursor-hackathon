@@ -312,6 +312,15 @@ export function Sidebar({ sessions = [], onSessionDeleted }: SidebarProps) {
           <LogOut className="w-4 h-4" />
           Sign out
         </button>
+        <div className="px-3 pt-1 text-xs text-muted-foreground">
+          <a href="/privacy" className="underline hover:text-foreground transition-colors">
+            Privacy
+          </a>
+          {" · "}
+          <a href="/restricted-data" className="underline hover:text-foreground transition-colors">
+            Restricted Data
+          </a>
+        </div>
       </div>
     </aside>
 

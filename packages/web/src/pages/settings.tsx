@@ -202,6 +202,21 @@ export function SettingsPage() {
             </div>
           ) : (
             <div className="space-y-6">
+              <div className="rounded-xl border bg-card p-6">
+                <h2 className="font-semibold mb-2">Data & Privacy</h2>
+                <p className="text-sm text-muted-foreground mb-4">
+                  This workspace is not configured for sensitive personal data by default.
+                </p>
+                <div className="flex flex-wrap gap-3 text-sm">
+                  <a href="/privacy" className="underline hover:text-foreground transition-colors">
+                    Privacy Policy
+                  </a>
+                  <a href="/restricted-data" className="underline hover:text-foreground transition-colors">
+                    Restricted Data Notice
+                  </a>
+                </div>
+              </div>
+
               {/* Provider Cards */}
               {providers.map((provider) => {
                 const info = PROVIDER_INFO[provider];

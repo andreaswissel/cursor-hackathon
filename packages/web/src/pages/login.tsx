@@ -3,6 +3,8 @@ import { useNavigate, Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/auth-context";
 import { Zap, ArrowRight, Loader2 } from "lucide-react";
 
+const DATA_ACK_STORAGE_KEY = "productos_data_ack_v1";
+
 // Google icon component
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -24,6 +26,8 @@ export function LoginPage() {
   const [needsPassword, setNeedsPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [requiresDataAck, setRequiresDataAck] = useState(true);
+  const [dataAckChecked, setDataAckChecked] = useState(false);
 
   // Check for OAuth error in URL
   useEffect(() => {
@@ -34,6 +38,14 @@ export function LoginPage() {
       window.history.replaceState({}, "", "/login");
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    const hasAccepted = window.localStorage.getItem(DATA_ACK_STORAGE_KEY) === "true";
+    if (hasAccepted) {
+      setRequiresDataAck(false);
+      setDataAckChecked(true);
+    }
+  }, []);
 
   // Redirect if already logged in
   if (authLoading) {
@@ -57,7 +69,14 @@ export function LoginPage() {
     setError(null);
 
     try {
+      if (requiresDataAck && !dataAckChecked) {
+        throw new Error("Please confirm data responsibility before continuing.");
+      }
+
       await login(email, needsPassword ? password : undefined);
+      if (requiresDataAck && dataAckChecked) {
+        window.localStorage.setItem(DATA_ACK_STORAGE_KEY, "true");
+      }
       navigate("/");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Login failed";
@@ -70,6 +89,14 @@ export function LoginPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleGoogleLogin = () => {
+    if (requiresDataAck && !dataAckChecked) return;
+    if (requiresDataAck && dataAckChecked) {
+      window.localStorage.setItem(DATA_ACK_STORAGE_KEY, "true");
+    }
+    loginWithGoogle();
   };
 
   return (
@@ -92,12 +119,27 @@ export function LoginPage() {
         {/* Google Sign In */}
         <button
           type="button"
-          onClick={loginWithGoogle}
+          onClick={handleGoogleLogin}
+          disabled={requiresDataAck && !dataAckChecked}
           className="w-full flex items-center justify-center gap-3 rounded-xl border bg-card px-4 py-3 text-sm font-medium hover:bg-secondary/50 transition-colors"
         >
           <GoogleIcon className="w-5 h-5" />
           Continue with Google
         </button>
+
+        {requiresDataAck && (
+          <label className="mt-4 flex items-start gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={dataAckChecked}
+              onChange={(e) => setDataAckChecked(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-border"
+            />
+            <span>
+              I understand I must only upload data I am authorized to process.
+            </span>
+          </label>
+        )}
 
         {/* Divider */}
         <div className="relative my-6">
@@ -179,6 +221,10 @@ export function LoginPage() {
           <p className="mt-3">
             <a href="/privacy" className="underline hover:text-foreground transition-colors">
               Privacy Policy
+            </a>
+            {" · "}
+            <a href="/restricted-data" className="underline hover:text-foreground transition-colors">
+              Restricted Data Notice
             </a>
           </p>
         </div>

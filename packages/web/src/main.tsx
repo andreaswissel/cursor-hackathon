@@ -11,6 +11,7 @@ import { AuthCallbackPage } from "./pages/auth-callback";
 import { SettingsPage } from "./pages/settings";
 import { PrivacyPage } from "./pages/privacy";
 import { DiscoverPage } from "./pages/discover";
+import { RestrictedDataPage } from "./pages/restricted-data";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -20,6 +21,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/restricted-data" element={<RestrictedDataPage />} />
           <Route
             path="/"
             element={

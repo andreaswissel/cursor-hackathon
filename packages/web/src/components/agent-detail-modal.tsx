@@ -530,6 +530,12 @@ export function AgentDetailModal({
               <p className="text-[10px] text-muted-foreground/60 mt-2 text-center">
                 Enter to send · Shift+Enter for new line · Esc to close
               </p>
+              <p className="text-[10px] text-muted-foreground mt-1 text-center">
+                Do not include sensitive personal data.{" "}
+                <a href="/restricted-data" className="underline hover:text-foreground transition-colors">
+                  Restricted data notice
+                </a>
+              </p>
             </div>
           </div>
         </div>

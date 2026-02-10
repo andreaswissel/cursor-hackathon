@@ -248,34 +248,42 @@ export function HomePage() {
             <form onSubmit={handleSubmit} className="mb-12">
               {mode === "idea-to-spec" ? (
                 // Idea to Spec mode
-                <div className="rounded-xl border bg-card p-1">
-                  <textarea
-                    value={idea}
-                    onChange={(e) => setIdea(e.target.value)}
-                    placeholder="Describe your product idea..."
-                    className="w-full min-h-[140px] px-4 py-3 text-base bg-transparent resize-none focus:outline-none placeholder:text-muted-foreground/50"
-                    disabled={isLoading || (usageStats !== null && !usageStats.canCreateSession)}
-                  />
-                  <div className="flex items-center justify-between px-3 py-2 border-t">
-                    <span className="text-xs text-muted-foreground">
-                      {usageStats ? `${usageStats.sessionCount}/${usageStats.maxSessions === null ? "unlimited" : usageStats.maxSessions} sessions used` : "Press Enter to submit"}
-                    </span>
-                    <button
-                      type="submit"
-                      disabled={isLoading || !canSubmit || (usageStats !== null && !usageStats.canCreateSession)}
-                      className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {isLoading ? (
-                        "Starting..."
-                      ) : (
-                        <>
-                          Launch Agents
-                          <ArrowRight className="w-4 h-4" />
-                        </>
-                      )}
-                    </button>
+                <>
+                  <div className="rounded-xl border bg-card p-1">
+                    <textarea
+                      value={idea}
+                      onChange={(e) => setIdea(e.target.value)}
+                      placeholder="Describe your product idea..."
+                      className="w-full min-h-[140px] px-4 py-3 text-base bg-transparent resize-none focus:outline-none placeholder:text-muted-foreground/50"
+                      disabled={isLoading || (usageStats !== null && !usageStats.canCreateSession)}
+                    />
+                    <div className="flex items-center justify-between px-3 py-2 border-t">
+                      <span className="text-xs text-muted-foreground">
+                        {usageStats ? `${usageStats.sessionCount}/${usageStats.maxSessions === null ? "unlimited" : usageStats.maxSessions} sessions used` : "Press Enter to submit"}
+                      </span>
+                      <button
+                        type="submit"
+                        disabled={isLoading || !canSubmit || (usageStats !== null && !usageStats.canCreateSession)}
+                        className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {isLoading ? (
+                          "Starting..."
+                        ) : (
+                          <>
+                            Launch Agents
+                            <ArrowRight className="w-4 h-4" />
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
-                </div>
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    Do not upload sensitive personal data unless your workspace is explicitly configured for it.{" "}
+                    <a href="/restricted-data" className="underline hover:text-foreground transition-colors">
+                      Restricted data examples
+                    </a>
+                  </p>
+                </>
               ) : (
                 // Documentation mode
                 <div className="space-y-4">
@@ -312,6 +320,12 @@ export function HomePage() {
                       </button>
                     </div>
                   </div>
+                  <p className="text-xs text-muted-foreground text-center">
+                    Only include details you are authorized to share.{" "}
+                    <a href="/restricted-data" className="underline hover:text-foreground transition-colors">
+                      Restricted data examples
+                    </a>
+                  </p>
                 </div>
               )}
             </form>

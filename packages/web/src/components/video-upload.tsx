@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Video, Upload, X, FileVideo, AlertCircle } from "lucide-react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 interface VideoUploadProps {
   onFileSelect: (file: File | null) => void;
@@ -15,6 +16,8 @@ const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 export function VideoUpload({ onFileSelect, selectedFile, disabled }: VideoUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const validateFile = useCallback((file: File): string | null => {
@@ -35,9 +38,10 @@ export function VideoUpload({ onFileSelect, selectedFile, disabled }: VideoUploa
         setError(validationError);
         return;
       }
-      onFileSelect(file);
+      setPendingFile(file);
+      setIsConfirmOpen(true);
     },
-    [validateFile, onFileSelect]
+    [validateFile]
   );
 
   const handleDrop = useCallback(
@@ -82,6 +86,18 @@ export function VideoUpload({ onFileSelect, selectedFile, disabled }: VideoUploa
       inputRef.current.value = "";
     }
   }, [onFileSelect]);
+
+  const handleConfirmUpload = useCallback(() => {
+    if (!pendingFile) return;
+    onFileSelect(pendingFile);
+    setPendingFile(null);
+    setIsConfirmOpen(false);
+  }, [onFileSelect, pendingFile]);
+
+  const handleCancelUpload = useCallback(() => {
+    setPendingFile(null);
+    setIsConfirmOpen(false);
+  }, []);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024 * 1024) {
@@ -180,6 +196,23 @@ export function VideoUpload({ onFileSelect, selectedFile, disabled }: VideoUploa
           <p className="text-sm text-red-500">{error}</p>
         </div>
       )}
+
+      {/* Inline data-safety reminder */}
+      <p className="text-xs text-muted-foreground text-center">
+        Do not upload sensitive personal data unless this workspace is explicitly approved for it.
+      </p>
+
+      {/* Just-in-time upload warning */}
+      <ConfirmDialog
+        isOpen={isConfirmOpen}
+        onClose={handleCancelUpload}
+        onConfirm={handleConfirmUpload}
+        title="Before you upload"
+        description="Make sure this file does not include restricted sensitive data (like health data, government IDs, payment card data, passwords, or children's data) unless your workspace is approved for it."
+        confirmLabel="Continue Upload"
+        cancelLabel="Cancel"
+        variant="info"
+      />
     </div>
   );
 }
