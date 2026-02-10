@@ -6,7 +6,11 @@ const API_BASE = import.meta.env.VITE_API_URL ||
 
 function getAuthHeaders(): HeadersInit {
   const token = localStorage.getItem("auth_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  const teamId = localStorage.getItem("active_team_id");
+  const headers: HeadersInit = {};
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (teamId) headers["X-Team-Id"] = teamId;
+  return headers;
 }
 
 export interface SessionSummary {
@@ -516,4 +520,152 @@ export async function saveOnboardingPreferences(
     const error = await res.json().catch(() => ({ error: "Failed to save preferences" }));
     throw new Error(error.message || error.error || "Failed to save preferences");
   }
+}
+
+// ============================================================
+// Profile API
+// ============================================================
+
+export async function updateProfile(data: { displayName?: string; avatarUrl?: string }): Promise<void> {
+  const res = await fetch(`${API_BASE}/auth/profile`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to update profile" }));
+    throw new Error(error.error || "Failed to update profile");
+  }
+}
+
+// ============================================================
+// Team API
+// ============================================================
+
+export async function getTeams(): Promise<{ teams: Array<{ id: string; name: string; slug: string; avatarUrl: string | null; role: string; createdAt: string; updatedAt: string }> }> {
+  const res = await fetch(`${API_BASE}/teams`, { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch teams");
+  return res.json();
+}
+
+export async function createTeam(name: string): Promise<{ id: string; name: string; slug: string }> {
+  const res = await fetch(`${API_BASE}/teams`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to create team" }));
+    throw new Error(error.error || "Failed to create team");
+  }
+  return res.json();
+}
+
+export async function getTeam(teamId: string): Promise<{ team: any; members: any[]; invites: any[] }> {
+  const res = await fetch(`${API_BASE}/teams/${teamId}`, { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch team");
+  return res.json();
+}
+
+export async function updateTeam(teamId: string, data: { name?: string; slug?: string; avatarUrl?: string }): Promise<any> {
+  const res = await fetch(`${API_BASE}/teams/${teamId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to update team" }));
+    throw new Error(error.error || "Failed to update team");
+  }
+  return res.json();
+}
+
+export async function deleteTeam(teamId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/teams/${teamId}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to delete team" }));
+    throw new Error(error.error || "Failed to delete team");
+  }
+}
+
+export async function updateMemberRole(teamId: string, userId: string, role: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/teams/${teamId}/members/${userId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({ role }),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to update role" }));
+    throw new Error(error.error || "Failed to update role");
+  }
+}
+
+export async function removeMember(teamId: string, userId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/teams/${teamId}/members/${userId}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to remove member" }));
+    throw new Error(error.error || "Failed to remove member");
+  }
+}
+
+export async function createInvite(teamId: string, email?: string, role?: string): Promise<{ token: string; id: string }> {
+  const res = await fetch(`${API_BASE}/teams/${teamId}/invites`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({ email, role }),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to create invite" }));
+    throw new Error(error.error || "Failed to create invite");
+  }
+  return res.json();
+}
+
+export async function revokeInvite(teamId: string, inviteId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/teams/${teamId}/invites/${inviteId}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to revoke invite");
+}
+
+export async function getPendingInvites(): Promise<{ invites: any[] }> {
+  const res = await fetch(`${API_BASE}/invites/pending`, { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch invites");
+  return res.json();
+}
+
+export async function getInviteByToken(token: string): Promise<any> {
+  const res = await fetch(`${API_BASE}/invites/${token}`, { headers: getAuthHeaders() });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Invite not found" }));
+    throw new Error(error.error || "Invite not found");
+  }
+  return res.json();
+}
+
+export async function acceptInvite(token: string): Promise<{ success: boolean; teamId?: string }> {
+  const res = await fetch(`${API_BASE}/invites/${token}/accept`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to accept invite" }));
+    throw new Error(error.error || "Failed to accept invite");
+  }
+  return res.json();
+}
+
+export async function declineInvite(token: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/invites/${token}/decline`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to decline invite");
 }

@@ -3,6 +3,8 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
 import { deleteSession, deleteProject, updateProject, createProject } from "@/lib/api";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { TeamSwitcher } from "@/components/team-switcher";
+import { UserAvatar } from "@/components/user-avatar";
 import type { ProjectWithSessions } from "@product-os/shared";
 import {
   Zap,
@@ -72,7 +74,7 @@ const STATUS_CONFIG = {
 export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onSessionDeleted }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, activeTeamId } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
@@ -197,6 +199,137 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
 
   const totalSessions = projects.reduce((sum, p) => sum + p.sessions.length, 0);
 
+  function renderProject(project: ProjectWithSessions) {
+    const isExpanded = expandedProjects.has(project.id);
+    const isDefault = project.name === "Untitled Project";
+
+    return (
+      <div key={project.id} className="mb-1">
+        {/* Project header */}
+        <div className="group flex items-center gap-1 px-3 py-1.5 hover:bg-secondary/50 transition-colors rounded-md mx-1">
+          <button
+            onClick={() => toggleProject(project.id)}
+            className="flex items-center gap-1.5 flex-1 min-w-0 text-left"
+          >
+            {isExpanded ? (
+              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+            ) : (
+              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+            )}
+            {isExpanded ? (
+              <FolderOpen className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            ) : (
+              <Folder className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            )}
+
+            {renamingProjectId === project.id ? (
+              <input
+                type="text"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onBlur={() => handleRenameSubmit(project.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleRenameSubmit(project.id);
+                  if (e.key === "Escape") setRenamingProjectId(null);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                className="text-sm font-medium bg-secondary border border-border rounded px-1 py-0 w-full min-w-0 focus:outline-none focus:ring-1 focus:ring-ring"
+                autoFocus
+              />
+            ) : (
+              <span className="text-sm font-medium truncate">{project.name}</span>
+            )}
+          </button>
+
+          <span className="text-xs text-muted-foreground bg-secondary px-1.5 py-0.5 rounded flex-shrink-0">
+            {project.sessions.length}
+          </span>
+
+          {/* Project actions (hover) */}
+          {renamingProjectId !== project.id && (
+            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+              <button
+                onClick={(e) => handleRenameStart(e, project.id, project.name)}
+                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-secondary"
+                title="Rename project"
+              >
+                <Pencil className="w-3 h-3" />
+              </button>
+              {!isDefault && (
+                <button
+                  onClick={(e) => handleDeleteProjectClick(e, project.id, project.name)}
+                  className="p-1 rounded text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
+                  title="Delete project"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Nested sessions */}
+        {isExpanded && (
+          <div className="ml-3">
+            {project.sessions.length === 0 ? (
+              <div className="px-6 py-2 text-xs text-muted-foreground italic">
+                No sessions yet
+              </div>
+            ) : (
+              project.sessions.map((session) => {
+                const config = STATUS_CONFIG[session.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.pending;
+                const Icon = config.icon;
+                const isActive = location.pathname === `/session/${session.id}`;
+
+                return (
+                  <div key={session.id} className="group/session relative">
+                    <Link
+                      to={`/session/${session.id}`}
+                      onClick={() => setIsOpen(false)}
+                      className={cn(
+                        "flex items-center gap-2 pl-6 pr-10 py-1.5 text-sm hover:bg-secondary transition-colors rounded-md mx-1",
+                        isActive && "bg-secondary"
+                      )}
+                    >
+                      <Icon
+                        className={cn(
+                          "w-3.5 h-3.5 flex-shrink-0",
+                          config.color,
+                          session.status === "running" && "animate-spin-slow"
+                        )}
+                      />
+                      <span className="truncate text-muted-foreground text-xs">
+                        {session.idea.slice(0, 35)}
+                        {session.idea.length > 35 && "..."}
+                      </span>
+                    </Link>
+                    <button
+                      onClick={(e) => handleDeleteSessionClick(e, session.id, session.idea)}
+                      disabled={deletingSessionId === session.id}
+                      className={cn(
+                        "absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded",
+                        "text-muted-foreground hover:text-red-500 hover:bg-red-500/10",
+                        "opacity-0 group-hover/session:opacity-100 transition-opacity",
+                        deletingSessionId === session.id && "opacity-100"
+                      )}
+                      title="Delete session"
+                    >
+                      {deletingSessionId === session.id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-3 h-3" />
+                      )}
+                    </button>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <>
       {/* Mobile header */}
@@ -248,6 +381,9 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
 
         {/* Spacer for mobile header */}
         <div className="h-14 md:hidden" />
+
+      {/* Team Switcher */}
+      <TeamSwitcher />
 
       {/* Nav Links */}
       <div className="px-3 pt-3 space-y-1 flex-shrink-0">
@@ -306,142 +442,29 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
 
       {/* Projects List */}
       <div className="flex-1 overflow-y-auto">
+        {/* Team projects section (when a team is active) */}
+        {activeTeamId && (() => {
+          const teamProjects = projects.filter((p: any) => p.teamId === activeTeamId);
+          if (teamProjects.length === 0) return null;
+          return (
+            <>
+              <div className="px-3 py-2">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Team Projects
+                </span>
+              </div>
+              {teamProjects.map((project) => renderProject(project))}
+            </>
+          );
+        })()}
+
         <div className="px-3 py-2">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Projects
+            {activeTeamId ? "Personal Projects" : "Projects"}
           </span>
         </div>
 
-        {projects.map((project) => {
-          const isExpanded = expandedProjects.has(project.id);
-          const isDefault = project.name === "Untitled Project";
-
-          return (
-            <div key={project.id} className="mb-1">
-              {/* Project header */}
-              <div className="group flex items-center gap-1 px-3 py-1.5 hover:bg-secondary/50 transition-colors rounded-md mx-1">
-                <button
-                  onClick={() => toggleProject(project.id)}
-                  className="flex items-center gap-1.5 flex-1 min-w-0 text-left"
-                >
-                  {isExpanded ? (
-                    <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                  ) : (
-                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                  )}
-                  {isExpanded ? (
-                    <FolderOpen className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  ) : (
-                    <Folder className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  )}
-
-                  {renamingProjectId === project.id ? (
-                    <input
-                      type="text"
-                      value={renameValue}
-                      onChange={(e) => setRenameValue(e.target.value)}
-                      onBlur={() => handleRenameSubmit(project.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleRenameSubmit(project.id);
-                        if (e.key === "Escape") setRenamingProjectId(null);
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-sm font-medium bg-secondary border border-border rounded px-1 py-0 w-full min-w-0 focus:outline-none focus:ring-1 focus:ring-ring"
-                      autoFocus
-                    />
-                  ) : (
-                    <span className="text-sm font-medium truncate">{project.name}</span>
-                  )}
-                </button>
-
-                <span className="text-xs text-muted-foreground bg-secondary px-1.5 py-0.5 rounded flex-shrink-0">
-                  {project.sessions.length}
-                </span>
-
-                {/* Project actions (hover) */}
-                {renamingProjectId !== project.id && (
-                  <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                    <button
-                      onClick={(e) => handleRenameStart(e, project.id, project.name)}
-                      className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-secondary"
-                      title="Rename project"
-                    >
-                      <Pencil className="w-3 h-3" />
-                    </button>
-                    {!isDefault && (
-                      <button
-                        onClick={(e) => handleDeleteProjectClick(e, project.id, project.name)}
-                        className="p-1 rounded text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
-                        title="Delete project"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Nested sessions */}
-              {isExpanded && (
-                <div className="ml-3">
-                  {project.sessions.length === 0 ? (
-                    <div className="px-6 py-2 text-xs text-muted-foreground italic">
-                      No sessions yet
-                    </div>
-                  ) : (
-                    project.sessions.map((session) => {
-                      const config = STATUS_CONFIG[session.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.pending;
-                      const Icon = config.icon;
-                      const isActive = location.pathname === `/session/${session.id}`;
-
-                      return (
-                        <div key={session.id} className="group/session relative">
-                          <Link
-                            to={`/session/${session.id}`}
-                            onClick={() => setIsOpen(false)}
-                            className={cn(
-                              "flex items-center gap-2 pl-6 pr-10 py-1.5 text-sm hover:bg-secondary transition-colors rounded-md mx-1",
-                              isActive && "bg-secondary"
-                            )}
-                          >
-                            <Icon
-                              className={cn(
-                                "w-3.5 h-3.5 flex-shrink-0",
-                                config.color,
-                                session.status === "running" && "animate-spin-slow"
-                              )}
-                            />
-                            <span className="truncate text-muted-foreground text-xs">
-                              {session.idea.slice(0, 35)}
-                              {session.idea.length > 35 && "..."}
-                            </span>
-                          </Link>
-                          <button
-                            onClick={(e) => handleDeleteSessionClick(e, session.id, session.idea)}
-                            disabled={deletingSessionId === session.id}
-                            className={cn(
-                              "absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded",
-                              "text-muted-foreground hover:text-red-500 hover:bg-red-500/10",
-                              "opacity-0 group-hover/session:opacity-100 transition-opacity",
-                              deletingSessionId === session.id && "opacity-100"
-                            )}
-                            title="Delete session"
-                          >
-                            {deletingSessionId === session.id ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-3 h-3" />
-                            )}
-                          </button>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {projects.filter((p: any) => !p.teamId).map((project) => renderProject(project))}
 
         {projects.length === 0 && totalSessions === 0 && (
           <div className="px-4 py-8 text-center">
@@ -455,8 +478,13 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
       <div className="border-t p-3 space-y-1 flex-shrink-0">
         {user && (
           <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
-            <User className="w-4 h-4" />
-            <span className="truncate">{user.email}</span>
+            <UserAvatar
+              displayName={user.displayName}
+              email={user.email}
+              avatarUrl={user.avatarUrl}
+              size="sm"
+            />
+            <span className="truncate">{user.displayName || user.email}</span>
           </div>
         )}
         <Link

@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Sidebar } from "@/components/sidebar";
 import { useAuth } from "@/contexts/auth-context";
-import { Key, Loader2, Check, Trash2, Eye, EyeOff, Sparkles, Link2, Users, Plus } from "lucide-react";
-import { getAllProjects, getUsers, createUser, deleteUser } from "@/lib/api";
+import { UserAvatar } from "@/components/user-avatar";
+import { Key, Loader2, Check, Trash2, Eye, EyeOff, Sparkles, Link2, Users, Plus, User } from "lucide-react";
+import { getAllProjects, getUsers, createUser, deleteUser, updateProfile, createTeam } from "@/lib/api";
 import type { AdminUser } from "@/lib/api";
 import type { ProjectWithSessions } from "@product-os/shared";
 import { cn } from "@/lib/utils";
@@ -49,7 +51,8 @@ const PROVIDER_INFO: Record<Provider, { name: string; color: string; placeholder
 };
 
 export function SettingsPage() {
-  const { user, token } = useAuth();
+  const { user, token, refreshUser, setActiveTeam } = useAuth();
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<ProjectWithSessions[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,6 +80,49 @@ export function SettingsPage() {
   const [adminSaving, setAdminSaving] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
   const [adminSuccess, setAdminSuccess] = useState<string | null>(null);
+
+  // Profile state
+  const [profileName, setProfileName] = useState(user?.displayName || "");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSuccess, setProfileSuccess] = useState(false);
+
+  // Team creation state
+  const [newTeamName, setNewTeamName] = useState("");
+  const [teamCreating, setTeamCreating] = useState(false);
+
+  useEffect(() => {
+    if (user) setProfileName(user.displayName || "");
+  }, [user?.displayName]);
+
+  const handleProfileSave = async () => {
+    setProfileSaving(true);
+    try {
+      await updateProfile({ displayName: profileName });
+      await refreshUser();
+      setProfileSuccess(true);
+      setTimeout(() => setProfileSuccess(false), 3000);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  const handleCreateTeam = async () => {
+    if (!newTeamName.trim()) return;
+    setTeamCreating(true);
+    try {
+      const team = await createTeam(newTeamName.trim());
+      setActiveTeam(team.id);
+      await refreshUser();
+      setNewTeamName("");
+      navigate(`/team/${team.id}/settings`);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setTeamCreating(false);
+    }
+  };
 
   const refreshProjects = () => {
     getAllProjects()
@@ -255,6 +301,103 @@ export function SettingsPage() {
             </div>
           ) : (
             <div className="space-y-6">
+              {/* Profile Section */}
+              <div className="rounded-xl border bg-card p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <User className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold">Profile</h2>
+                    <p className="text-sm text-muted-foreground">Your display name and avatar</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 mb-4">
+                  <UserAvatar
+                    displayName={user?.displayName}
+                    email={user?.email}
+                    avatarUrl={user?.avatarUrl}
+                    size="lg"
+                  />
+                  <div className="flex-1">
+                    <label className="text-xs font-medium text-muted-foreground mb-1 block">Display Name</label>
+                    <input
+                      type="text"
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                      placeholder={user?.email?.split("@")[0] || "Your name"}
+                      className="w-full px-4 py-2.5 rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">{user?.email}</p>
+                  <button
+                    onClick={handleProfileSave}
+                    disabled={profileSaving}
+                    className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 disabled:opacity-50 transition-colors"
+                  >
+                    {profileSaving ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : profileSuccess ? (
+                      <><Check className="w-4 h-4" /> Saved</>
+                    ) : (
+                      "Save"
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Teams Section */}
+              <div className="rounded-xl border bg-card p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-violet-500" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold">Teams</h2>
+                    <p className="text-sm text-muted-foreground">Manage your teams</p>
+                  </div>
+                </div>
+
+                {user?.teams && user.teams.length > 0 && (
+                  <div className="space-y-2 mb-4">
+                    {user.teams.map((team) => (
+                      <button
+                        key={team.teamId}
+                        onClick={() => navigate(`/team/${team.teamId}/settings`)}
+                        className="flex items-center justify-between w-full p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors text-left"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{team.teamName}</p>
+                          <p className="text-xs text-muted-foreground capitalize">{team.role}</p>
+                        </div>
+                        <span className="text-xs text-muted-foreground">Manage</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={newTeamName}
+                    onChange={(e) => setNewTeamName(e.target.value)}
+                    placeholder="New team name"
+                    className="flex-1 px-4 py-2.5 rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+                    onKeyDown={(e) => { if (e.key === "Enter") handleCreateTeam(); }}
+                  />
+                  <button
+                    onClick={handleCreateTeam}
+                    disabled={teamCreating || !newTeamName.trim()}
+                    className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2.5 text-sm font-medium text-background hover:bg-foreground/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {teamCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    Create
+                  </button>
+                </div>
+              </div>
+
               <div className="rounded-xl border bg-card p-6">
                 <h2 className="font-semibold mb-2">Data & Privacy</h2>
                 <p className="text-sm text-muted-foreground mb-4">

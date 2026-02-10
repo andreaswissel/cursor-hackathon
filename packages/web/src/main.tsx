@@ -15,6 +15,8 @@ import { ImaginePage } from "./pages/imagine";
 import { DocumentPage } from "./pages/document";
 import { RestrictedDataPage } from "./pages/restricted-data";
 import { OnboardingPage } from "./pages/onboarding";
+import { TeamSettingsPage } from "./pages/team-settings";
+import { InvitePage } from "./pages/invite";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -25,6 +27,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/restricted-data" element={<RestrictedDataPage />} />
+          <Route path="/invite/:token" element={<InvitePage />} />
           <Route
             path="/onboarding"
             element={
@@ -78,6 +81,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             element={
               <ProtectedRoute>
                 <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/team/:teamId/settings"
+            element={
+              <ProtectedRoute>
+                <TeamSettingsPage />
               </ProtectedRoute>
             }
           />

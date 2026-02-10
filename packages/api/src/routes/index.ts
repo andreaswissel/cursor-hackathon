@@ -6,12 +6,15 @@ import integrationsRouter from "./integrations";
 import discoveryRouter from "./discovery";
 import projectsRouter from "./projects";
 import adminRouter from "./admin";
+import teamsRouter, { inviteRouter } from "./teams";
 
 const router = Router();
 
 router.use("/auth", authRouter);
 router.use("/sessions", sessionsRouter);
 router.use("/projects", projectsRouter);
+router.use("/teams", teamsRouter);
+router.use("/invites", inviteRouter);
 router.use("/settings", settingsRouter);
 router.use("/integrations", integrationsRouter);
 router.use("/discovery", discoveryRouter);

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, or, isNull } from "drizzle-orm";
 import { db } from "../db";
-import { projects, sessions } from "../db/schema";
+import { projects, sessions, teamMembers } from "../db/schema";
 import { requireAuth } from "../middleware/auth";
 import { ensureDefaultProject } from "../lib/project-helpers";
 
@@ -13,25 +13,74 @@ router.use(requireAuth);
 // List user's projects with nested session summaries
 router.get("/", async (req: Request, res: Response) => {
   const userId = req.user!.id;
+  const activeTeamId = req.user!.activeTeamId;
 
-  const dbProjects = await db
-    .select()
-    .from(projects)
-    .where(eq(projects.userId, userId))
-    .orderBy(desc(projects.updatedAt));
+  // Build project query: personal projects + active team projects
+  let dbProjects;
+  if (activeTeamId) {
+    dbProjects = await db
+      .select()
+      .from(projects)
+      .where(
+        or(
+          and(eq(projects.userId, userId), isNull(projects.teamId)),
+          eq(projects.teamId, activeTeamId)
+        )
+      )
+      .orderBy(desc(projects.updatedAt));
+  } else {
+    dbProjects = await db
+      .select()
+      .from(projects)
+      .where(and(eq(projects.userId, userId), isNull(projects.teamId)))
+      .orderBy(desc(projects.updatedAt));
+  }
 
-  const dbSessions = await db
-    .select({
-      id: sessions.id,
-      idea: sessions.idea,
-      status: sessions.status,
-      mode: sessions.mode,
-      projectId: sessions.projectId,
-      createdAt: sessions.createdAt,
-    })
-    .from(sessions)
-    .where(eq(sessions.userId, userId))
-    .orderBy(desc(sessions.createdAt));
+  const projectIds = dbProjects.map((p) => p.id);
+
+  // Get sessions for all visible projects
+  let dbSessions: Array<{ id: string; idea: string; status: string; mode: string | null; projectId: string | null; createdAt: Date }> = [];
+  if (projectIds.length > 0) {
+    const allSessions = await db
+      .select({
+        id: sessions.id,
+        idea: sessions.idea,
+        status: sessions.status,
+        mode: sessions.mode,
+        projectId: sessions.projectId,
+        createdAt: sessions.createdAt,
+      })
+      .from(sessions)
+      .where(eq(sessions.userId, userId))
+      .orderBy(desc(sessions.createdAt));
+
+    dbSessions = allSessions.filter((s) => s.projectId && projectIds.includes(s.projectId));
+
+    // For team projects, also include sessions from other team members
+    if (activeTeamId) {
+      const teamProjectIds = dbProjects.filter((p) => p.teamId === activeTeamId).map((p) => p.id);
+      if (teamProjectIds.length > 0) {
+        const teamSessions = await db
+          .select({
+            id: sessions.id,
+            idea: sessions.idea,
+            status: sessions.status,
+            mode: sessions.mode,
+            projectId: sessions.projectId,
+            createdAt: sessions.createdAt,
+          })
+          .from(sessions)
+          .orderBy(desc(sessions.createdAt));
+
+        const existingIds = new Set(dbSessions.map((s) => s.id));
+        for (const s of teamSessions) {
+          if (s.projectId && teamProjectIds.includes(s.projectId) && !existingIds.has(s.id)) {
+            dbSessions.push(s);
+          }
+        }
+      }
+    }
+  }
 
   // Group sessions by projectId
   const sessionsByProject = new Map<string, typeof dbSessions>();
@@ -52,6 +101,7 @@ router.get("/", async (req: Request, res: Response) => {
     id: p.id,
     name: p.name,
     description: p.description,
+    teamId: p.teamId,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
     sessions: (sessionsByProject.get(p.id) ?? []).map((s) => ({
@@ -69,12 +119,26 @@ router.get("/", async (req: Request, res: Response) => {
 // Create a new project
 router.post("/", async (req: Request, res: Response) => {
   const userId = req.user!.id;
-  const { name, description } = req.body as { name?: string; description?: string };
+  const { name, description, teamId } = req.body as { name?: string; description?: string; teamId?: string };
+
+  // If teamId provided, verify user is a team member
+  if (teamId) {
+    const [membership] = await db
+      .select({ id: teamMembers.id })
+      .from(teamMembers)
+      .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, userId)));
+
+    if (!membership) {
+      res.status(403).json({ error: "You are not a member of this team" });
+      return;
+    }
+  }
 
   const [created] = await db
     .insert(projects)
     .values({
       userId,
+      teamId: teamId || null,
       name: name || "Untitled Project",
       description: description || null,
     })
@@ -84,6 +148,7 @@ router.post("/", async (req: Request, res: Response) => {
     id: created.id,
     name: created.name,
     description: created.description,
+    teamId: created.teamId,
     createdAt: created.createdAt.toISOString(),
     updatedAt: created.updatedAt.toISOString(),
   });
@@ -95,13 +160,28 @@ router.patch("/:id", async (req: Request, res: Response) => {
   const projectId = req.params.id;
   const { name, description } = req.body as { name?: string; description?: string };
 
-  // Verify ownership
+  // Find project
   const [project] = await db
     .select()
     .from(projects)
-    .where(and(eq(projects.id, projectId), eq(projects.userId, userId)));
+    .where(eq(projects.id, projectId));
 
   if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  // Access check: personal project → owner only; team project → any member
+  if (project.teamId) {
+    const [membership] = await db
+      .select({ id: teamMembers.id })
+      .from(teamMembers)
+      .where(and(eq(teamMembers.teamId, project.teamId), eq(teamMembers.userId, userId)));
+    if (!membership) {
+      res.status(403).json({ error: "Not a team member" });
+      return;
+    }
+  } else if (project.userId !== userId) {
     res.status(404).json({ error: "Project not found" });
     return;
   }
@@ -120,6 +200,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
     id: updated.id,
     name: updated.name,
     description: updated.description,
+    teamId: updated.teamId,
     createdAt: updated.createdAt.toISOString(),
     updatedAt: updated.updatedAt.toISOString(),
   });
@@ -130,13 +211,28 @@ router.delete("/:id", async (req: Request, res: Response) => {
   const userId = req.user!.id;
   const projectId = req.params.id;
 
-  // Verify ownership
+  // Find project
   const [project] = await db
     .select()
     .from(projects)
-    .where(and(eq(projects.id, projectId), eq(projects.userId, userId)));
+    .where(eq(projects.id, projectId));
 
   if (!project) {
+    res.status(404).json({ error: "Project not found" });
+    return;
+  }
+
+  // Access check: personal → owner only; team → owner/admin only
+  if (project.teamId) {
+    const [membership] = await db
+      .select({ role: teamMembers.role })
+      .from(teamMembers)
+      .where(and(eq(teamMembers.teamId, project.teamId), eq(teamMembers.userId, userId)));
+    if (!membership || membership.role === "member") {
+      res.status(403).json({ error: "Only team owners and admins can delete team projects" });
+      return;
+    }
+  } else if (project.userId !== userId) {
     res.status(404).json({ error: "Project not found" });
     return;
   }

@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, jsonb, uuid, integer, real } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, jsonb, uuid, integer, real, unique } from "drizzle-orm/pg-core";
 import type { UserPreferences } from "@product-os/shared";
 
 // Users table for demo auth
@@ -7,6 +7,8 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash"),
   isAdmin: integer("is_admin").default(0).notNull(),
+  displayName: text("display_name"),
+  avatarUrl: text("avatar_url"),
   // Multi-provider API keys
   anthropicApiKey: text("anthropic_api_key"),
   openaiApiKey: text("openai_api_key"),
@@ -17,10 +19,45 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Teams — collaborative workspaces
+export const teams = pgTable("teams", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  avatarUrl: text("avatar_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Team members
+export const teamMembers = pgTable("team_members", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  teamId: uuid("team_id").references(() => teams.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  role: text("role").$type<"owner" | "admin" | "member">().default("member").notNull(),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+}, (t) => [
+  unique("team_members_team_user_unique").on(t.teamId, t.userId),
+]);
+
+// Team invites
+export const teamInvites = pgTable("team_invites", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  teamId: uuid("team_id").references(() => teams.id, { onDelete: "cascade" }).notNull(),
+  invitedByUserId: uuid("invited_by_user_id").references(() => users.id).notNull(),
+  invitedEmail: text("invited_email"),
+  role: text("role").$type<"owner" | "admin" | "member">().default("member").notNull(),
+  status: text("status").$type<"pending" | "accepted" | "declined" | "expired">().default("pending").notNull(),
+  token: text("token").notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Projects — organizational unit grouping sessions
 export const projects = pgTable("projects", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").references(() => users.id).notNull(),
+  teamId: uuid("team_id").references(() => teams.id, { onDelete: "set null" }),
   name: text("name").default("Untitled Project").notNull(),
   description: text("description"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

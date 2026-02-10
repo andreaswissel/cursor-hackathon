@@ -71,6 +71,13 @@
       "when": 1770761573225,
       "tag": "0009_rich_speed_demon",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1770763853978,
+      "tag": "0010_short_vance_astro",
+      "breakpoints": true
     }
   ]
 }

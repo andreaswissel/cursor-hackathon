@@ -100,7 +100,7 @@ export async function checkPromptLimit(req: Request, res: Response, next: NextFu
   next();
 }
 
-// Check if user owns the session
+// Check if user owns the session or has team access
 export async function checkSessionOwnership(req: Request, res: Response, next: NextFunction): Promise<void> {
   const userId = req.user?.id;
   const { sessionId } = req.params;
@@ -111,7 +111,7 @@ export async function checkSessionOwnership(req: Request, res: Response, next: N
   }
 
   const [session] = await db
-    .select({ userId: sessions.userId })
+    .select({ userId: sessions.userId, projectId: sessions.projectId })
     .from(sessions)
     .where(eq(sessions.id, sessionId));
 
@@ -120,12 +120,36 @@ export async function checkSessionOwnership(req: Request, res: Response, next: N
     return;
   }
 
-  if (session.userId !== userId) {
-    res.status(403).json({ error: "You don't have access to this session" });
+  // Direct owner
+  if (session.userId === userId) {
+    next();
     return;
   }
 
-  next();
+  // Team access: check if the session's project is a team project the user belongs to
+  if (session.projectId) {
+    const { projects, teamMembers } = await import("../db/schema");
+    const { and: andOp } = await import("drizzle-orm");
+
+    const [project] = await db
+      .select({ teamId: projects.teamId })
+      .from(projects)
+      .where(eq(projects.id, session.projectId));
+
+    if (project?.teamId) {
+      const [membership] = await db
+        .select({ id: teamMembers.id })
+        .from(teamMembers)
+        .where(andOp(eq(teamMembers.teamId, project.teamId), eq(teamMembers.userId, userId)));
+
+      if (membership) {
+        next();
+        return;
+      }
+    }
+  }
+
+  res.status(403).json({ error: "You don't have access to this session" });
 }
 
 // Increment prompt count for a session (atomic)

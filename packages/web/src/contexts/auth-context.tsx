@@ -1,26 +1,39 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
-import type { UserPreferences } from "@product-os/shared";
+import type { UserPreferences, TeamRole } from "@product-os/shared";
 
 const API_BASE = import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV ? "/api" : "https://api.product-os.ai/api");
 
+interface UserTeam {
+  teamId: string;
+  teamName: string;
+  teamSlug: string;
+  role: TeamRole;
+}
+
 interface User {
   id: string;
   email: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
   isAdmin?: boolean;
   onboardingCompleted?: boolean;
   preferences?: UserPreferences | null;
+  teams?: UserTeam[];
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   isLoading: boolean;
+  activeTeamId: string | null;
+  activeTeamRole: TeamRole | null;
   login: (email: string, password?: string) => Promise<void>;
   loginWithGoogle: () => void;
   setTokenFromOAuth: (token: string) => Promise<void>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  setActiveTeam: (teamId: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -29,6 +42,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(() => localStorage.getItem("auth_token"));
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTeamId, setActiveTeamIdState] = useState<string | null>(() => localStorage.getItem("active_team_id"));
+  const [activeTeamRole, setActiveTeamRole] = useState<TeamRole | null>(null);
+
+  // Derive team role whenever user or activeTeamId changes
+  useEffect(() => {
+    if (user?.teams && activeTeamId) {
+      const team = user.teams.find((t) => t.teamId === activeTeamId);
+      setActiveTeamRole(team?.role ?? null);
+      if (!team) {
+        // Not a member of this team anymore, clear it
+        localStorage.removeItem("active_team_id");
+        setActiveTeamIdState(null);
+      }
+    } else {
+      setActiveTeamRole(null);
+    }
+  }, [user, activeTeamId]);
 
   // Verify token on mount
   useEffect(() => {
@@ -127,14 +157,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const setActiveTeam = useCallback((teamId: string | null) => {
+    if (teamId) {
+      localStorage.setItem("active_team_id", teamId);
+    } else {
+      localStorage.removeItem("active_team_id");
+    }
+    setActiveTeamIdState(teamId);
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem("auth_token");
+    localStorage.removeItem("active_team_id");
     setToken(null);
     setUser(null);
+    setActiveTeamIdState(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, loginWithGoogle, setTokenFromOAuth, logout, refreshUser }}>
+    <AuthContext.Provider value={{ user, token, isLoading, activeTeamId, activeTeamRole, login, loginWithGoogle, setTokenFromOAuth, logout, refreshUser, setActiveTeam }}>
       {children}
     </AuthContext.Provider>
   );

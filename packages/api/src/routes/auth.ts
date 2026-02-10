@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db } from "../db";
-import { users } from "../db/schema";
+import { users, teamMembers, teams } from "../db/schema";
 import { signToken, requireAuth } from "../middleware/auth";
 
 const router = Router();
@@ -71,18 +71,61 @@ router.get("/me", requireAuth, async (req: Request, res: Response) => {
       res.status(404).json({ error: "User not found" });
       return;
     }
+
+    // Fetch user's teams
+    const userTeams = await db
+      .select({
+        teamId: teams.id,
+        teamName: teams.name,
+        teamSlug: teams.slug,
+        role: teamMembers.role,
+      })
+      .from(teamMembers)
+      .innerJoin(teams, eq(teamMembers.teamId, teams.id))
+      .where(eq(teamMembers.userId, dbUser.id));
+
     res.json({
       user: {
         id: dbUser.id,
         email: dbUser.email,
+        displayName: dbUser.displayName,
+        avatarUrl: dbUser.avatarUrl,
         isAdmin: dbUser.isAdmin === 1,
         onboardingCompleted: dbUser.onboardingCompleted === 1,
         preferences: dbUser.preferences || null,
+        teams: userTeams.map((t) => ({
+          teamId: t.teamId,
+          teamName: t.teamName,
+          teamSlug: t.teamSlug,
+          role: t.role,
+        })),
       },
     });
   } catch (error) {
     console.error("Failed to fetch user:", error);
     res.status(500).json({ error: "Failed to fetch user" });
+  }
+});
+
+// Update user profile
+router.put("/profile", requireAuth, async (req: Request, res: Response) => {
+  const { displayName, avatarUrl } = req.body as { displayName?: string; avatarUrl?: string };
+
+  const updates: Record<string, unknown> = {};
+  if (displayName !== undefined) updates.displayName = displayName?.trim() || null;
+  if (avatarUrl !== undefined) updates.avatarUrl = avatarUrl || null;
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "No fields to update" });
+    return;
+  }
+
+  try {
+    await db.update(users).set(updates).where(eq(users.id, req.user!.id));
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Failed to update profile:", error);
+    res.status(500).json({ error: "Failed to update profile" });
   }
 });
 
@@ -214,9 +257,11 @@ router.get("/google/callback", async (req: Request, res: Response) => {
     let [user] = await db.select().from(users).where(eq(users.email, email));
 
     if (!user) {
+      const googleName = googleUser.name || googleUser.given_name || null;
+      const googlePicture = googleUser.picture || null;
       [user] = await db
         .insert(users)
-        .values({ email })
+        .values({ email, displayName: googleName, avatarUrl: googlePicture })
         .returning();
     }
 

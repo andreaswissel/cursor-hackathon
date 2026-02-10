@@ -1,5 +1,7 @@
 export type UserRole = "pm_automation" | "engineer_support" | "pm_builder";
 export type AgentMode = "guided" | "balanced" | "autonomous";
+export type TeamRole = "owner" | "admin" | "member";
+export type InviteStatus = "pending" | "accepted" | "declined" | "expired";
 
 export interface UserPreferences {
   role?: UserRole;
@@ -95,10 +97,54 @@ export interface Session {
   createdAt: string;
 }
 
+export interface Team {
+  id: string;
+  name: string;
+  slug: string;
+  avatarUrl?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeamMember {
+  id: string;
+  teamId: string;
+  userId: string;
+  role: TeamRole;
+  joinedAt: string;
+  user?: { id: string; email: string; displayName?: string | null; avatarUrl?: string | null };
+}
+
+export interface TeamInvite {
+  id: string;
+  teamId: string;
+  invitedByUserId: string;
+  invitedEmail?: string | null;
+  role: TeamRole;
+  status: InviteStatus;
+  token: string;
+  expiresAt: string;
+  createdAt: string;
+  team?: Team;
+  invitedBy?: { email: string; displayName?: string | null };
+}
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+  isAdmin?: boolean;
+  onboardingCompleted?: boolean;
+  preferences?: UserPreferences | null;
+  teams?: Array<{ teamId: string; teamName: string; teamSlug: string; role: TeamRole }>;
+}
+
 export interface Project {
   id: string;
   name: string;
   description?: string | null;
+  teamId?: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -23,7 +23,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   const onboardingBypass = ["/onboarding", "/settings"];
-  if (!user.onboardingCompleted && !onboardingBypass.includes(location.pathname)) {
+  if (!user.onboardingCompleted && !onboardingBypass.some((p) => location.pathname.startsWith(p))) {
     return <Navigate to="/onboarding" replace />;
   }
 

@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/auth-context";
-import { saveOnboardingPreferences } from "@/lib/api";
+import { saveOnboardingPreferences, getPendingInvites, acceptInvite, declineInvite, createTeam } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { UserPreferences, UserRole, AgentMode } from "@product-os/shared";
 import {
@@ -19,6 +19,9 @@ import {
   CheckSquare,
   Square,
   ExternalLink,
+  Users,
+  Check,
+  X,
 } from "lucide-react";
 
 // Step 1: Role cards
@@ -123,14 +126,32 @@ const FRAMEWORK_OPTIONS: Array<{
   },
 ];
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 export function OnboardingPage() {
   const navigate = useNavigate();
-  const { refreshUser } = useAuth();
+  const { refreshUser, setActiveTeam } = useAuth();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferences>({});
+
+  // Team step state
+  const [pendingInvites, setPendingInvites] = useState<any[]>([]);
+  const [loadingInvites, setLoadingInvites] = useState(false);
+  const [teamName, setTeamName] = useState("");
+  const [creatingTeam, setCreatingTeam] = useState(false);
+  const [processingInvite, setProcessingInvite] = useState<string | null>(null);
+
+  // Load pending invites when reaching step 3
+  useEffect(() => {
+    if (step === 3) {
+      setLoadingInvites(true);
+      getPendingInvites()
+        .then(({ invites }) => setPendingInvites(invites))
+        .catch(() => setPendingInvites([]))
+        .finally(() => setLoadingInvites(false));
+    }
+  }, [step]);
 
   const progress = (step / TOTAL_STEPS) * 100;
 
@@ -230,6 +251,110 @@ export function OnboardingPage() {
 
           {step === 3 && (
             <StepContainer
+              title="Team Setup"
+              subtitle="Collaborate with your team, or skip for now."
+            >
+              {loadingInvites ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : pendingInvites.length > 0 ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground text-center mb-4">
+                    You have pending team invitations
+                  </p>
+                  {pendingInvites.map((invite) => (
+                    <div
+                      key={invite.id}
+                      className="flex items-center justify-between rounded-xl border p-4"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Users className="w-5 h-5 text-primary" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{invite.team?.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            Invited by {invite.invitedBy?.displayName || invite.invitedBy?.email} as {invite.role}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button
+                          onClick={async () => {
+                            setProcessingInvite(invite.id);
+                            try {
+                              await declineInvite(invite.token);
+                              setPendingInvites((prev) => prev.filter((i) => i.id !== invite.id));
+                            } catch {} finally { setProcessingInvite(null); }
+                          }}
+                          disabled={processingInvite === invite.id}
+                          className="p-2 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={async () => {
+                            setProcessingInvite(invite.id);
+                            try {
+                              const result = await acceptInvite(invite.token);
+                              if (result.teamId) setActiveTeam(result.teamId);
+                              await refreshUser();
+                              setPendingInvites((prev) => prev.filter((i) => i.id !== invite.id));
+                            } catch {} finally { setProcessingInvite(null); }
+                          }}
+                          disabled={processingInvite === invite.id}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-foreground px-3 py-2 text-xs font-medium text-background hover:bg-foreground/90 disabled:opacity-50 transition-colors"
+                        >
+                          {processingInvite === invite.id ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Check className="w-3 h-3" />
+                          )}
+                          Accept
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground text-center">
+                    Create a team to collaborate with others
+                  </p>
+                  <div className="flex items-center gap-3 max-w-sm mx-auto">
+                    <input
+                      type="text"
+                      value={teamName}
+                      onChange={(e) => setTeamName(e.target.value)}
+                      placeholder="Team name"
+                      className="flex-1 px-4 py-2.5 rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+                    />
+                    <button
+                      onClick={async () => {
+                        if (!teamName.trim()) return;
+                        setCreatingTeam(true);
+                        try {
+                          const team = await createTeam(teamName.trim());
+                          setActiveTeam(team.id);
+                          await refreshUser();
+                          setTeamName("");
+                          setStep(4);
+                        } catch {} finally { setCreatingTeam(false); }
+                      }}
+                      disabled={creatingTeam || !teamName.trim()}
+                      className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2.5 text-sm font-medium text-background hover:bg-foreground/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {creatingTeam ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </StepContainer>
+          )}
+
+          {step === 4 && (
+            <StepContainer
               title="Connect your tools"
               subtitle="Pull in real data from the tools you already use. You can always do this later."
             >
@@ -259,7 +384,7 @@ export function OnboardingPage() {
             </StepContainer>
           )}
 
-          {step === 4 && (
+          {step === 5 && (
             <StepContainer
               title="Follow a framework?"
               subtitle="Enable structured output formats. All optional."
@@ -307,7 +432,7 @@ export function OnboardingPage() {
             </StepContainer>
           )}
 
-          {step === 5 && (
+          {step === 6 && (
             <StepContainer
               title="You're all set!"
               subtitle="Choose your first action to get started."
@@ -344,7 +469,7 @@ export function OnboardingPage() {
           {/* Navigation */}
           <div className="flex items-center justify-between mt-8">
             <div>
-              {step > 1 && step < 5 && (
+              {step > 1 && step < 6 && (
                 <button
                   onClick={() => setStep((s) => s - 1)}
                   className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -364,7 +489,7 @@ export function OnboardingPage() {
             </button>
 
             <div>
-              {step < 5 && (
+              {step < 6 && (
                 <button
                   onClick={() => setStep((s) => s + 1)}
                   disabled={!canContinue}
