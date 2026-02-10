@@ -26,6 +26,7 @@ const corsOptions = {
     "https://www.product-os.ai",
     "http://localhost:5173",
     "http://localhost:5174",
+    "tauri://localhost",
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
