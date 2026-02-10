@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/sidebar";
 import { useAuth } from "@/contexts/auth-context";
-import { Key, Loader2, Check, Trash2, Eye, EyeOff, Sparkles, Link2 } from "lucide-react";
-import { getAllProjects } from "@/lib/api";
+import { Key, Loader2, Check, Trash2, Eye, EyeOff, Sparkles, Link2, Users, Plus } from "lucide-react";
+import { getAllProjects, getUsers, createUser, deleteUser } from "@/lib/api";
+import type { AdminUser } from "@/lib/api";
 import type { ProjectWithSessions } from "@product-os/shared";
 import { cn } from "@/lib/utils";
 import { IntegrationsPanel } from "@/components/integrations-panel";
@@ -48,7 +49,7 @@ const PROVIDER_INFO: Record<Provider, { name: string; color: string; placeholder
 };
 
 export function SettingsPage() {
-  const { token } = useAuth();
+  const { user, token } = useAuth();
   const [projects, setProjects] = useState<ProjectWithSessions[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -67,6 +68,15 @@ export function SettingsPage() {
     openai: false,
     gemini: false,
   });
+
+  // Admin: User management state
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [adminLoading, setAdminLoading] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserIsAdmin, setNewUserIsAdmin] = useState(false);
+  const [adminSaving, setAdminSaving] = useState(false);
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const [adminSuccess, setAdminSuccess] = useState<string | null>(null);
 
   const refreshProjects = () => {
     getAllProjects()
@@ -88,6 +98,48 @@ export function SettingsPage() {
       .catch(console.error)
       .finally(() => setIsLoading(false));
   }, [token]);
+
+  // Load users for admin
+  useEffect(() => {
+    if (!user?.isAdmin) return;
+    setAdminLoading(true);
+    getUsers()
+      .then(setAdminUsers)
+      .catch(console.error)
+      .finally(() => setAdminLoading(false));
+  }, [user?.isAdmin]);
+
+  const handleAddUser = async () => {
+    if (!newUserEmail.trim()) return;
+    setAdminSaving(true);
+    setAdminError(null);
+    setAdminSuccess(null);
+    try {
+      const created = await createUser(newUserEmail.trim(), newUserIsAdmin);
+      setAdminUsers((prev) => [...prev, created]);
+      setNewUserEmail("");
+      setNewUserIsAdmin(false);
+      setAdminSuccess(`User ${created.email} created`);
+      setTimeout(() => setAdminSuccess(null), 3000);
+    } catch (err) {
+      setAdminError(err instanceof Error ? err.message : "Failed to create user");
+    } finally {
+      setAdminSaving(false);
+    }
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    setAdminError(null);
+    setAdminSuccess(null);
+    try {
+      await deleteUser(id);
+      setAdminUsers((prev) => prev.filter((u) => u.id !== id));
+      setAdminSuccess("User deleted");
+      setTimeout(() => setAdminSuccess(null), 3000);
+    } catch (err) {
+      setAdminError(err instanceof Error ? err.message : "Failed to delete user");
+    }
+  };
 
   const handleSaveKey = async (provider: Provider) => {
     const key = apiKeys[provider];
@@ -387,6 +439,120 @@ export function SettingsPage() {
                 </div>
                 <IntegrationsPanel />
               </div>
+
+              {/* User Management — Admin Only */}
+              {user?.isAdmin && (
+                <div className="pt-8 border-t">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-violet-500" />
+                    </div>
+                    <div>
+                      <h2 className="font-semibold">User Management</h2>
+                      <p className="text-sm text-muted-foreground">
+                        View and manage users in the system
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border bg-card p-6 space-y-6">
+                    {/* User table */}
+                    {adminLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : adminUsers.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No users found
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {adminUsers.map((u) => (
+                          <div
+                            key={u.id}
+                            className="flex items-center justify-between p-3 rounded-lg bg-secondary/50"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className="text-sm font-medium truncate">
+                                {u.email}
+                              </span>
+                              {u.isAdmin && (
+                                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-500 flex-shrink-0">
+                                  Admin
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(u.createdAt).toLocaleDateString()}
+                              </span>
+                              {u.id !== user.id && (
+                                <button
+                                  onClick={() => handleDeleteUser(u.id)}
+                                  className="p-1.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                  title="Delete user"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Add user form */}
+                    <div className="pt-4 border-t space-y-3">
+                      <h3 className="text-sm font-medium">Add User</h3>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="email"
+                          value={newUserEmail}
+                          onChange={(e) => setNewUserEmail(e.target.value)}
+                          placeholder="user@example.com"
+                          className="flex-1 px-4 py-2.5 rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleAddUser();
+                          }}
+                        />
+                        <button
+                          onClick={handleAddUser}
+                          disabled={adminSaving || !newUserEmail.trim()}
+                          className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2.5 text-sm font-medium text-background hover:bg-foreground/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                          {adminSaving ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Plus className="w-4 h-4" />
+                          )}
+                          Add
+                        </button>
+                      </div>
+                      <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={newUserIsAdmin}
+                          onChange={(e) => setNewUserIsAdmin(e.target.checked)}
+                          className="rounded border-muted-foreground/30"
+                        />
+                        Grant admin privileges
+                      </label>
+                    </div>
+
+                    {/* Admin feedback messages */}
+                    {adminError && (
+                      <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-500">
+                        {adminError}
+                      </div>
+                    )}
+                    {adminSuccess && (
+                      <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm text-emerald-600">
+                        {adminSuccess}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

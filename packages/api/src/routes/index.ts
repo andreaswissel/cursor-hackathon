@@ -5,6 +5,7 @@ import settingsRouter from "./settings";
 import integrationsRouter from "./integrations";
 import discoveryRouter from "./discovery";
 import projectsRouter from "./projects";
+import adminRouter from "./admin";
 
 const router = Router();
 
@@ -14,6 +15,7 @@ router.use("/projects", projectsRouter);
 router.use("/settings", settingsRouter);
 router.use("/integrations", integrationsRouter);
 router.use("/discovery", discoveryRouter);
+router.use("/admin", adminRouter);
 
 // Health check
 router.get("/health", (_, res) => {

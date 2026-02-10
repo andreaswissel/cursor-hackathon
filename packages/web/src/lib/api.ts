@@ -449,6 +449,58 @@ export async function getDiscoveryRunStatus(runId: string): Promise<DiscoveryRun
   return res.json();
 }
 
+// Admin — User Management
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  isAdmin: boolean;
+  onboardingCompleted: boolean;
+  createdAt: string;
+}
+
+export async function getUsers(): Promise<AdminUser[]> {
+  const res = await fetch(`${API_BASE}/admin/users`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to fetch users" }));
+    throw new Error(error.error || "Failed to fetch users");
+  }
+
+  const data = await res.json();
+  return data.users;
+}
+
+export async function createUser(email: string, isAdmin?: boolean): Promise<AdminUser> {
+  const res = await fetch(`${API_BASE}/admin/users`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({ email, isAdmin }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to create user" }));
+    throw new Error(error.error || "Failed to create user");
+  }
+
+  const data = await res.json();
+  return data.user;
+}
+
+export async function deleteUser(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/admin/users/${id}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to delete user" }));
+    throw new Error(error.error || "Failed to delete user");
+  }
+}
+
 // Onboarding preferences
 export async function saveOnboardingPreferences(
   preferences: UserPreferences,
