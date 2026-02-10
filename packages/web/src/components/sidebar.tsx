@@ -29,6 +29,7 @@ import {
   ChevronDown,
   Pencil,
   BookOpen,
+  Users,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -85,6 +86,9 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
   const [renameValue, setRenameValue] = useState("");
   const [creatingProject, setCreatingProject] = useState(false);
   const [errorDialog, setErrorDialog] = useState<string | null>(null);
+  const [moveToTeamProject, setMoveToTeamProject] = useState<{ id: string; name: string } | null>(null);
+  const [selectedMoveTeamId, setSelectedMoveTeamId] = useState<string>("");
+  const [movingToTeam, setMovingToTeam] = useState(false);
 
   // Auto-expand project containing the current session
   useEffect(() => {
@@ -177,6 +181,29 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
     }
   };
 
+  const handleMoveToTeamClick = (e: React.MouseEvent, projectId: string, name: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setMoveToTeamProject({ id: projectId, name });
+    setSelectedMoveTeamId(user?.teams?.[0]?.teamId ?? "");
+  };
+
+  const handleMoveToTeamConfirm = async () => {
+    if (!moveToTeamProject || !selectedMoveTeamId) return;
+
+    setMovingToTeam(true);
+    try {
+      await updateProject(moveToTeamProject.id, { teamId: selectedMoveTeamId });
+      setMoveToTeamProject(null);
+      onProjectCreated?.(); // refresh projects list
+    } catch (error) {
+      console.error("Failed to move project to team:", error);
+      setErrorDialog((error as Error).message || "Failed to move project to team. Please try again.");
+    } finally {
+      setMovingToTeam(false);
+    }
+  };
+
   const handleRenameStart = (e: React.MouseEvent, projectId: string, currentName: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -264,6 +291,15 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
               >
                 <Pencil className="w-3 h-3" />
               </button>
+              {!project.teamId && user?.teams && user.teams.length > 0 && (
+                <button
+                  onClick={(e) => handleMoveToTeamClick(e, project.id, project.name)}
+                  className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  title="Move to team"
+                >
+                  <Users className="w-3 h-3" />
+                </button>
+              )}
               {!isDefault && (
                 <button
                   onClick={(e) => handleDeleteProjectClick(e, project.id, project.name)}
@@ -549,6 +585,67 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
         cancelLabel="Cancel"
         variant="destructive"
       />
+
+      {/* Move to Team Dialog */}
+      {moveToTeamProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-[2px] animate-in fade-in duration-150"
+            onClick={() => !movingToTeam && setMoveToTeamProject(null)}
+            aria-hidden="true"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="relative w-full max-w-[380px] mx-4 bg-card border rounded-xl shadow-2xl animate-in zoom-in-95 fade-in duration-150"
+          >
+            <button
+              onClick={() => !movingToTeam && setMoveToTeamProject(null)}
+              className="absolute top-3 right-3 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              aria-label="Close"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="p-5 pt-6">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 bg-amber-500/10">
+                <Users className="w-5 h-5 text-amber-500" />
+              </div>
+              <h2 className="text-base font-semibold tracking-tight mb-1.5">
+                Move to team?
+              </h2>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                Moving "{moveToTeamProject.name}" to a team will make all its sessions visible to team members. You can move it back later.
+              </p>
+              <label className="block text-sm font-medium mb-1.5">Select team</label>
+              <select
+                value={selectedMoveTeamId}
+                onChange={(e) => setSelectedMoveTeamId(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                {user?.teams?.map((t) => (
+                  <option key={t.teamId} value={t.teamId}>{t.teamName}</option>
+                ))}
+              </select>
+            </div>
+            <div className="px-5 pb-5 pt-2 flex gap-2.5">
+              <button
+                onClick={() => setMoveToTeamProject(null)}
+                disabled={movingToTeam}
+                className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg border bg-transparent hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleMoveToTeamConfirm}
+                disabled={movingToTeam || !selectedMoveTeamId}
+                className="flex-1 px-4 py-2.5 text-sm font-medium rounded-lg bg-foreground text-background hover:bg-foreground/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {movingToTeam ? "Moving..." : "Move to team"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Error Alert Dialog */}
       <ConfirmDialog

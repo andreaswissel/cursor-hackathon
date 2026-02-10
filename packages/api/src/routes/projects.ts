@@ -154,11 +154,11 @@ router.post("/", async (req: Request, res: Response) => {
   });
 });
 
-// Rename / update description
+// Update project (rename, description, team assignment)
 router.patch("/:id", async (req: Request, res: Response) => {
   const userId = req.user!.id;
   const projectId = req.params.id;
-  const { name, description } = req.body as { name?: string; description?: string };
+  const { name, description, teamId } = req.body as { name?: string; description?: string; teamId?: string | null };
 
   // Find project
   const [project] = await db
@@ -186,9 +186,22 @@ router.patch("/:id", async (req: Request, res: Response) => {
     return;
   }
 
+  // If moving to a team, verify the user is a member of the target team
+  if (teamId !== undefined && teamId !== null) {
+    const [membership] = await db
+      .select({ id: teamMembers.id })
+      .from(teamMembers)
+      .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, userId)));
+    if (!membership) {
+      res.status(403).json({ error: "You are not a member of this team" });
+      return;
+    }
+  }
+
   const updates: Record<string, unknown> = { updatedAt: new Date() };
   if (name !== undefined) updates.name = name;
   if (description !== undefined) updates.description = description;
+  if (teamId !== undefined) updates.teamId = teamId;
 
   const [updated] = await db
     .update(projects)
@@ -242,17 +255,23 @@ router.delete("/:id", async (req: Request, res: Response) => {
     return;
   }
 
-  // Reassign sessions to Untitled Project
-  const defaultProjectId = await ensureDefaultProject(userId);
-  await db
-    .update(sessions)
-    .set({ projectId: defaultProjectId })
-    .where(eq(sessions.projectId, projectId));
+  try {
+    // Reassign sessions to Untitled Project
+    const defaultProjectId = await ensureDefaultProject(userId);
+    await db
+      .update(sessions)
+      .set({ projectId: defaultProjectId })
+      .where(eq(sessions.projectId, projectId));
 
-  // Delete the project
-  await db.delete(projects).where(eq(projects.id, projectId));
+    // knowledge_sources cascade-deletes automatically via FK
+    // Delete the project
+    await db.delete(projects).where(eq(projects.id, projectId));
 
-  res.json({ success: true });
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Failed to delete project:", error);
+    res.status(500).json({ error: "Failed to delete project. Please try again." });
+  }
 });
 
 export default router;

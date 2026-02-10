@@ -85,7 +85,7 @@ export async function createProject(
 
 export async function updateProject(
   id: string,
-  data: { name?: string; description?: string }
+  data: { name?: string; description?: string; teamId?: string | null }
 ): Promise<ProjectWithSessions> {
   const res = await fetch(`${API_BASE}/projects/${id}`, {
     method: "PATCH",
