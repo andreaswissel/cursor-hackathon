@@ -20,6 +20,7 @@ import {
   Trash2,
   Compass,
   Lightbulb,
+  Video,
   FolderOpen,
   Folder,
   ChevronRight,
@@ -251,17 +252,30 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
       {/* Nav Links */}
       <div className="px-3 pt-3 space-y-1 flex-shrink-0">
         <Link
-          to="/"
+          to="/imagine"
           onClick={() => setIsOpen(false)}
           className={cn(
             "flex items-center gap-2 px-3 py-2 w-full text-sm font-medium rounded-lg transition-colors",
-            location.pathname === "/"
+            location.pathname === "/imagine"
               ? "bg-secondary text-foreground"
               : "text-muted-foreground hover:text-foreground hover:bg-secondary"
           )}
         >
           <Lightbulb className="w-4 h-4" />
           Imagine
+        </Link>
+        <Link
+          to="/document"
+          onClick={() => setIsOpen(false)}
+          className={cn(
+            "flex items-center gap-2 px-3 py-2 w-full text-sm font-medium rounded-lg transition-colors",
+            location.pathname === "/document"
+              ? "bg-secondary text-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+          )}
+        >
+          <Video className="w-4 h-4" />
+          Document
         </Link>
         <Link
           to="/discover"
@@ -431,8 +445,8 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
 
         {projects.length === 0 && totalSessions === 0 && (
           <div className="px-4 py-8 text-center">
-            <FileText className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">No projects yet</p>
+            <Loader2 className="w-5 h-5 text-muted-foreground/40 mx-auto mb-2 animate-spin" />
+            <p className="text-xs text-muted-foreground">Loading projects...</p>
           </div>
         )}
       </div>

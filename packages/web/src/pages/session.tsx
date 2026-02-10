@@ -32,6 +32,9 @@ import {
 } from "@/lib/api";
 import type { ProjectWithSessions } from "@product-os/shared";
 import { CursorHandoff } from "@/components/cursor-handoff";
+import { ClaudeCodeHandoff } from "@/components/claude-code-handoff";
+import { TerminalPanel } from "@/components/terminal-panel";
+import { isTauri } from "@/lib/platform";
 
 const AGENT_ORDER: AgentType[] = [
   "orchestrator",
@@ -96,7 +99,7 @@ type TabType = "agents" | "outputs";
 
 export function SessionPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
-  const { session, isConnected, error } = useSessionStream(sessionId ?? "");
+  const { session, isConnected, error, isReconnecting } = useSessionStream(sessionId ?? "");
   const [copied, setCopied] = useState(false);
   const [copiedUpdate, setCopiedUpdate] = useState(false);
   const [projects, setProjects] = useState<ProjectWithSessions[]>([]);
@@ -104,6 +107,15 @@ export function SessionPage() {
   const [activeTab, setActiveTab] = useState<TabType>("agents");
   const [documentationPieces, setDocumentationPieces] = useState<DocumentationPiece[]>([]);
   const [refiningPieceId, setRefiningPieceId] = useState<string | null>(null);
+  const [terminalVisible, setTerminalVisible] = useState(false);
+  const [terminalCommand, setTerminalCommand] = useState<string | undefined>();
+  const [terminalCwd, setTerminalCwd] = useState<string | undefined>();
+
+  const handleTerminalOpen = useCallback((command: string, cwd?: string) => {
+    setTerminalCommand(command);
+    setTerminalCwd(cwd);
+    setTerminalVisible(true);
+  }, []);
 
   const isDocumentationMode = session?.mode === "documentation";
 
@@ -206,7 +218,8 @@ export function SessionPage() {
     );
   }
 
-  if (error) {
+  // Only show full-screen error when we have no session data at all
+  if (error && !session) {
     return (
       <div className="flex h-screen">
         <Sidebar projects={projects} onProjectCreated={refreshProjects} onProjectDeleted={refreshProjects} onSessionDeleted={refreshProjects} />
@@ -376,6 +389,21 @@ export function SessionPage() {
           </div>
         </div>
 
+        {/* Reconnecting banner — shown when we have data but lost connection */}
+        {isReconnecting && (
+          <div className="mx-4 md:mx-6 mt-2 px-4 py-2.5 rounded-lg border border-amber-500/20 bg-amber-500/10 flex items-center gap-3">
+            <Loader2 className="w-4 h-4 text-amber-500 animate-spin flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-amber-600 font-medium">
+                Connection lost — reconnecting...
+              </p>
+              <p className="text-xs text-amber-600/70">
+                Your data is still available. You can continue working offline.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto">
           {activeTab === "agents" ? (
@@ -459,7 +487,15 @@ export function SessionPage() {
                         <Sparkles className="w-5 h-5 text-violet-500" />
                         <span className="text-sm font-semibold text-violet-600">Ready to Build</span>
                       </div>
-                      <CursorHandoff spec={session.outputs.spec!} ideaTitle={session.idea} />
+                      {isTauri() ? (
+                        <ClaudeCodeHandoff
+                          spec={session.outputs.spec!}
+                          ideaTitle={session.idea}
+                          onTerminalOpen={handleTerminalOpen}
+                        />
+                      ) : (
+                        <CursorHandoff spec={session.outputs.spec!} ideaTitle={session.idea} />
+                      )}
                     </div>
                   </div>
 
@@ -591,6 +627,14 @@ export function SessionPage() {
             </div>
           )}
         </div>
+
+        {/* Terminal Panel */}
+        <TerminalPanel
+          visible={terminalVisible}
+          cwd={terminalCwd}
+          initialCommand={terminalCommand}
+          onClose={() => setTerminalVisible(false)}
+        />
 
         {/* Agent Detail Modal */}
         {selectedAgent && (

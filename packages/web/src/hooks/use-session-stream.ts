@@ -9,6 +9,8 @@ interface UseSessionStreamResult {
   session: Session | null;
   isConnected: boolean;
   error: string | null;
+  /** True if we have session data but lost connection (content still usable) */
+  isReconnecting: boolean;
 }
 
 export function useSessionStream(sessionId: string): UseSessionStreamResult {
@@ -241,5 +243,8 @@ export function useSessionStream(sessionId: string): UseSessionStreamResult {
     };
   }, [sessionId]);
 
-  return { session, isConnected, error };
+  // If we have session data but lost connection, we're reconnecting (not fatally errored)
+  const isReconnecting = !isConnected && session !== null && error !== null;
+
+  return { session, isConnected, error, isReconnecting };
 }

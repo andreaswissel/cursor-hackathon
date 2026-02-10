@@ -34,6 +34,28 @@
     --status-failed: 0 84% 60%;
     --status-waiting: 280 67% 54%;
   }
+
+  .dark {
+    --background: 224 10% 10%;
+    --foreground: 210 6% 93%;
+    --card: 224 10% 12%;
+    --card-foreground: 210 6% 93%;
+    --popover: 224 10% 12%;
+    --popover-foreground: 210 6% 93%;
+    --primary: 210 6% 93%;
+    --primary-foreground: 224 10% 10%;
+    --secondary: 220 8% 18%;
+    --secondary-foreground: 210 6% 93%;
+    --muted: 220 8% 18%;
+    --muted-foreground: 220 7% 55%;
+    --accent: 220 8% 18%;
+    --accent-foreground: 210 6% 93%;
+    --destructive: 0 62% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 8% 20%;
+    --input: 220 8% 20%;
+    --ring: 217 91% 60%;
+  }
 }
 
 @layer base {

@@ -11,6 +11,8 @@ import { AuthCallbackPage } from "./pages/auth-callback";
 import { SettingsPage } from "./pages/settings";
 import { PrivacyPage } from "./pages/privacy";
 import { DiscoverPage } from "./pages/discover";
+import { ImaginePage } from "./pages/imagine";
+import { DocumentPage } from "./pages/document";
 import { RestrictedDataPage } from "./pages/restricted-data";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -35,6 +37,22 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             element={
               <ProtectedRoute>
                 <SessionPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/imagine"
+            element={
+              <ProtectedRoute>
+                <ImaginePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/document"
+            element={
+              <ProtectedRoute>
+                <DocumentPage />
               </ProtectedRoute>
             }
           />

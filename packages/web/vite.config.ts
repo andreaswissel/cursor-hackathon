@@ -9,8 +9,10 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  envPrefix: ["VITE_", "TAURI_"],
   server: {
     port: 5173,
+    strictPort: true,
     proxy: {
       "/api": {
         target: "http://localhost:3001",

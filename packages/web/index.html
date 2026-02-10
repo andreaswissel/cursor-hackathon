@@ -23,6 +23,16 @@
     <meta property="twitter:title" content="Product OS" />
     <meta property="twitter:description" content="AI-powered product management workflow that turns ideas into specs, strategies, and launch materials using specialized agents" />
     <meta property="twitter:image" content="https://product-os.ai/social.png" />
+    <!-- Sync dark mode with system preference before first paint to avoid flash -->
+    <script>
+      (function() {
+        function apply() {
+          document.documentElement.classList.toggle('dark', window.matchMedia('(prefers-color-scheme: dark)').matches);
+        }
+        apply();
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply);
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
