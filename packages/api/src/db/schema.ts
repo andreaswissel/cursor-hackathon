@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, jsonb, uuid, integer, real } from "drizzle-orm/pg-core";
+import type { UserPreferences } from "@product-os/shared";
 
 // Users table for demo auth
 export const users = pgTable("users", {
@@ -11,6 +12,8 @@ export const users = pgTable("users", {
   openaiApiKey: text("openai_api_key"),
   geminiApiKey: text("gemini_api_key"),
   activeProvider: text("active_provider").$type<"anthropic" | "openai" | "gemini">().default("anthropic"),
+  onboardingCompleted: integer("onboarding_completed").default(0).notNull(),
+  preferences: jsonb("preferences").$type<UserPreferences>(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

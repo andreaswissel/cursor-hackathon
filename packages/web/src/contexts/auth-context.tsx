@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import type { UserPreferences } from "@product-os/shared";
 
 const API_BASE = import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV ? "/api" : "https://api.product-os.ai/api");
@@ -7,6 +8,8 @@ interface User {
   id: string;
   email: string;
   isAdmin?: boolean;
+  onboardingCompleted?: boolean;
+  preferences?: UserPreferences | null;
 }
 
 interface AuthContextType {
@@ -17,6 +20,7 @@ interface AuthContextType {
   loginWithGoogle: () => void;
   setTokenFromOAuth: (token: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -106,6 +110,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    const storedToken = localStorage.getItem("auth_token");
+    if (!storedToken) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        headers: { Authorization: `Bearer ${storedToken}` },
+      });
+      if (res.ok) {
+        const { user } = await res.json();
+        setUser(user);
+      }
+    } catch (err) {
+      console.error("Failed to refresh user:", err);
+    }
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem("auth_token");
     setToken(null);
@@ -113,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, loginWithGoogle, setTokenFromOAuth, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, loginWithGoogle, setTokenFromOAuth, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

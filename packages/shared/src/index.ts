@@ -1,3 +1,18 @@
+export type UserRole = "pm_automation" | "engineer_support" | "pm_builder";
+export type AgentMode = "guided" | "balanced" | "autonomous";
+
+export interface UserPreferences {
+  role?: UserRole;
+  agentMode?: AgentMode;
+  frameworks?: {
+    jiraTaxonomy?: boolean;
+    definitionOfDone?: boolean;
+    okrAlignment?: boolean;
+    customTemplate?: boolean;
+  };
+  completedAt?: string;
+}
+
 export type AgentType = "orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "product-marketing" | "doc-orchestrator" | "transcription" | "doc-generator";
 export type AgentStatus = "pending" | "running" | "waiting_input" | "completed" | "failed";
 export type SessionStatus = "pending" | "running" | "waiting_input" | "completed" | "failed";

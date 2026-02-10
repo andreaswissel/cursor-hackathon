@@ -65,7 +65,64 @@ router.post("/login", async (req: Request, res: Response) => {
 
 // Get current user
 router.get("/me", requireAuth, async (req: Request, res: Response) => {
-  res.json({ user: req.user });
+  try {
+    const [dbUser] = await db.select().from(users).where(eq(users.id, req.user!.id));
+    if (!dbUser) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    res.json({
+      user: {
+        id: dbUser.id,
+        email: dbUser.email,
+        isAdmin: dbUser.isAdmin === 1,
+        onboardingCompleted: dbUser.onboardingCompleted === 1,
+        preferences: dbUser.preferences || null,
+      },
+    });
+  } catch (error) {
+    console.error("Failed to fetch user:", error);
+    res.status(500).json({ error: "Failed to fetch user" });
+  }
+});
+
+// Update user preferences (onboarding)
+router.put("/preferences", requireAuth, async (req: Request, res: Response) => {
+  const { preferences, completed } = req.body as {
+    preferences: Record<string, unknown>;
+    completed?: boolean;
+  };
+
+  if (!preferences || typeof preferences !== "object") {
+    res.status(400).json({ error: "preferences object is required" });
+    return;
+  }
+
+  try {
+    const [dbUser] = await db.select().from(users).where(eq(users.id, req.user!.id));
+    if (!dbUser) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const merged = { ...(dbUser.preferences || {}), ...preferences };
+    if (completed) {
+      merged.completedAt = new Date().toISOString();
+    }
+
+    await db
+      .update(users)
+      .set({
+        preferences: merged,
+        ...(completed ? { onboardingCompleted: 1 } : {}),
+      })
+      .where(eq(users.id, req.user!.id));
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Failed to update preferences:", error);
+    res.status(500).json({ error: "Failed to update preferences" });
+  }
 });
 
 // Google OAuth - Initiate login

@@ -14,6 +14,7 @@ import { DiscoverPage } from "./pages/discover";
 import { ImaginePage } from "./pages/imagine";
 import { DocumentPage } from "./pages/document";
 import { RestrictedDataPage } from "./pages/restricted-data";
+import { OnboardingPage } from "./pages/onboarding";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -24,6 +25,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/restricted-data" element={<RestrictedDataPage />} />
+          <Route
+            path="/onboarding"
+            element={
+              <ProtectedRoute>
+                <OnboardingPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/"
             element={

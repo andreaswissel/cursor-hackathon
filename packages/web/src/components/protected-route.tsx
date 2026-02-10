@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/auth-context";
 import { Loader2 } from "lucide-react";
 
@@ -8,6 +8,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -19,6 +20,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (!user.onboardingCompleted && location.pathname !== "/onboarding") {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return <>{children}</>;

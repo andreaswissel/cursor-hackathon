@@ -1,4 +1,4 @@
-import type { SessionContext, Session, AgentType, DocumentationPiece, DocPieceStatus, SessionMode, DiscoveryDashboard, DiscoveryRun, ProjectWithSessions } from "@product-os/shared";
+import type { SessionContext, Session, AgentType, DocumentationPiece, DocPieceStatus, SessionMode, DiscoveryDashboard, DiscoveryRun, ProjectWithSessions, UserPreferences } from "@product-os/shared";
 
 // In production, use the full API URL; in dev, proxy through Vite
 const API_BASE = import.meta.env.VITE_API_URL ||
@@ -447,4 +447,21 @@ export async function getDiscoveryRunStatus(runId: string): Promise<DiscoveryRun
   }
 
   return res.json();
+}
+
+// Onboarding preferences
+export async function saveOnboardingPreferences(
+  preferences: UserPreferences,
+  completed: boolean
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/auth/preferences`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({ preferences, completed }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to save preferences" }));
+    throw new Error(error.message || error.error || "Failed to save preferences");
+  }
 }
