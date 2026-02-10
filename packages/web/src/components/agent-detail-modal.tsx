@@ -354,7 +354,7 @@ export function AgentDetailModal({
                 </div>
                 <div className={cn(
                   "prose prose-sm max-w-none",
-                  "prose-headings:font-semibold prose-headings:tracking-tight",
+                  "prose-headings:text-foreground prose-headings:font-semibold prose-headings:tracking-tight",
                   "prose-h1:text-xl prose-h2:text-lg prose-h3:text-base",
                   "prose-p:text-muted-foreground prose-p:leading-relaxed",
                   "prose-li:text-muted-foreground",

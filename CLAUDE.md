@@ -152,3 +152,11 @@ After implementing any user-facing feature or UI change:
 2. Verify the feature works end-to-end: renders correctly, interactions work, no console errors
 3. This applies to: new features, bug fixes, UI changes, routing changes, and any modification that affects what users see or interact with
 4. Do not consider a frontend task complete until it has been validated in the browser
+
+### Git — Commit & Push on completion
+
+After a feature is fully implemented and verified:
+
+1. **Always commit and push all related changes** — stage every modified and new file that is part of the feature, not just the files from the current task
+2. Check `git status` to ensure no relevant changes are left unstaged
+3. The app is deployed from `main` via Railway — unpushed changes mean production stays stale

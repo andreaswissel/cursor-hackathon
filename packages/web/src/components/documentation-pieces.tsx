@@ -317,7 +317,7 @@ export function DocumentationPieces({
               <div
                 className={cn(
                   "prose prose-sm max-w-none",
-                  "prose-headings:font-semibold prose-headings:tracking-tight",
+                  "prose-headings:text-foreground prose-headings:font-semibold prose-headings:tracking-tight",
                   "prose-h1:text-lg prose-h2:text-base prose-h3:text-sm",
                   "prose-p:text-muted-foreground prose-li:text-muted-foreground",
                   "prose-strong:text-foreground",

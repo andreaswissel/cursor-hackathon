@@ -260,7 +260,7 @@ export function AgentPanel({ agent, type, sessionId, expanded = true, onClick }:
             "p-4 overflow-y-auto h-48 bg-secondary/20",
             isMarkdown ? [
               "prose prose-sm max-w-none",
-              "prose-headings:font-semibold prose-headings:tracking-tight prose-h1:text-base prose-h2:text-sm prose-h3:text-sm",
+              "prose-headings:text-foreground prose-headings:font-semibold prose-headings:tracking-tight prose-h1:text-base prose-h2:text-sm prose-h3:text-sm",
               "prose-p:text-muted-foreground prose-p:text-sm prose-p:leading-relaxed prose-p:my-2",
               "prose-li:text-muted-foreground prose-li:text-sm prose-li:my-0.5",
               "prose-strong:text-foreground",

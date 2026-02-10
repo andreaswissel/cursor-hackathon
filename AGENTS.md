@@ -43,3 +43,7 @@ The goal: **never leave Product OS** for product scoping work. All context flows
 - **Real-time**: SSE streaming from agents to frontend
 - **Persistence**: PostgreSQL (Neon) with Drizzle ORM
 - **Session Store**: In-memory cache backed by PostgreSQL, with event emission for SSE
+
+## Workflow Rules
+
+- **Commit & push on completion**: When a feature is fully implemented and verified, commit and push **all** related changes (not just files from the current task). Check `git status` to ensure nothing is left unstaged. The app deploys from `main` via Railway — unpushed changes mean production stays stale.
