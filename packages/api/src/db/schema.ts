@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, jsonb, uuid, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, jsonb, uuid, integer, real } from "drizzle-orm/pg-core";
 
 // Users table for demo auth
 export const users = pgTable("users", {
@@ -131,4 +131,34 @@ export const integrationData = pgTable("integration_data", {
   summary: text("summary"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Discovery mode — periodic signal analysis
+export const discoveryRuns = pgTable("discovery_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  status: text("status").$type<"pending" | "running" | "completed" | "failed">().default("pending").notNull(),
+  signalCount: integer("signal_count").default(0).notNull(),
+  clusterCount: integer("cluster_count").default(0).notNull(),
+  error: text("error"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+});
+
+export const discoveryClusters = pgTable("discovery_clusters", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  runId: uuid("run_id").references(() => discoveryRuns.id).notNull(),
+  userId: uuid("user_id").references(() => users.id).notNull(),
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  featureSuggestion: text("feature_suggestion").notNull(),
+  compositeScore: real("composite_score").default(0).notNull(),
+  signalCount: integer("signal_count").default(0).notNull(),
+  painSeverity: integer("pain_severity").default(1).notNull(),
+  hasMoneyQuotes: integer("has_money_quotes").default(0).notNull(),
+  recencyScore: real("recency_score").default(0).notNull(),
+  moneyQuotes: jsonb("money_quotes").$type<string[]>().default([]),
+  sampleSignals: jsonb("sample_signals").$type<string[]>().default([]),
+  sources: jsonb("sources").$type<string[]>().default([]),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });

@@ -35,14 +35,34 @@ export abstract class BaseAgent {
     const questionId = uuid();
     sessionStore.setAgentQuestion(this.sessionId, this.type, questionId, question);
 
-    // This will be resolved when the user answers
-    return new Promise((resolve) => {
+    // Poll until the question is cleared (answered by user)
+    return new Promise((resolve, reject) => {
+      let elapsed = 0;
+      const TIMEOUT_MS = 10 * 60 * 1000; // 10 minute timeout
       const checkAnswer = setInterval(async () => {
-        const state = await sessionStore.getState(this.sessionId);
-        const agent = state?.session.agents[this.type];
-        if (!agent?.currentQuestion) {
+        elapsed += 500;
+        if (elapsed > TIMEOUT_MS) {
           clearInterval(checkAnswer);
-          resolve("");
+          reject(new Error("Question timed out waiting for user response"));
+          return;
+        }
+        try {
+          const state = await sessionStore.getState(this.sessionId);
+          if (!state) {
+            clearInterval(checkAnswer);
+            resolve("");
+            return;
+          }
+          const agent = state.session.agents[this.type];
+          if (!agent?.currentQuestion) {
+            clearInterval(checkAnswer);
+            // Retrieve the user's answer from the most recent message
+            const chatMessages = await sessionStore.getMessages(this.sessionId, this.type);
+            const lastUserMessage = chatMessages.filter(m => m.role === "user").pop();
+            resolve(lastUserMessage?.content || "");
+          }
+        } catch {
+          // Swallow errors from getState and keep polling
         }
       }, 500);
     });

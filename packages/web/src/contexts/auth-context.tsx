@@ -15,7 +15,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password?: string) => Promise<void>;
   loginWithGoogle: () => void;
-  setTokenFromOAuth: (token: string) => void;
+  setTokenFromOAuth: (token: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -68,8 +68,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || "Login failed");
+      let message = "Login failed";
+      try {
+        const error = await res.json();
+        message = error.error || message;
+      } catch {}
+      throw new Error(message);
     }
 
     const { token: newToken, user: newUser } = await res.json();

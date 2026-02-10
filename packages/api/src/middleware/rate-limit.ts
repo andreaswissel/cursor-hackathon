@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "../db";
 import { sessions, users } from "../db/schema";
 
@@ -49,7 +49,7 @@ export async function checkSessionLimit(req: Request, res: Response, next: NextF
   if (userSessions.length >= MAX_SESSIONS_PER_USER) {
     res.status(429).json({
       error: "Session limit reached",
-      message: `You can only have ${MAX_SESSIONS_PER_USER} session. Please use your existing session.`,
+      message: `You can only have ${MAX_SESSIONS_PER_USER} sessions. Please use an existing session.`,
       limit: MAX_SESSIONS_PER_USER,
       current: userSessions.length,
     });
@@ -128,19 +128,12 @@ export async function checkSessionOwnership(req: Request, res: Response, next: N
   next();
 }
 
-// Increment prompt count for a session
+// Increment prompt count for a session (atomic)
 export async function incrementPromptCount(sessionId: string): Promise<void> {
-  const [session] = await db
-    .select({ promptCount: sessions.promptCount })
-    .from(sessions)
+  await db
+    .update(sessions)
+    .set({ promptCount: sql`${sessions.promptCount} + 1` })
     .where(eq(sessions.id, sessionId));
-
-  if (session) {
-    await db
-      .update(sessions)
-      .set({ promptCount: session.promptCount + 1 })
-      .where(eq(sessions.id, sessionId));
-  }
 }
 
 // Get user's usage stats

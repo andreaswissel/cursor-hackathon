@@ -175,7 +175,7 @@ export function LoginPage() {
         {/* Info */}
         <div className="mt-8 text-center text-xs text-muted-foreground">
           <p>This is a demo with limited usage:</p>
-          <p className="mt-1">1 session max &middot; 5 prompts per session</p>
+          <p className="mt-1">5 sessions max &middot; 5 prompts per session</p>
           <p className="mt-3">
             <a href="/privacy" className="underline hover:text-foreground transition-colors">
               Privacy Policy

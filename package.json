@@ -3,7 +3,7 @@
   "private": true,
   "workspaces": ["packages/*"],
   "scripts": {
-    "dev": "bun run --filter '*' dev",
+    "dev": "concurrently -n api,web -c blue,green \"bun run dev:api\" \"bun run dev:web\"",
     "dev:api": "bun run --filter @product-os/api dev",
     "dev:web": "bun run --filter @product-os/web dev",
     "build": "bun run --filter '*' build",
@@ -16,6 +16,7 @@
     "db:studio": "bun run --filter @product-os/api db:studio"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "typescript": "^5.3.3"
   }
 }

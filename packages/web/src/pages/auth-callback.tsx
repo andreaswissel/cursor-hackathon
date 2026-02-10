@@ -18,8 +18,9 @@ export function AuthCallbackPage() {
     }
 
     if (token) {
-      setTokenFromOAuth(token);
-      navigate("/", { replace: true });
+      setTokenFromOAuth(token).then(() => {
+        navigate("/", { replace: true });
+      });
     } else {
       navigate("/login?error=No token received");
     }

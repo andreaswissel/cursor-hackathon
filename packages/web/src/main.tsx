@@ -10,6 +10,7 @@ import { LoginPage } from "./pages/login";
 import { AuthCallbackPage } from "./pages/auth-callback";
 import { SettingsPage } from "./pages/settings";
 import { PrivacyPage } from "./pages/privacy";
+import { DiscoverPage } from "./pages/discover";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -32,6 +33,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             element={
               <ProtectedRoute>
                 <SessionPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/discover"
+            element={
+              <ProtectedRoute>
+                <DiscoverPage />
               </ProtectedRoute>
             }
           />

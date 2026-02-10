@@ -16,22 +16,26 @@ export function useSessionStream(sessionId: string): UseSessionStreamResult {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
+  const retryCountRef = useRef(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!sessionId) return;
 
-    const token = getAuthToken();
-    const url = token
-      ? `${API_BASE}/sessions/${sessionId}/stream?token=${encodeURIComponent(token)}`
-      : `${API_BASE}/sessions/${sessionId}/stream`;
+    function connect() {
+      const token = getAuthToken();
+      const url = token
+        ? `${API_BASE}/sessions/${sessionId}/stream?token=${encodeURIComponent(token)}`
+        : `${API_BASE}/sessions/${sessionId}/stream`;
 
-    const eventSource = new EventSource(url);
-    eventSourceRef.current = eventSource;
+      const eventSource = new EventSource(url);
+      eventSourceRef.current = eventSource;
 
-    eventSource.onopen = () => {
-      setIsConnected(true);
-      setError(null);
-    };
+      eventSource.onopen = () => {
+        retryCountRef.current = 0;
+        setIsConnected(true);
+        setError(null);
+      };
 
     eventSource.onmessage = (event) => {
       try {
@@ -210,13 +214,29 @@ export function useSessionStream(sessionId: string): UseSessionStreamResult {
       }
     };
 
-    eventSource.onerror = () => {
-      setIsConnected(false);
-      setError("Connection lost");
-    };
+      eventSource.onerror = () => {
+        setIsConnected(false);
+        eventSource.close();
+        eventSourceRef.current = null;
+
+        // Exponential backoff: 1s, 2s, 4s, 8s, max 30s
+        const delay = Math.min(1000 * Math.pow(2, retryCountRef.current), 30000);
+        retryCountRef.current++;
+
+        if (retryCountRef.current <= 10) {
+          setError(`Connection lost. Reconnecting in ${Math.round(delay / 1000)}s...`);
+          retryTimerRef.current = setTimeout(connect, delay);
+        } else {
+          setError("Connection lost. Please refresh the page.");
+        }
+      };
+    }
+
+    connect();
 
     return () => {
-      eventSource.close();
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      eventSourceRef.current?.close();
       eventSourceRef.current = null;
     };
   }, [sessionId]);

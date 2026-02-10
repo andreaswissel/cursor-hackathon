@@ -112,10 +112,25 @@ export interface SessionEvents {
   "documentation:piece:updated": { sessionId: string; pieceId: string; piece: DocumentationPieceRecord };
 }
 
+const CACHE_EVICTION_DELAY_MS = 5 * 60 * 1000; // 5 minutes after completion
+
 class SessionStore {
   // In-memory cache for active sessions (for SSE performance)
   private cache = new Map<string, Session>();
+  private evictionTimers = new Map<string, ReturnType<typeof setTimeout>>();
   public events = new TypedEventEmitter<SessionEvents>();
+
+  private scheduleEviction(sessionId: string): void {
+    // Clear any existing timer
+    const existing = this.evictionTimers.get(sessionId);
+    if (existing) clearTimeout(existing);
+
+    const timer = setTimeout(() => {
+      this.cache.delete(sessionId);
+      this.evictionTimers.delete(sessionId);
+    }, CACHE_EVICTION_DELAY_MS);
+    this.evictionTimers.set(sessionId, timer);
+  }
 
   // Create a new session
   async create(
@@ -373,6 +388,11 @@ class SessionStore {
       .where(eq(sessions.id, sessionId));
 
     this.events.emit("session:status", { sessionId, status });
+
+    // Schedule cache eviction for terminal states
+    if (status === "completed" || status === "failed") {
+      this.scheduleEviction(sessionId);
+    }
   }
 
   // Set session output

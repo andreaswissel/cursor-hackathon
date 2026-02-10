@@ -5,6 +5,7 @@ import { db } from "../db";
 import { integrations, integrationData } from "../db/schema";
 import { requireAuth } from "../middleware/auth";
 import { getAdapter, PROVIDER_INFO, type IntegrationProvider } from "../integrations";
+import { runDiscoveryAnalysis, isRunning as isDiscoveryRunning } from "../lib/discovery-analyzer";
 
 const router = Router();
 
@@ -341,6 +342,13 @@ router.post("/:integrationId/sync", async (req: Request, res: Response) => {
       .update(integrations)
       .set({ lastSyncedAt: new Date(), updatedAt: new Date() })
       .where(eq(integrations.id, integrationId));
+
+    // Auto-trigger discovery analysis after successful sync
+    if (!isDiscoveryRunning(userId)) {
+      runDiscoveryAnalysis(userId).catch(err =>
+        console.error("Auto-discovery after sync failed:", err)
+      );
+    }
 
     res.json({
       success: true,

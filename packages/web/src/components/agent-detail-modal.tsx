@@ -121,6 +121,7 @@ export function AgentDetailModal({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<(() => void) | null>(null);
+  const streamingContentRef = useRef("");
 
   const config = AGENT_CONFIG[agentType];
   const Icon = config.icon;
@@ -190,19 +191,23 @@ export function AgentDetailModal({
     setMessages((prev) => [...prev, { role: "user", content: userMessage }]);
 
     // Start streaming
+    streamingContentRef.current = "";
     abortRef.current = chatWithAgent(
       sessionId,
       agentType,
       userMessage,
       (text) => {
-        setStreamingContent((prev) => prev + text);
+        streamingContentRef.current += text;
+        setStreamingContent(streamingContentRef.current);
       },
       () => {
-        // On complete - move streaming content to messages
+        // On complete - move streaming content to messages using ref for current value
+        const finalContent = streamingContentRef.current;
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", content: streamingContent || "" },
+          { role: "assistant", content: finalContent },
         ]);
+        streamingContentRef.current = "";
         setStreamingContent("");
         setIsLoading(false);
         onMessageSent?.();
@@ -213,22 +218,12 @@ export function AgentDetailModal({
           ...prev,
           { role: "assistant", content: `Error: ${error}` },
         ]);
+        streamingContentRef.current = "";
         setStreamingContent("");
         setIsLoading(false);
       }
     );
-  }, [input, isLoading, sessionId, agentType, onMessageSent, streamingContent]);
-
-  // Update the complete handler to use current streamingContent
-  useEffect(() => {
-    if (!isLoading && streamingContent) {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: streamingContent },
-      ]);
-      setStreamingContent("");
-    }
-  }, [isLoading, streamingContent]);
+  }, [input, isLoading, sessionId, agentType, onMessageSent]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {

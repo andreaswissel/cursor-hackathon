@@ -20,7 +20,7 @@
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "drizzle-orm": "^0.38.0",
+    "drizzle-orm": "^0.45.1",
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
@@ -37,6 +37,6 @@
     "@types/multer": "^2.0.0",
     "@types/uuid": "^10.0.0",
     "dotenv-cli": "^11.0.0",
-    "drizzle-kit": "^0.30.0"
+    "drizzle-kit": "^0.31.9"
   }
 }

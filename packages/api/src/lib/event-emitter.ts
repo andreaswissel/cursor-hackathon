@@ -15,7 +15,13 @@ export class TypedEventEmitter<Events extends Record<string, unknown>> {
   }
 
   emit<K extends keyof Events>(event: K, data: Events[K]): void {
-    this.listeners.get(event)?.forEach((listener) => listener(data));
+    this.listeners.get(event)?.forEach((listener) => {
+      try {
+        listener(data);
+      } catch {
+        // Isolate listener errors so one broken listener doesn't break others
+      }
+    });
   }
 
   removeAllListeners(): void {

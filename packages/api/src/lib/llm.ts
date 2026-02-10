@@ -246,7 +246,7 @@ function isValidApiKey(key: string | undefined | null, provider: Provider): bool
     case "anthropic":
       return trimmed.startsWith("sk-ant-");
     case "openai":
-      return trimmed.startsWith("sk-");
+      return trimmed.startsWith("sk-") && !trimmed.startsWith("sk-ant-");
     case "gemini":
       return trimmed.length > 20; // Gemini keys are long strings
     default:

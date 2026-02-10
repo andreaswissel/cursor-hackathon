@@ -1,4 +1,4 @@
-import type { SessionContext, Session, AgentType, DocumentationPiece, DocPieceStatus, SessionMode } from "@product-os/shared";
+import type { SessionContext, Session, AgentType, DocumentationPiece, DocPieceStatus, SessionMode, DiscoveryDashboard, DiscoveryRun } from "@product-os/shared";
 
 // In production, use the full API URL; in dev, proxy through Vite
 const API_BASE = import.meta.env.VITE_API_URL ||
@@ -338,4 +338,44 @@ export function refineDocumentationPiece(
   });
 
   return () => controller.abort();
+}
+
+// Discovery Mode API functions
+
+export async function getDiscoveryDashboard(): Promise<DiscoveryDashboard> {
+  const res = await fetch(`${API_BASE}/discovery`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to get discovery dashboard");
+  }
+
+  return res.json();
+}
+
+export async function triggerDiscoveryRun(): Promise<{ runId: string }> {
+  const res = await fetch(`${API_BASE}/discovery/run`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to trigger discovery run" }));
+    throw new Error(error.message || error.error || "Failed to trigger discovery run");
+  }
+
+  return res.json();
+}
+
+export async function getDiscoveryRunStatus(runId: string): Promise<DiscoveryRun> {
+  const res = await fetch(`${API_BASE}/discovery/run/${runId}`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to get discovery run status");
+  }
+
+  return res.json();
 }
