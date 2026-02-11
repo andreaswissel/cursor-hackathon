@@ -16,6 +16,7 @@ import {
   Loader2,
   FolderPlus,
   Lightbulb,
+  Workflow,
   CheckSquare,
   Square,
   ExternalLink,
@@ -437,14 +438,14 @@ export function OnboardingPage() {
               title="You're all set!"
               subtitle="Choose your first action to get started."
             >
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <ActionCard
-                  icon={FolderPlus}
-                  iconColor="bg-emerald-500/10 text-emerald-500"
-                  title="Create a project"
-                  description="Organize your ideas and specs into a project workspace."
+                  icon={Workflow}
+                  iconColor="bg-violet-500/10 text-violet-500"
+                  title="Start a Flow"
+                  description="Chat with AI agents to plan, build, and ship. The fastest way to get things done."
                   loading={isSubmitting}
-                  onClick={() => handleComplete("/")}
+                  onClick={() => handleComplete("/flow")}
                 />
                 <ActionCard
                   icon={Lightbulb}
@@ -461,6 +462,14 @@ export function OnboardingPage() {
                   description="Analyze signals from your tools to find what to build next."
                   loading={isSubmitting}
                   onClick={() => handleComplete("/discover")}
+                />
+                <ActionCard
+                  icon={FolderPlus}
+                  iconColor="bg-emerald-500/10 text-emerald-500"
+                  title="Create a project"
+                  description="Organize your ideas and specs into a project workspace."
+                  loading={isSubmitting}
+                  onClick={() => handleComplete("/")}
                 />
               </div>
             </StepContainer>

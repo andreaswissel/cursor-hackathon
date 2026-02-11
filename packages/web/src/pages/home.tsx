@@ -3,9 +3,18 @@ import { Link } from "react-router-dom";
 import { Sidebar } from "@/components/sidebar";
 import { getAllProjects } from "@/lib/api";
 import type { ProjectWithSessions } from "@product-os/shared";
-import { Lightbulb, Blocks, Compass, ArrowRight } from "lucide-react";
+import { Workflow, Lightbulb, Blocks, Compass, ArrowRight } from "lucide-react";
 
 const CTA_CARDS = [
+  {
+    title: "Flow",
+    description: "Chat with AI agents to plan, build, and ship. The fastest way to go from idea to product.",
+    icon: Workflow,
+    to: "/flow",
+    color: "text-violet-500",
+    bg: "bg-violet-500/10",
+    border: "border-violet-500/20",
+  },
   {
     title: "Imagine",
     description: "Turn a product idea into a validated spec with AI agents that research, strategize, and write.",
@@ -63,7 +72,7 @@ export function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {CTA_CARDS.map((card) => {
               const Icon = card.icon;
               return (
