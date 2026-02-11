@@ -513,6 +513,18 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Team Projects
                 </span>
+                <button
+                  onClick={handleNewProject}
+                  disabled={creatingProject}
+                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
+                  title="New project"
+                >
+                  {creatingProject ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Plus className="w-3.5 h-3.5" />
+                  )}
+                </button>
               </div>
               {teamProjects.map((project) => renderProject(project))}
             </>
