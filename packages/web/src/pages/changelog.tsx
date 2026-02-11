@@ -31,6 +31,11 @@ export function ChangelogPage() {
           <h3 className="text-lg font-medium mt-6 mb-3">Features</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
+              <strong>Salesforce Integration</strong> &mdash; New integration
+              adapter to import sales feedback from Cases, Opportunities, Leads,
+              and Contacts via OAuth with refresh token support
+            </li>
+            <li>
               <strong>Tools Marketplace</strong> &mdash; New{" "}
               <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
                 /tools

@@ -142,7 +142,7 @@ export const messages = pgTable("messages", {
 });
 
 // Integration types
-export type IntegrationProvider = "airtable" | "jira" | "notion" | "google" | "slack" | "intercom";
+export type IntegrationProvider = "airtable" | "jira" | "notion" | "google" | "slack" | "intercom" | "salesforce";
 
 // User integrations (OAuth connections to external tools)
 export const integrations = pgTable("integrations", {

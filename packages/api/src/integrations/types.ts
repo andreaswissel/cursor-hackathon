@@ -97,4 +97,10 @@ export const PROVIDER_INFO: Record<IntegrationProvider, {
     icon: "message-circle",
     color: "#286EFA",
   },
+  salesforce: {
+    name: "Salesforce",
+    description: "Import sales feedback from Cases and Opportunities",
+    icon: "cloud",
+    color: "#00A1E0",
+  },
 };

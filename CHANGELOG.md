@@ -6,6 +6,7 @@ All notable changes to Product OS are documented here.
 
 ### Features
 
+- **Salesforce Integration** — New integration adapter to import sales feedback from Cases, Opportunities, Leads, and Contacts via OAuth with refresh token support
 - **Tools Marketplace** — New `/tools` hub consolidating Documents, Roadmap, and two new AI-powered tools: Guided Tours (product tour designer) and Feedback Forms (survey/form designer)
 - **Changelog** — Public `/changelog` page accessible without authentication
 

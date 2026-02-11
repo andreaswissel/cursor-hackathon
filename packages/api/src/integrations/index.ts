@@ -5,6 +5,7 @@ import { notionAdapter } from "./notion";
 import { googleAdapter } from "./google";
 import { slackAdapter } from "./slack";
 import { intercomAdapter } from "./intercom";
+import { salesforceAdapter } from "./salesforce";
 
 export * from "./types";
 
@@ -16,6 +17,7 @@ export const integrationAdapters: Record<IntegrationProvider, IntegrationAdapter
   google: googleAdapter,
   slack: slackAdapter,
   intercom: intercomAdapter,
+  salesforce: salesforceAdapter,
 };
 
 // Get adapter by provider
