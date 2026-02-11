@@ -496,13 +496,18 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo }: FlowChatTh
             <button
               onClick={() => setShowAgentMenu(!showAgentMenu)}
               disabled={isStreaming}
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors disabled:opacity-50"
+              className={cn(
+                "p-1.5 rounded-lg transition-colors disabled:opacity-50",
+                showAgentMenu
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+              )}
             >
               <Plus className="w-4 h-4" />
             </button>
 
             {showAgentMenu && (
-              <div className="absolute bottom-full left-0 mb-2 w-56 max-h-[70vh] overflow-y-auto rounded-xl border bg-popover shadow-lg py-1.5 z-50">
+              <div className="absolute bottom-full left-0 mb-2 w-56 max-h-[70vh] overflow-y-auto rounded-xl border border-border bg-background shadow-xl py-1.5 z-[100]">
                 <div className="px-3 py-1.5 text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">
                   Agents
                 </div>
