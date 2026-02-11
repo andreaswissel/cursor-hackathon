@@ -6,6 +6,7 @@ All notable changes to Product OS are documented here.
 
 ### Features
 
+- **Landing Page** — Public marketing landing page at `/` for unauthenticated visitors with hero, feature showcase, how it works, integrations, and CTA sections. Authenticated users still see the home dashboard.
 - **Salesforce Integration** — New integration adapter to import sales feedback from Cases, Opportunities, Leads, and Contacts via OAuth with refresh token support
 - **New Flow in Project** — Start a Flow session directly from a project via hover action button in the sidebar
 - **Tools Marketplace** — New `/tools` hub consolidating Documents, Roadmap, and two new AI-powered tools: Guided Tours (product tour designer) and Feedback Forms (survey/form designer)

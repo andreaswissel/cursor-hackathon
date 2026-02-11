@@ -31,6 +31,14 @@ export function ChangelogPage() {
           <h3 className="text-lg font-medium mt-6 mb-3">Features</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
+              <strong>Landing Page</strong> &mdash; Public marketing landing page
+              at{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">/</code>{" "}
+              for unauthenticated visitors with hero, feature showcase, how it
+              works, integrations, and CTA sections. Authenticated users still
+              see the home dashboard.
+            </li>
+            <li>
               <strong>Salesforce Integration</strong> &mdash; New integration
               adapter to import sales feedback from Cases, Opportunities, Leads,
               and Contacts via OAuth with refresh token support

@@ -2,9 +2,10 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./index.css";
-import { AuthProvider } from "./contexts/auth-context";
+import { AuthProvider, useAuth } from "./contexts/auth-context";
 import { ProtectedRoute } from "./components/protected-route";
 import { HomePage } from "./pages/home";
+import { LandingPage } from "./pages/landing";
 import { SessionPage } from "./pages/session";
 import { LoginPage } from "./pages/login";
 import { AuthCallbackPage } from "./pages/auth-callback";
@@ -24,6 +25,29 @@ import { RoadmapPage } from "./pages/roadmap";
 import { ToolsPage } from "./pages/tools";
 import { ToolsGuidedToursPage } from "./pages/tools-guided-tours";
 import { ToolsFeedbackFormsPage } from "./pages/tools-feedback-forms";
+import { Loader2 } from "lucide-react";
+
+function RootRoute() {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LandingPage />;
+  }
+
+  if (!user.onboardingCompleted) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  return <HomePage />;
+}
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -44,14 +68,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <HomePage />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/" element={<RootRoute />} />
           <Route
             path="/session/:sessionId"
             element={
