@@ -25,7 +25,40 @@ export function ChangelogPage() {
             All notable changes to Product OS are documented here.
           </p>
 
-          <h2 className="text-xl font-semibold mt-8 mb-4">2026-02-11</h2>
+          {/* Feb 12 */}
+          <h2 className="text-xl font-semibold mt-8 mb-4">2026-02-12</h2>
+
+          <h3 className="text-lg font-medium mt-6 mb-3">Features</h3>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Tools Marketplace</strong> &mdash; New{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                /tools
+              </code>{" "}
+              hub consolidating Documents, Roadmap, and two new AI-powered
+              tools: Guided Tours (product tour designer) and Feedback Forms
+              (survey/form designer)
+            </li>
+            <li>
+              <strong>Changelog</strong> &mdash; Public{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                /changelog
+              </code>{" "}
+              page accessible without authentication
+            </li>
+          </ul>
+
+          <h3 className="text-lg font-medium mt-6 mb-3">Improvements</h3>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Flow chat UX</strong> &mdash; Replace agent button row
+              with + popup menu in chat thread; move + button inside textarea
+              container to match ChatGPT layout
+            </li>
+          </ul>
+
+          {/* Feb 11 */}
+          <h2 className="text-xl font-semibold mt-10 mb-4">2026-02-11</h2>
 
           <h3 className="text-lg font-medium mt-6 mb-3">Features</h3>
           <ul className="list-disc pl-6 space-y-1">
@@ -50,24 +83,12 @@ export function ChangelogPage() {
               planning features across quarters
             </li>
             <li>
-              <strong>Knowledge Sources</strong> &mdash; Project-scoped
-              knowledge with inheritance and AI summarization
-            </li>
-            <li>
-              <strong>Intercom Integration</strong> &mdash; Customer
-              conversation sync adapter
-            </li>
-            <li>
               <strong>Privacy &amp; Compliance</strong> &mdash; Inline privacy
               policy, DPA, and subprocessors list
             </li>
             <li>
-              <strong>Move-to-Team UI</strong> &mdash; Transfer projects between
-              personal and team workspaces
-            </li>
-            <li>
-              <strong>Flow chat menu</strong> &mdash; Replaced agent button row
-              with + popup menu in chat thread
+              <strong>Intercom Integration</strong> &mdash; Customer
+              conversation sync adapter
             </li>
           </ul>
 
@@ -94,6 +115,65 @@ export function ChangelogPage() {
             <li>
               <strong>Sidebar</strong> &mdash; Move Flow nav item to first
               position
+            </li>
+          </ul>
+
+          {/* Feb 10 */}
+          <h2 className="text-xl font-semibold mt-10 mb-4">2026-02-10</h2>
+
+          <h3 className="text-lg font-medium mt-6 mb-3">Features</h3>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Discover</strong> &mdash; Discovery page with CTA buttons,
+              backend API, and real data source selector
+            </li>
+            <li>
+              <strong>Imagine</strong> &mdash; New Imagine page with file
+              import, terminal panel, and UI improvements
+            </li>
+            <li>
+              <strong>Projects</strong> &mdash; Projects as primary
+              organizational unit for grouping sessions
+            </li>
+            <li>
+              <strong>Onboarding</strong> &mdash; Multi-step onboarding wizard
+              for new users
+            </li>
+            <li>
+              <strong>Teams &amp; Roles</strong> &mdash; Teams, user profiles,
+              and role-based access with invite flows
+            </li>
+            <li>
+              <strong>Knowledge Sources</strong> &mdash; Project-scoped
+              knowledge with inheritance and AI summarization
+            </li>
+            <li>
+              <strong>Move-to-Team UI</strong> &mdash; Transfer projects between
+              personal and team workspaces
+            </li>
+            <li>
+              <strong>Admin User Management</strong> &mdash; User management
+              panel in settings page
+            </li>
+            <li>
+              <strong>Privacy Notices</strong> &mdash; Layered privacy notices
+              with low-friction UX
+            </li>
+            <li>
+              <strong>Desktop App</strong> &mdash; Tauri desktop app CORS
+              support
+            </li>
+          </ul>
+
+          <h3 className="text-lg font-medium mt-6 mb-3">Fixes</h3>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Dark mode</strong> &mdash; Fix heading colors in markdown
+              prose containers
+            </li>
+            <li>
+              <strong>Onboarding</strong> &mdash; Fix tool links redirecting to
+              step 1
             </li>
           </ul>
         </div>
