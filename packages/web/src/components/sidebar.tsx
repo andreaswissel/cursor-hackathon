@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
-import { deleteSession, deleteProject, updateProject, createProject } from "@/lib/api";
+import { deleteSession, deleteProject, updateProject, createProject, createFlowSession } from "@/lib/api";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { TeamSwitcher } from "@/components/team-switcher";
 import { UserAvatar } from "@/components/user-avatar";
@@ -126,7 +126,7 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
   const handleNewProject = async () => {
     setCreatingProject(true);
     try {
-      await createProject("Untitled Project");
+      await createProject("Drafts");
       onProjectCreated?.();
     } catch (error) {
       console.error("Failed to create project:", error);
@@ -228,11 +228,15 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
     }
   };
 
+  const handleNewFlow = async (projectId: string) => {
+    navigate(`/flow?projectId=${projectId}`);
+  };
+
   const totalSessions = projects.reduce((sum, p) => sum + p.sessions.length, 0);
 
   function renderProject(project: ProjectWithSessions) {
     const isExpanded = expandedProjects.has(project.id);
-    const isDefault = project.name === "Untitled Project";
+    const isDefault = project.name === "Drafts";
 
     return (
       <div key={project.id} className="mb-1">
@@ -241,6 +245,7 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
           <button
             onClick={() => toggleProject(project.id)}
             className="flex items-center gap-1.5 flex-1 min-w-0 text-left"
+            title={project.name}
           >
             {isExpanded ? (
               <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
@@ -268,17 +273,24 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
                 autoFocus
               />
             ) : (
-              <span className="text-sm font-medium truncate">{project.name}</span>
+              <span className="text-sm font-medium truncate flex-1 min-w-0">{project.name}</span>
             )}
           </button>
-
-          <span className="text-xs text-muted-foreground bg-secondary px-1.5 py-0.5 rounded flex-shrink-0">
-            {project.sessions.length}
-          </span>
 
           {/* Project actions (hover) */}
           {renamingProjectId !== project.id && (
             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleNewFlow(project.id);
+                }}
+                className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-secondary"
+                title="New Flow session"
+              >
+                <Workflow className="w-3 h-3" />
+              </button>
               <Link
                 to={`/project/${project.id}/knowledge`}
                 onClick={(e) => e.stopPropagation()}
@@ -314,6 +326,10 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
               )}
             </div>
           )}
+
+          <span className="text-xs text-muted-foreground bg-secondary px-1.5 py-0.5 rounded flex-shrink-0 ml-auto">
+            {project.sessions.length}
+          </span>
         </div>
 
         {/* Nested sessions */}
@@ -346,9 +362,8 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
                           session.status === "running" && "animate-spin-slow"
                         )}
                       />
-                      <span className="truncate text-muted-foreground text-xs">
-                        {session.idea.slice(0, 35)}
-                        {session.idea.length > 35 && "..."}
+                      <span className="truncate text-muted-foreground text-xs" title={session.idea}>
+                        {session.idea}
                       </span>
                     </Link>
                     <button
@@ -489,18 +504,6 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
         </Link>
       </div>
 
-      {/* New Project Button */}
-      <div className="p-3 flex-shrink-0">
-        <button
-          onClick={handleNewProject}
-          disabled={creatingProject}
-          className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium border rounded-lg hover:bg-secondary transition-colors disabled:opacity-50"
-        >
-          {creatingProject ? "Creating..." : "New Project"}
-          <Plus className="w-4 h-4" />
-        </button>
-      </div>
-
       {/* Projects List */}
       <div className="flex-1 overflow-y-auto">
         {/* Team projects section (when a team is active) */}
@@ -509,7 +512,7 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
           if (teamProjects.length === 0) return null;
           return (
             <>
-              <div className="px-3 py-2">
+              <div className="flex items-center justify-between px-3 pt-4 pb-2">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Team Projects
                 </span>
@@ -519,10 +522,22 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
           );
         })()}
 
-        <div className="px-3 py-2">
+        <div className="flex items-center justify-between px-3 pt-4 pb-2">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             {activeTeamId ? "Personal Projects" : "Projects"}
           </span>
+          <button
+            onClick={handleNewProject}
+            disabled={creatingProject}
+            className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
+            title="New project"
+          >
+            {creatingProject ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Plus className="w-3.5 h-3.5" />
+            )}
+          </button>
         </div>
 
         {projects.filter((p: any) => !p.teamId).map((project) => renderProject(project))}
@@ -600,7 +615,7 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
         onClose={() => setDeleteProjectConfirm(null)}
         onConfirm={handleDeleteProjectConfirm}
         title="Delete project?"
-        description={`This will delete "${deleteProjectConfirm?.name}". All sessions will be moved to "Untitled Project". This action cannot be undone.`}
+        description={`This will delete "${deleteProjectConfirm?.name}". All sessions will be moved to "Drafts". This action cannot be undone.`}
         confirmLabel="Delete"
         cancelLabel="Cancel"
         variant="destructive"

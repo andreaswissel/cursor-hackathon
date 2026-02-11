@@ -90,10 +90,10 @@ router.get("/", async (req: Request, res: Response) => {
     sessionsByProject.get(pid)!.push(s);
   }
 
-  // Sort: "Untitled Project" always last
+  // Sort: "Drafts" always last
   const sorted = [...dbProjects].sort((a, b) => {
-    if (a.name === "Untitled Project" && b.name !== "Untitled Project") return 1;
-    if (b.name === "Untitled Project" && a.name !== "Untitled Project") return -1;
+    if (a.name === "Drafts" && b.name !== "Drafts") return 1;
+    if (b.name === "Drafts" && a.name !== "Drafts") return -1;
     return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
   });
 
@@ -140,7 +140,7 @@ router.post("/", async (req: Request, res: Response) => {
     .values({
       userId,
       teamId: teamId || null,
-      name: name || "Untitled Project",
+      name: name || "Drafts",
       description: description || null,
       repoUrl: repoUrl || null,
     })
@@ -255,13 +255,13 @@ router.delete("/:id", async (req: Request, res: Response) => {
     return;
   }
 
-  if (project.name === "Untitled Project") {
+  if (project.name === "Drafts") {
     res.status(400).json({ error: "Cannot delete the default project" });
     return;
   }
 
   try {
-    // Reassign sessions to Untitled Project
+    // Reassign sessions to Drafts
     const defaultProjectId = await ensureDefaultProject(userId);
     await db
       .update(sessions)

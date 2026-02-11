@@ -58,7 +58,7 @@ export const projects = pgTable("projects", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id").references(() => users.id).notNull(),
   teamId: uuid("team_id").references(() => teams.id, { onDelete: "set null" }),
-  name: text("name").default("Untitled Project").notNull(),
+  name: text("name").default("Drafts").notNull(),
   description: text("description"),
   repoUrl: text("repo_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
