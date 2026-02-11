@@ -24,6 +24,8 @@ import { ReviewAgent } from "../agents/review-agent";
 import { ChangelogAgent } from "../agents/changelog-agent";
 import { DiscoveryAgent, StrategyAgent, SpecAgent, GTMAgent } from "../agents";
 import { ProductMarketingAgent } from "../agents/product-marketing-agent";
+import { GuidedToursAgent } from "../agents/guided-tours-agent";
+import { FeedbackFormsAgent } from "../agents/feedback-forms-agent";
 import { resolveKnowledge, toSessionContext } from "../lib/knowledge-resolver";
 import { knowledgeSources } from "../db/schema";
 import type { AgentInput } from "../agents/base-agent";
@@ -232,6 +234,57 @@ router.post("/flow", checkSessionLimit, async (req: Request, res: Response) => {
 
   await sessionStore.create(sessionId, generatedTitle, context, userId, "flow", undefined, resolvedProjectId, resolvedRepoUrl);
   // Flow sessions are immediately ready for chat — set status to completed
+  await sessionStore.setSessionStatus(sessionId, "completed");
+
+  res.json({ sessionId, title: generatedTitle });
+});
+
+// Create a new guided tours session
+router.post("/guided-tours", checkSessionLimit, async (req: Request, res: Response) => {
+  const { message, sessionLink, projectId } = req.body as {
+    message?: string;
+    sessionLink?: string;
+    projectId?: string;
+  };
+
+  if (!message) {
+    res.status(400).json({ error: "Missing message" });
+    return;
+  }
+
+  const userId = req.user!.id;
+  const resolvedProjectId = projectId || await ensureDefaultProject(userId);
+  const generatedTitle = await generateSessionTitle(message);
+
+  const sessionId = uuid();
+  const context: SessionContext = { okrs: [], customerFeedback: [] };
+
+  await sessionStore.create(sessionId, generatedTitle, context, userId, "guided-tours", undefined, resolvedProjectId);
+  await sessionStore.setSessionStatus(sessionId, "completed");
+
+  res.json({ sessionId, title: generatedTitle });
+});
+
+// Create a new feedback forms session
+router.post("/feedback-forms", checkSessionLimit, async (req: Request, res: Response) => {
+  const { message, projectId } = req.body as {
+    message?: string;
+    projectId?: string;
+  };
+
+  if (!message) {
+    res.status(400).json({ error: "Missing message" });
+    return;
+  }
+
+  const userId = req.user!.id;
+  const resolvedProjectId = projectId || await ensureDefaultProject(userId);
+  const generatedTitle = await generateSessionTitle(message);
+
+  const sessionId = uuid();
+  const context: SessionContext = { okrs: [], customerFeedback: [] };
+
+  await sessionStore.create(sessionId, generatedTitle, context, userId, "feedback-forms", undefined, resolvedProjectId);
   await sessionStore.setSessionStatus(sessionId, "completed");
 
   res.json({ sessionId, title: generatedTitle });
@@ -792,8 +845,8 @@ router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (
         await sessionStore.addMessage(sessionId, agentType, "assistant", fullResponse);
         await incrementPromptCount(sessionId);
 
-        // For flow mode, parse and save any artifacts from the response
-        if (session!.mode === "flow") {
+        // For flow-like modes, parse and save any artifacts from the response
+        if (session!.mode === "flow" || session!.mode === "guided-tours" || session!.mode === "feedback-forms") {
           const artifacts = parseArtifacts(fullResponse);
           for (const artifact of artifacts) {
             await sessionStore.createArtifact(sessionId, {
@@ -1053,7 +1106,49 @@ Your job is to:
 - Organize into Added/Changed/Fixed/Removed categories
 - Use non-technical language end users can understand
 - Focus on user impact, not implementation details`,
+
+    "guided-tours-agent": `You are a Guided Tour Design Specialist. You help product teams design step-by-step interactive product tours that onboard new users and highlight key features.
+
+${baseContext}
+
+You can create artifacts during your responses using this format:
+[ARTIFACT:guided-tour:Tour Title]
+content here
+[/ARTIFACT]
+
+Your job is to:
+- Ask clarifying questions about the product, target audience, and goals
+- Design a structured tour with numbered steps, each containing: target element, tooltip text, and action
+- Consider user experience principles: progressive disclosure, clear CTAs, and escape hatches
+- Output tours in a structured markdown format that can be translated to code
+- Suggest A/B testing variations for tour effectiveness
+Keep your chat responses conversational and concise. Use artifacts for substantial tour content.`,
+
+    "feedback-forms-agent": `You are a Feedback Form Design Specialist. You help product teams create targeted feedback forms that capture user sentiment, feature requests, and usability insights.
+
+${baseContext}
+
+You can create artifacts during your responses using this format:
+[ARTIFACT:feedback-form:Form Title]
+content here
+[/ARTIFACT]
+
+Your job is to:
+- Ask about the target audience, goals, and what decisions the feedback will inform
+- Design forms with a mix of quantitative (NPS, ratings, scales) and qualitative (open-ended) questions
+- Follow survey design best practices: avoid leading questions, keep it short, logical flow
+- Output forms in a structured markdown format with question types clearly labeled
+- Suggest follow-up strategies and analysis approaches
+Keep your chat responses conversational and concise. Use artifacts for substantial form content.`,
   };
+
+  // For tool modes, use the specialized prompt even when agentType is flow-orchestrator
+  if (agentType === "flow-orchestrator" && session?.mode === "guided-tours") {
+    return agentContexts["guided-tours-agent"]!;
+  }
+  if (agentType === "flow-orchestrator" && session?.mode === "feedback-forms") {
+    return agentContexts["feedback-forms-agent"]!;
+  }
 
   return agentContexts[agentType] || agentContexts["flow-orchestrator"];
 }

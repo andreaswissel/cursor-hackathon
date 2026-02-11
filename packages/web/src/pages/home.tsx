@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Sidebar } from "@/components/sidebar";
 import { getAllProjects } from "@/lib/api";
 import type { ProjectWithSessions } from "@product-os/shared";
-import { Lightbulb, Video, Compass, ArrowRight } from "lucide-react";
+import { Lightbulb, Blocks, Compass, ArrowRight } from "lucide-react";
 
 const CTA_CARDS = [
   {
@@ -16,13 +16,13 @@ const CTA_CARDS = [
     border: "border-amber-500/20",
   },
   {
-    title: "Document",
-    description: "Upload a video and get structured documentation pieces you can review and refine.",
-    icon: Video,
-    to: "/document",
-    color: "text-blue-500",
-    bg: "bg-blue-500/10",
-    border: "border-blue-500/20",
+    title: "Tools",
+    description: "Extend your workflow with guided tours, feedback forms, documents, and more.",
+    icon: Blocks,
+    to: "/tools",
+    color: "text-purple-500",
+    bg: "bg-purple-500/10",
+    border: "border-purple-500/20",
   },
   {
     title: "Discover",

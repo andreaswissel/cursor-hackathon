@@ -948,6 +948,47 @@ export async function deleteRoadmapItem(id: string): Promise<void> {
   }
 }
 
+// ============================================================
+// Tools API (Guided Tours, Feedback Forms)
+// ============================================================
+
+export async function createGuidedToursSession(
+  message: string,
+  sessionLink?: string,
+  projectId?: string
+): Promise<{ sessionId: string; title: string }> {
+  const res = await fetch(`${API_BASE}/sessions/guided-tours`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({ message, sessionLink, projectId }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to create guided tours session" }));
+    throw new Error(error.message || error.error || "Failed to create guided tours session");
+  }
+
+  return res.json();
+}
+
+export async function createFeedbackFormsSession(
+  message: string,
+  projectId?: string
+): Promise<{ sessionId: string; title: string }> {
+  const res = await fetch(`${API_BASE}/sessions/feedback-forms`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({ message, projectId }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to create feedback forms session" }));
+    throw new Error(error.message || error.error || "Failed to create feedback forms session");
+  }
+
+  return res.json();
+}
+
 export async function searchSessionsForLinking(query: string): Promise<{ sessions: Array<{ id: string; idea: string; status: string; mode?: string }> }> {
   const res = await fetch(`${API_BASE}/roadmap/sessions/search?q=${encodeURIComponent(query)}`, {
     headers: getAuthHeaders(),

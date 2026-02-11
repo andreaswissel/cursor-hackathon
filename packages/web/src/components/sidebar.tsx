@@ -25,6 +25,7 @@ import {
   Video,
   Workflow,
   Map,
+  Blocks,
   FolderOpen,
   Folder,
   ChevronRight,
@@ -461,32 +462,6 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
           Imagine
         </Link>
         <Link
-          to="/document"
-          onClick={() => setIsOpen(false)}
-          className={cn(
-            "flex items-center gap-2 px-3 py-2 w-full text-sm font-medium rounded-lg transition-colors",
-            location.pathname === "/document"
-              ? "bg-secondary text-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-          )}
-        >
-          <Video className="w-4 h-4" />
-          Document
-        </Link>
-        <Link
-          to="/roadmap"
-          onClick={() => setIsOpen(false)}
-          className={cn(
-            "flex items-center gap-2 px-3 py-2 w-full text-sm font-medium rounded-lg transition-colors",
-            location.pathname === "/roadmap"
-              ? "bg-secondary text-foreground"
-              : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-          )}
-        >
-          <Map className="w-4 h-4" />
-          Roadmap
-        </Link>
-        <Link
           to="/discover"
           onClick={() => setIsOpen(false)}
           className={cn(
@@ -498,6 +473,19 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
         >
           <Compass className="w-4 h-4" />
           Discover
+        </Link>
+        <Link
+          to="/tools"
+          onClick={() => setIsOpen(false)}
+          className={cn(
+            "flex items-center gap-2 px-3 py-2 w-full text-sm font-medium rounded-lg transition-colors",
+            location.pathname.startsWith("/tools")
+              ? "bg-secondary text-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+          )}
+        >
+          <Blocks className="w-4 h-4" />
+          Tools
         </Link>
       </div>
 
@@ -585,6 +573,10 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
           {" · "}
           <a href="/restricted-data" className="underline hover:text-foreground transition-colors">
             Restricted Data
+          </a>
+          {" · "}
+          <a href="/changelog" className="underline hover:text-foreground transition-colors">
+            Changelog
           </a>
         </div>
       </div>

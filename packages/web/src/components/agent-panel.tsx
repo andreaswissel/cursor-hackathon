@@ -98,6 +98,16 @@ const AGENT_CONFIG: Record<
     description: "Writes changelog entries",
     icon: FileText,
   },
+  "guided-tours-agent": {
+    name: "Guided Tours Agent",
+    description: "Designs product tours",
+    icon: FileText,
+  },
+  "feedback-forms-agent": {
+    name: "Feedback Forms Agent",
+    description: "Creates feedback forms",
+    icon: FileText,
+  },
 };
 
 const STATUS_CONFIG = {

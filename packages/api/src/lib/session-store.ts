@@ -3,9 +3,9 @@ import { db } from "../db";
 import { sessions, agentRuns, outputs, messages, documentationPieces, flowArtifacts } from "../db/schema";
 import { TypedEventEmitter } from "./event-emitter";
 
-export type AgentType = "orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "product-marketing" | "doc-orchestrator" | "transcription" | "doc-generator" | "flow-orchestrator" | "code-agent" | "review-agent" | "changelog-agent";
+export type AgentType = "orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "product-marketing" | "doc-orchestrator" | "transcription" | "doc-generator" | "flow-orchestrator" | "code-agent" | "review-agent" | "changelog-agent" | "guided-tours-agent" | "feedback-forms-agent";
 export type AgentStatus = "pending" | "running" | "waiting_input" | "completed" | "failed";
-export type SessionMode = "idea-to-spec" | "documentation" | "flow";
+export type SessionMode = "idea-to-spec" | "documentation" | "flow" | "guided-tours" | "feedback-forms";
 
 export interface FlowArtifactRecord {
   id: string;
@@ -94,6 +94,7 @@ export interface Session {
   agents: Map<AgentType, AgentState>;
   outputs: {
     spec?: string;
+    codingPrompt?: string;
     slidesUrl?: string;
     productUpdate?: string;
     validation?: string;

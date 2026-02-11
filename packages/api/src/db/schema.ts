@@ -76,7 +76,7 @@ export const sessions = pgTable("sessions", {
   }>(),
   status: text("status").$type<"pending" | "running" | "waiting_input" | "completed" | "failed">().default("pending").notNull(),
   promptCount: integer("prompt_count").default(1).notNull(),
-  mode: text("mode").$type<"idea-to-spec" | "documentation" | "flow">().default("idea-to-spec").notNull(),
+  mode: text("mode").$type<"idea-to-spec" | "documentation" | "flow" | "guided-tours" | "feedback-forms">().default("idea-to-spec").notNull(),
   videoMetadata: jsonb("video_metadata").$type<{
     filename: string;
     originalName: string;

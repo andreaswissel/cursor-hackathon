@@ -130,6 +130,20 @@ const AGENT_CONFIG: Record<
     color: "text-rose-500",
     gradient: "from-rose-500/20 to-pink-600/5",
   },
+  "guided-tours-agent": {
+    name: "Guided Tours Agent",
+    description: "Designs step-by-step product tours",
+    icon: FileText,
+    color: "text-emerald-500",
+    gradient: "from-emerald-500/20 to-teal-600/5",
+  },
+  "feedback-forms-agent": {
+    name: "Feedback Forms Agent",
+    description: "Creates targeted feedback forms",
+    icon: MessageSquare,
+    color: "text-orange-500",
+    gradient: "from-orange-500/20 to-amber-600/5",
+  },
 };
 
 export function AgentDetailModal({

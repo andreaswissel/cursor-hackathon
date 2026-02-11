@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import "./index.css";
 import { AuthProvider } from "./contexts/auth-context";
 import { ProtectedRoute } from "./components/protected-route";
@@ -14,12 +14,16 @@ import { DiscoverPage } from "./pages/discover";
 import { ImaginePage } from "./pages/imagine";
 import { DocumentPage } from "./pages/document";
 import { RestrictedDataPage } from "./pages/restricted-data";
+import { ChangelogPage } from "./pages/changelog";
 import { OnboardingPage } from "./pages/onboarding";
 import { TeamSettingsPage } from "./pages/team-settings";
 import { InvitePage } from "./pages/invite";
 import { ProjectKnowledgePage } from "./pages/project-knowledge";
 import { FlowPage } from "./pages/flow";
 import { RoadmapPage } from "./pages/roadmap";
+import { ToolsPage } from "./pages/tools";
+import { ToolsGuidedToursPage } from "./pages/tools-guided-tours";
+import { ToolsFeedbackFormsPage } from "./pages/tools-feedback-forms";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -30,6 +34,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/auth/callback" element={<AuthCallbackPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/restricted-data" element={<RestrictedDataPage />} />
+          <Route path="/changelog" element={<ChangelogPage />} />
           <Route path="/invite/:token" element={<InvitePage />} />
           <Route
             path="/onboarding"
@@ -64,14 +69,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             }
           />
           <Route
-            path="/document"
-            element={
-              <ProtectedRoute>
-                <DocumentPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/flow"
             element={
               <ProtectedRoute>
@@ -81,9 +78,49 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           />
           <Route
             path="/roadmap"
+            element={<Navigate to="/tools/roadmap" replace />}
+          />
+          <Route
+            path="/document"
+            element={<Navigate to="/tools/documents" replace />}
+          />
+          <Route
+            path="/tools"
+            element={
+              <ProtectedRoute>
+                <ToolsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tools/roadmap"
             element={
               <ProtectedRoute>
                 <RoadmapPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tools/documents"
+            element={
+              <ProtectedRoute>
+                <DocumentPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tools/guided-tours"
+            element={
+              <ProtectedRoute>
+                <ToolsGuidedToursPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tools/feedback-forms"
+            element={
+              <ProtectedRoute>
+                <ToolsFeedbackFormsPage />
               </ProtectedRoute>
             }
           />

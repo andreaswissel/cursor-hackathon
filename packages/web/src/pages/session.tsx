@@ -112,6 +112,14 @@ const AGENT_PROGRESS_INFO: Record<AgentType, { title: string; description: strin
     title: "Changelog Agent",
     description: "Writing user-facing changelog entries...",
   },
+  "guided-tours-agent": {
+    title: "Guided Tours Agent",
+    description: "Designing step-by-step product tours...",
+  },
+  "feedback-forms-agent": {
+    title: "Feedback Forms Agent",
+    description: "Creating targeted feedback forms...",
+  },
 };
 
 type TabType = "agents" | "outputs";
@@ -137,6 +145,9 @@ export function SessionPage() {
   }, []);
 
   const isFlowMode = session?.mode === "flow";
+  const isGuidedToursMode = session?.mode === "guided-tours";
+  const isFeedbackFormsMode = session?.mode === "feedback-forms";
+  const isFlowLikeMode = isFlowMode || isGuidedToursMode || isFeedbackFormsMode;
   const isDocumentationMode = session?.mode === "documentation";
 
   const refreshProjects = () => {
@@ -265,8 +276,15 @@ export function SessionPage() {
     );
   }
 
-  // Flow mode has its own dedicated layout
-  if (isFlowMode) {
+  // Flow-like modes have their own dedicated layout
+  if (isFlowLikeMode) {
+    const badgeText = isGuidedToursMode ? "Tours" : isFeedbackFormsMode ? "Forms" : "Flow";
+    const badgeColor = isGuidedToursMode
+      ? "bg-emerald-500/10 text-emerald-600"
+      : isFeedbackFormsMode
+        ? "bg-orange-500/10 text-orange-600"
+        : "bg-violet-500/10 text-violet-600";
+
     return (
       <div className="flex h-screen">
         <Sidebar projects={projects} onProjectCreated={refreshProjects} onProjectDeleted={refreshProjects} onSessionDeleted={refreshProjects} />
@@ -288,8 +306,8 @@ export function SessionPage() {
                 <div className={cn("w-2 h-2 rounded-full", isConnected ? "bg-emerald-500" : "bg-red-500")} />
                 <span className="text-xs text-muted-foreground">{isConnected ? "Connected" : "Disconnected"}</span>
               </div>
-              <div className="px-2 py-0.5 rounded-full text-xs font-medium bg-violet-500/10 text-violet-600">
-                Flow
+              <div className={cn("px-2 py-0.5 rounded-full text-xs font-medium", badgeColor)}>
+                {badgeText}
               </div>
             </div>
           </div>
