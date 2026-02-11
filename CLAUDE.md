@@ -159,4 +159,5 @@ After a feature is fully implemented and verified:
 
 1. **Always commit and push all related changes** — stage every modified and new file that is part of the feature, not just the files from the current task
 2. Check `git status` to ensure no relevant changes are left unstaged
-3. The app is deployed from `main` via Railway — unpushed changes mean production stays stale
+3. **Always update the changelog** — add an entry to both `CHANGELOG.md` (repo root) and `packages/web/src/pages/changelog.tsx` (in-app page) describing what changed. Group entries under the current date and categorize as Features, Improvements, or Fixes. Include these files in the commit.
+4. The app is deployed from `main` via Railway — unpushed changes mean production stays stale
