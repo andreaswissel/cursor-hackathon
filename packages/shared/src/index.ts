@@ -91,6 +91,8 @@ export interface DocumentationPiece {
   updatedAt: string;
 }
 
+export type SandboxStatus = "idle" | "cloning" | "ready" | "running" | "error";
+
 export interface Session {
   id: string;
   idea: string;
@@ -99,6 +101,7 @@ export interface Session {
   promptCount?: number;
   mode?: SessionMode;
   projectId?: string;
+  repoUrl?: string;
   videoMetadata?: VideoMetadata;
   agents: Record<AgentType, AgentState>;
   outputs: {

@@ -84,6 +84,7 @@ export const sessions = pgTable("sessions", {
     path: string;
     duration?: number;
   }>(),
+  repoUrl: text("repo_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

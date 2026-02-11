@@ -101,6 +101,8 @@ export function FlowArtifactPanel({ artifacts, className }: FlowArtifactPanelPro
               <Loader2 className="w-4 h-4 animate-spin" />
               Generating...
             </div>
+          ) : selectedArtifact.type === "code-diff" ? (
+            <DiffViewer content={selectedArtifact.content} />
           ) : (
             <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-headings:font-semibold prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground prose-code:text-xs prose-code:bg-muted prose-code:text-foreground prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:rounded-lg prose-pre:p-3 [&_pre_code]:bg-transparent [&_pre_code]:p-0">
               <ReactMarkdown>{selectedArtifact.content}</ReactMarkdown>
@@ -185,5 +187,32 @@ export function FlowArtifactPanel({ artifacts, className }: FlowArtifactPanelPro
         )}
       </div>
     </div>
+  );
+}
+
+function DiffViewer({ content }: { content: string }) {
+  const lines = content.split("\n");
+  return (
+    <pre className="text-xs font-mono overflow-x-auto">
+      {lines.map((line, i) => {
+        let className = "block px-2 py-px whitespace-pre ";
+        if (line.startsWith("+") && !line.startsWith("+++")) {
+          className += "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400";
+        } else if (line.startsWith("-") && !line.startsWith("---")) {
+          className += "bg-red-500/10 text-red-600 dark:text-red-400";
+        } else if (line.startsWith("@@")) {
+          className += "bg-blue-500/10 text-blue-600 dark:text-blue-400";
+        } else if (line.startsWith("diff ") || line.startsWith("index ") || line.startsWith("---") || line.startsWith("+++")) {
+          className += "text-muted-foreground font-semibold";
+        } else {
+          className += "text-muted-foreground";
+        }
+        return (
+          <span key={i} className={className}>
+            {line}
+          </span>
+        );
+      })}
+    </pre>
   );
 }

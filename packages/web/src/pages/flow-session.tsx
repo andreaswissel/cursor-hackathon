@@ -1,19 +1,34 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { FlowChatThread } from "@/components/flow-chat-thread";
 import { FlowArtifactPanel } from "@/components/flow-artifact-panel";
 import { cn } from "@/lib/utils";
 import type { FlowArtifact } from "@product-os/shared";
-import { getFlowArtifacts } from "@/lib/api";
+import { getFlowArtifacts, connectRepo } from "@/lib/api";
 import { Package, X } from "lucide-react";
 
 interface FlowSessionPageProps {
   sessionId: string;
   artifacts: FlowArtifact[];
+  repoUrl?: string;
 }
 
-export function FlowSessionPage({ sessionId, artifacts: sseArtifacts }: FlowSessionPageProps) {
+export function FlowSessionPage({ sessionId, artifacts: sseArtifacts, repoUrl: initialRepoUrl }: FlowSessionPageProps) {
   const [artifacts, setArtifacts] = useState<FlowArtifact[]>([]);
   const [showArtifacts, setShowArtifacts] = useState(true);
+  const [repoUrl, setRepoUrl] = useState<string | undefined>(initialRepoUrl);
+
+  useEffect(() => {
+    setRepoUrl(initialRepoUrl);
+  }, [initialRepoUrl]);
+
+  const handleConnectRepo = useCallback(async (url: string) => {
+    try {
+      await connectRepo(sessionId, url);
+      setRepoUrl(url);
+    } catch (err) {
+      console.error("Failed to connect repo:", err);
+    }
+  }, [sessionId]);
 
   // Load initial artifacts from API, then overlay with SSE artifacts
   useEffect(() => {
@@ -40,7 +55,7 @@ export function FlowSessionPage({ sessionId, artifacts: sseArtifacts }: FlowSess
     <div className="flex h-full">
       {/* Chat Thread */}
       <div className="flex-1 flex flex-col min-w-0">
-        <FlowChatThread sessionId={sessionId} />
+        <FlowChatThread sessionId={sessionId} repoUrl={repoUrl} onConnectRepo={handleConnectRepo} />
       </div>
 
       {/* Artifact Panel Toggle (mobile + when hidden) */}

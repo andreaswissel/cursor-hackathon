@@ -90,6 +90,7 @@ export interface Session {
   promptCount: number;
   mode: SessionMode;
   videoMetadata?: VideoMetadata;
+  repoUrl?: string;
   agents: Map<AgentType, AgentState>;
   outputs: {
     spec?: string;
@@ -156,7 +157,8 @@ class SessionStore {
     userId?: string,
     mode: SessionMode = "idea-to-spec",
     videoMetadata?: VideoMetadata,
-    projectId?: string
+    projectId?: string,
+    repoUrl?: string
   ): Promise<Session> {
     // Insert into database
     await db.insert(sessions).values({
@@ -169,6 +171,7 @@ class SessionStore {
       promptCount: 1,
       mode,
       videoMetadata,
+      repoUrl,
     });
 
     const session: Session = {
@@ -181,6 +184,7 @@ class SessionStore {
       promptCount: 1,
       mode,
       videoMetadata,
+      repoUrl,
       agents: new Map(),
       outputs: {},
       createdAt: new Date(),
@@ -223,6 +227,7 @@ class SessionStore {
       promptCount: dbSession.promptCount,
       mode: dbSession.mode as SessionMode,
       videoMetadata: dbSession.videoMetadata as VideoMetadata | undefined,
+      repoUrl: dbSession.repoUrl ?? undefined,
       agents: new Map(),
       outputs: {},
       documentationPieces: dbDocPieces.map((p) => ({

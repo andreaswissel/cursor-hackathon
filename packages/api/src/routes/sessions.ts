@@ -5,7 +5,7 @@ import { OrchestratorAgent } from "../agents/orchestrator-agent";
 import { DocOrchestratorAgent } from "../agents/doc-orchestrator-agent";
 import { streamCompletion, getUserLLMConfig } from "../lib/claude";
 import { db } from "../db";
-import { users } from "../db/schema";
+import { users, sessions as sessionsTable } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
 import {
@@ -18,6 +18,8 @@ import {
 } from "../middleware/rate-limit";
 import { videoUpload, deleteUploadedFile } from "../lib/upload";
 import { ensureDefaultProject } from "../lib/project-helpers";
+import { CodeAgent } from "../agents/code-agent";
+import { ReviewAgent } from "../agents/review-agent";
 import { resolveKnowledge, toSessionContext } from "../lib/knowledge-resolver";
 import { knowledgeSources } from "../db/schema";
 
@@ -175,9 +177,8 @@ router.post("/flow", checkSessionLimit, async (req: Request, res: Response) => {
 
   const sessionId = uuid();
   const context: SessionContext = { okrs: [], customerFeedback: [] };
-  const metadata = repoUrl ? { repoUrl } : undefined;
 
-  await sessionStore.create(sessionId, title, context, userId, "flow", undefined, resolvedProjectId);
+  await sessionStore.create(sessionId, title, context, userId, "flow", undefined, resolvedProjectId, repoUrl);
   // Flow sessions are immediately ready for chat — set status to completed
   await sessionStore.setSessionStatus(sessionId, "completed");
 
@@ -427,6 +428,47 @@ router.delete("/:sessionId", checkSessionOwnership, async (req: Request, res: Re
   }
 });
 
+// Connect a repo URL to a flow session
+router.post("/:sessionId/connect-repo", checkSessionOwnership, async (req: Request, res: Response) => {
+  const { sessionId } = req.params;
+  const { repoUrl } = req.body as { repoUrl: string };
+
+  if (!repoUrl || typeof repoUrl !== "string") {
+    res.status(400).json({ error: "Missing or invalid repoUrl" });
+    return;
+  }
+
+  // Basic URL validation
+  try {
+    new URL(repoUrl);
+  } catch {
+    res.status(400).json({ error: "Invalid URL format" });
+    return;
+  }
+
+  const session = await sessionStore.get(sessionId);
+  if (!session) {
+    res.status(404).json({ error: "Session not found" });
+    return;
+  }
+
+  if (session.mode !== "flow") {
+    res.status(400).json({ error: "Can only connect repos to flow sessions" });
+    return;
+  }
+
+  // Update in DB
+  await db
+    .update(sessionsTable)
+    .set({ repoUrl, updatedAt: new Date() })
+    .where(eq(sessionsTable.id, sessionId));
+
+  // Update cache
+  session.repoUrl = repoUrl;
+
+  res.json({ success: true, repoUrl });
+});
+
 // SSE endpoint for real-time updates
 router.get("/:sessionId/stream", checkSessionOwnership, async (req: Request, res: Response) => {
   const { sessionId } = req.params;
@@ -498,6 +540,96 @@ router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (
   const session = await sessionStore.get(sessionId);
   if (!session) {
     res.status(404).json({ error: "Session not found" });
+    return;
+  }
+
+  // Detect @Code / @Review prefix in flow mode
+  if (session.mode === "flow" && (message.startsWith("@Code") || message.startsWith("@Review"))) {
+    const isCode = message.startsWith("@Code");
+    const agentPrefix = isCode ? "@Code" : "@Review";
+    const strippedMessage = message.slice(agentPrefix.length).trim();
+
+    if (!session.repoUrl) {
+      // Return an error message asking to connect a repo
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.flushHeaders();
+
+      await sessionStore.addMessage(sessionId, agentType, "user", message);
+      const errorMsg = `Please connect a repository first before using ${agentPrefix}. Use the repo connector above the input area to link a GitHub repository.`;
+      await sessionStore.addMessage(sessionId, agentType, "assistant", errorMsg);
+      res.write(`data: ${JSON.stringify({ type: "text", content: errorMsg })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+      res.end();
+      return;
+    }
+
+    // Save user message
+    await sessionStore.addMessage(sessionId, agentType, "user", message);
+
+    // Set up SSE for streaming agent logs
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    // Get user's API key for BYOK
+    const [userRow] = await db
+      .select({ anthropicApiKey: users.anthropicApiKey })
+      .from(users)
+      .where(eq(users.id, userId));
+    const userApiKey = userRow?.anthropicApiKey || undefined;
+
+    // Subscribe to agent log events and stream them as SSE text
+    const agentKind = isCode ? "code-agent" as const : "review-agent" as const;
+    const unsubLog = sessionStore.events.on("agent:log", (data) => {
+      if (data.sessionId === sessionId && data.agentType === agentKind) {
+        res.write(`data: ${JSON.stringify({ type: "text", content: data.log.content + "\n" })}\n\n`);
+      }
+    });
+
+    const unsubStatus = sessionStore.events.on("agent:status", (data) => {
+      if (data.sessionId === sessionId && data.agentType === agentKind) {
+        if (data.status === "completed" || data.status === "failed") {
+          res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+          res.end();
+          unsubLog();
+          unsubStatus();
+        }
+      }
+    });
+
+    req.on("close", () => {
+      unsubLog();
+      unsubStatus();
+    });
+
+    // Run agent in background
+    if (isCode) {
+      const codeAgent = new CodeAgent();
+      codeAgent.run({
+        sessionId,
+        userId,
+        message: strippedMessage || "Implement the requested changes",
+        repoUrl: session.repoUrl,
+        apiKey: userApiKey,
+      }).catch((err) => {
+        console.error("CodeAgent error:", err);
+      });
+    } else {
+      const reviewAgent = new ReviewAgent();
+      reviewAgent.run({
+        sessionId,
+        userId,
+        message: strippedMessage || "Review the codebase for issues",
+        repoUrl: session.repoUrl,
+        apiKey: userApiKey,
+      }).catch((err) => {
+        console.error("ReviewAgent error:", err);
+      });
+    }
+
     return;
   }
 

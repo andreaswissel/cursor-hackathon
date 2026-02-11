@@ -806,6 +806,24 @@ export async function createFlowSession(
   return res.json();
 }
 
+export async function connectRepo(
+  sessionId: string,
+  repoUrl: string
+): Promise<{ success: boolean; repoUrl: string }> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/connect-repo`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({ repoUrl }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to connect repo" }));
+    throw new Error(error.message || error.error || "Failed to connect repo");
+  }
+
+  return res.json();
+}
+
 export async function getFlowArtifacts(sessionId: string): Promise<{ artifacts: FlowArtifact[] }> {
   const res = await fetch(`${API_BASE}/sessions/${sessionId}/artifacts`, {
     headers: getAuthHeaders(),

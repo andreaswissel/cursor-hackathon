@@ -278,7 +278,7 @@ export function SessionPage() {
               Flow
             </div>
           </div>
-          <FlowSessionPage sessionId={sessionId!} artifacts={artifacts} />
+          <FlowSessionPage sessionId={sessionId!} artifacts={artifacts} repoUrl={session.repoUrl} />
         </main>
       </div>
     );
