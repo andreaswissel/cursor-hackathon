@@ -232,7 +232,7 @@ export function FlowPage() {
                 </button>
 
                 {showAgentMenu && (
-                  <div className="absolute bottom-full left-0 mb-2 w-56 max-h-[70vh] overflow-y-auto rounded-xl border border-border bg-background shadow-xl py-1.5 z-[100]">
+                  <div className="absolute bottom-full left-0 mb-3 w-56 max-h-[70vh] overflow-y-auto rounded-xl border border-border bg-background shadow-xl py-1.5 z-[100]">
                     <div className="px-3 py-1.5 text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">
                       Agents
                     </div>
