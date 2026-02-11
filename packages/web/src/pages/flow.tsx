@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { createFlowSession, getAllProjects } from "@/lib/api";
 import { Sidebar } from "@/components/sidebar";
+import { ContextMenuPopup } from "@/components/context-menu-popup";
 import type { ProjectWithSessions } from "@product-os/shared";
 import { cn } from "@/lib/utils";
 import {
@@ -35,6 +36,11 @@ export function FlowPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [projects, setProjects] = useState<ProjectWithSessions[]>([]);
+  const [contextMenu, setContextMenu] = useState<{
+    trigger: "@" | "$" | "#";
+    query: string;
+    position: { bottom: number; left: number };
+  } | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const refreshProjects = () => {
@@ -71,6 +77,17 @@ export function FlowPage() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // If context menu is open, let it handle keyboard
+    if (contextMenu) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setContextMenu(null);
+        return;
+      }
+      if (e.key === "Enter" || e.key === "ArrowUp" || e.key === "ArrowDown") {
+        return;
+      }
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -84,6 +101,59 @@ export function FlowPage() {
       : `${agentPrefix} `;
     setInput(newInput);
     inputRef.current?.focus();
+  };
+
+  // Handle input change with context menu detection
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setInput(value);
+
+    const cursorPos = e.target.selectionStart;
+    const textBeforeCursor = value.slice(0, cursorPos);
+    const match = textBeforeCursor.match(/([@$#])(\w*)$/);
+
+    if (match) {
+      const trigger = match[1] as "@" | "$" | "#";
+      const query = match[2] || "";
+      const textarea = inputRef.current;
+      if (textarea) {
+        const rect = textarea.getBoundingClientRect();
+        setContextMenu({
+          trigger,
+          query,
+          position: { bottom: window.innerHeight - rect.top + 8, left: rect.left },
+        });
+      }
+    } else {
+      setContextMenu(null);
+    }
+  };
+
+  const handleContextMenuSelect = (item: { id: string; label: string }) => {
+    if (!contextMenu || !inputRef.current) return;
+
+    const cursorPos = inputRef.current.selectionStart;
+    const textBeforeCursor = input.slice(0, cursorPos);
+    const match = textBeforeCursor.match(/([@$#])(\w*)$/);
+
+    if (!match) return;
+
+    const triggerStart = cursorPos - match[0].length;
+    const textAfterCursor = input.slice(cursorPos);
+    let replacement = "";
+
+    if (contextMenu.trigger === "@") {
+      replacement = `@${item.label} `;
+    } else if (contextMenu.trigger === "$") {
+      replacement = `$${item.id} `;
+    } else if (contextMenu.trigger === "#") {
+      replacement = item.id + " ";
+    }
+
+    const newInput = input.slice(0, triggerStart) + replacement + textAfterCursor;
+    setInput(newInput);
+    setContextMenu(null);
+    inputRef.current.focus();
   };
 
   return (
@@ -108,11 +178,23 @@ export function FlowPage() {
         </div>
 
         {/* Input area pinned to bottom */}
-        <div className="border-t px-4 md:px-6 py-3 bg-background">
+        <div className="border-t px-4 md:px-6 py-3 bg-background relative">
           {error && (
             <div className="px-4 py-2.5 rounded-xl border border-red-500/20 bg-red-500/10 text-sm text-red-600 mb-2">
               {error}
             </div>
+          )}
+
+          {/* Context menu popup */}
+          {contextMenu && (
+            <ContextMenuPopup
+              trigger={contextMenu.trigger}
+              query={contextMenu.query}
+              position={contextMenu.position}
+              sessionId=""
+              onSelect={handleContextMenuSelect}
+              onDismiss={() => setContextMenu(null)}
+            />
           )}
 
           <div className="max-w-3xl mx-auto">
@@ -121,7 +203,7 @@ export function FlowPage() {
                 <textarea
                   ref={inputRef}
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   placeholder="Describe what you want to build..."
                   rows={1}
@@ -138,7 +220,7 @@ export function FlowPage() {
                   onClick={() => handleSend()}
                   disabled={!input.trim() || isLoading}
                   className={cn(
-                    "absolute right-2 bottom-2 p-1.5 rounded-lg transition-colors",
+                    "absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors",
                     input.trim() && !isLoading
                       ? "bg-foreground text-background hover:bg-foreground/90"
                       : "text-muted-foreground"
