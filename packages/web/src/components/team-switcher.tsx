@@ -40,7 +40,7 @@ export function TeamSwitcher() {
       </button>
 
       {isOpen && (
-        <div className="absolute left-3 right-3 top-full mt-1 z-50 rounded-lg border bg-popover shadow-md py-1">
+        <div className="absolute left-3 right-3 top-full mt-1 z-[100] rounded-lg border border-border bg-background shadow-xl py-1">
           {/* Personal option */}
           <button
             onClick={() => { setActiveTeam(null); setIsOpen(false); }}
