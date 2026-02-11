@@ -85,7 +85,7 @@ export async function createProject(
 
 export async function updateProject(
   id: string,
-  data: { name?: string; description?: string; teamId?: string | null }
+  data: { name?: string; description?: string; teamId?: string | null; repoUrl?: string | null }
 ): Promise<ProjectWithSessions> {
   const res = await fetch(`${API_BASE}/projects/${id}`, {
     method: "PATCH",
@@ -155,6 +155,22 @@ export async function deleteSession(sessionId: string): Promise<void> {
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: "Failed to delete session" }));
     throw new Error(error.message || error.error || "Failed to delete session");
+  }
+}
+
+export async function updateSession(
+  sessionId: string,
+  data: { title?: string; projectId?: string }
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to update session" }));
+    throw new Error(error.message || error.error || "Failed to update session");
   }
 }
 
@@ -801,14 +817,14 @@ export async function removeSessionKnowledgeOverride(sessionId: string, id: stri
 // ============================================================
 
 export async function createFlowSession(
-  title: string,
+  message: string,
   projectId?: string,
   repoUrl?: string
-): Promise<{ sessionId: string }> {
+): Promise<{ sessionId: string; title: string }> {
   const res = await fetch(`${API_BASE}/sessions/flow`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-    body: JSON.stringify({ title, projectId, repoUrl }),
+    body: JSON.stringify({ message, projectId, repoUrl }),
   });
 
   if (!res.ok) {

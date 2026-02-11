@@ -4,8 +4,9 @@ import { sessionStore, SessionContext, SessionEvents, AgentType, DocPieceStatus,
 import { OrchestratorAgent } from "../agents/orchestrator-agent";
 import { DocOrchestratorAgent } from "../agents/doc-orchestrator-agent";
 import { streamCompletion, getUserLLMConfig } from "../lib/claude";
+import Anthropic from "@anthropic-ai/sdk";
 import { db } from "../db";
-import { users, sessions as sessionsTable } from "../db/schema";
+import { users, sessions as sessionsTable, projects } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { requireAuth } from "../middleware/auth";
 import {
@@ -38,6 +39,25 @@ const AGENT_PREFIX_MAP: Record<string, { agentType: AgentType; requiresRepo: boo
   "@Marketing": { agentType: "product-marketing",  requiresRepo: false, label: "Marketing" },
   "@Changelog": { agentType: "changelog-agent",    requiresRepo: false, label: "Changelog" },
 };
+
+// Generate a short title from the user's first message using Haiku
+async function generateSessionTitle(message: string): Promise<string> {
+  try {
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || "" });
+    const response = await client.messages.create({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 30,
+      system: "Generate a concise 3-6 word title for a product chat session based on the user's message. Output ONLY the title, no quotes or punctuation at the end.",
+      messages: [{ role: "user", content: message }],
+    });
+    const textBlock = response.content.find((b) => b.type === "text");
+    const title = textBlock?.text?.trim();
+    if (title && title.length > 0 && title.length <= 80) return title;
+    return message.slice(0, 60);
+  } catch {
+    return message.slice(0, 60);
+  }
+}
 
 const router = Router();
 
@@ -177,28 +197,44 @@ router.post(
 
 // Create a new flow session
 router.post("/flow", checkSessionLimit, async (req: Request, res: Response) => {
-  const { title, projectId, repoUrl } = req.body as {
-    title: string;
+  const { message, title, projectId, repoUrl } = req.body as {
+    message?: string;
+    title?: string;
     projectId?: string;
     repoUrl?: string;
   };
 
-  if (!title) {
-    res.status(400).json({ error: "Missing title" });
+  // Support both new (message) and legacy (title) field
+  const userMessage = message || title;
+  if (!userMessage) {
+    res.status(400).json({ error: "Missing message" });
     return;
   }
 
   const userId = req.user!.id;
   const resolvedProjectId = projectId || await ensureDefaultProject(userId);
 
+  // Generate title from message via LLM
+  const generatedTitle = message ? await generateSessionTitle(message) : userMessage;
+
+  // Fall back to project's repoUrl if none provided
+  let resolvedRepoUrl = repoUrl;
+  if (!resolvedRepoUrl) {
+    const [project] = await db
+      .select({ repoUrl: projects.repoUrl })
+      .from(projects)
+      .where(eq(projects.id, resolvedProjectId));
+    if (project?.repoUrl) resolvedRepoUrl = project.repoUrl;
+  }
+
   const sessionId = uuid();
   const context: SessionContext = { okrs: [], customerFeedback: [] };
 
-  await sessionStore.create(sessionId, title, context, userId, "flow", undefined, resolvedProjectId, repoUrl);
+  await sessionStore.create(sessionId, generatedTitle, context, userId, "flow", undefined, resolvedProjectId, resolvedRepoUrl);
   // Flow sessions are immediately ready for chat — set status to completed
   await sessionStore.setSessionStatus(sessionId, "completed");
 
-  res.json({ sessionId });
+  res.json({ sessionId, title: generatedTitle });
 });
 
 // Get documentation pieces for a session
@@ -442,6 +478,33 @@ router.delete("/:sessionId", checkSessionOwnership, async (req: Request, res: Re
     console.error("Error deleting session:", error);
     res.status(500).json({ error: "Failed to delete session" });
   }
+});
+
+// Update session metadata (title, project assignment)
+router.patch("/:sessionId", checkSessionOwnership, async (req: Request, res: Response) => {
+  const { sessionId } = req.params;
+  const { title, projectId } = req.body as { title?: string; projectId?: string };
+
+  const session = await sessionStore.get(sessionId);
+  if (!session) {
+    res.status(404).json({ error: "Session not found" });
+    return;
+  }
+
+  const updates: Record<string, unknown> = { updatedAt: new Date() };
+  if (title !== undefined) updates.idea = title;
+  if (projectId !== undefined) updates.projectId = projectId;
+
+  await db
+    .update(sessionsTable)
+    .set(updates)
+    .where(eq(sessionsTable.id, sessionId));
+
+  // Update in-memory cache
+  if (title !== undefined) session.idea = title;
+  if (projectId !== undefined) session.projectId = projectId;
+
+  res.json({ success: true });
 });
 
 // Connect a repo URL to a flow session

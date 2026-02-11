@@ -106,6 +106,7 @@ export interface Session {
   agents: Record<AgentType, AgentState>;
   outputs: {
     spec?: string;
+    codingPrompt?: string;
     slidesUrl?: string;
     productUpdate?: string;
     validation?: string;
@@ -162,6 +163,7 @@ export interface Project {
   id: string;
   name: string;
   description?: string | null;
+  repoUrl?: string | null;
   teamId?: string | null;
   createdAt: string;
   updatedAt: string;

@@ -101,6 +101,7 @@ router.get("/", async (req: Request, res: Response) => {
     id: p.id,
     name: p.name,
     description: p.description,
+    repoUrl: p.repoUrl,
     teamId: p.teamId,
     createdAt: p.createdAt.toISOString(),
     updatedAt: p.updatedAt.toISOString(),
@@ -119,7 +120,7 @@ router.get("/", async (req: Request, res: Response) => {
 // Create a new project
 router.post("/", async (req: Request, res: Response) => {
   const userId = req.user!.id;
-  const { name, description, teamId } = req.body as { name?: string; description?: string; teamId?: string };
+  const { name, description, teamId, repoUrl } = req.body as { name?: string; description?: string; teamId?: string; repoUrl?: string };
 
   // If teamId provided, verify user is a team member
   if (teamId) {
@@ -141,6 +142,7 @@ router.post("/", async (req: Request, res: Response) => {
       teamId: teamId || null,
       name: name || "Untitled Project",
       description: description || null,
+      repoUrl: repoUrl || null,
     })
     .returning();
 
@@ -148,6 +150,7 @@ router.post("/", async (req: Request, res: Response) => {
     id: created.id,
     name: created.name,
     description: created.description,
+    repoUrl: created.repoUrl,
     teamId: created.teamId,
     createdAt: created.createdAt.toISOString(),
     updatedAt: created.updatedAt.toISOString(),
@@ -158,7 +161,7 @@ router.post("/", async (req: Request, res: Response) => {
 router.patch("/:id", async (req: Request, res: Response) => {
   const userId = req.user!.id;
   const projectId = req.params.id;
-  const { name, description, teamId } = req.body as { name?: string; description?: string; teamId?: string | null };
+  const { name, description, teamId, repoUrl } = req.body as { name?: string; description?: string; teamId?: string | null; repoUrl?: string | null };
 
   // Find project
   const [project] = await db
@@ -202,6 +205,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
   if (name !== undefined) updates.name = name;
   if (description !== undefined) updates.description = description;
   if (teamId !== undefined) updates.teamId = teamId;
+  if (repoUrl !== undefined) updates.repoUrl = repoUrl;
 
   const [updated] = await db
     .update(projects)
@@ -213,6 +217,7 @@ router.patch("/:id", async (req: Request, res: Response) => {
     id: updated.id,
     name: updated.name,
     description: updated.description,
+    repoUrl: updated.repoUrl,
     teamId: updated.teamId,
     createdAt: updated.createdAt.toISOString(),
     updatedAt: updated.updatedAt.toISOString(),

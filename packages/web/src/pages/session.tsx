@@ -5,6 +5,7 @@ import { AgentDetailModal } from "@/components/agent-detail-modal";
 import { Sidebar } from "@/components/sidebar";
 import { DocumentationPieces } from "@/components/documentation-pieces";
 import { FlowSessionPage } from "@/pages/flow-session";
+import { FlowBreadcrumb } from "@/components/flow-breadcrumb";
 import type { AgentType, DocumentationPiece } from "@product-os/shared";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,7 @@ import {
   getDocumentationPieces,
   updateDocumentationPieceStatus,
   refineDocumentationPiece,
+  updateSession,
 } from "@/lib/api";
 import type { ProjectWithSessions } from "@product-os/shared";
 import { CursorHandoff } from "@/components/cursor-handoff";
@@ -269,20 +271,29 @@ export function SessionPage() {
       <div className="flex h-screen">
         <Sidebar projects={projects} onProjectCreated={refreshProjects} onProjectDeleted={refreshProjects} onSessionDeleted={refreshProjects} />
         <main className="flex-1 flex flex-col overflow-hidden pt-14 md:pt-0">
-          {/* Minimal header for flow */}
+          {/* Breadcrumb header for flow */}
           <div className="px-4 md:px-6 py-3 border-b bg-background/95 backdrop-blur flex items-center justify-between">
-            <div className="flex items-center gap-3 min-w-0">
-              <h1 className="font-semibold text-sm truncate">{session.idea}</h1>
+            <FlowBreadcrumb
+              sessionId={sessionId!}
+              title={session.idea}
+              projectId={session.projectId}
+              projects={projects}
+              onProjectAssigned={async (projectId) => {
+                await updateSession(sessionId!, { projectId });
+                refreshProjects();
+              }}
+            />
+            <div className="flex items-center gap-2 flex-shrink-0">
               <div className="flex items-center gap-1.5">
                 <div className={cn("w-2 h-2 rounded-full", isConnected ? "bg-emerald-500" : "bg-red-500")} />
                 <span className="text-xs text-muted-foreground">{isConnected ? "Connected" : "Disconnected"}</span>
               </div>
-            </div>
-            <div className="px-2 py-0.5 rounded-full text-xs font-medium bg-violet-500/10 text-violet-600">
-              Flow
+              <div className="px-2 py-0.5 rounded-full text-xs font-medium bg-violet-500/10 text-violet-600">
+                Flow
+              </div>
             </div>
           </div>
-          <FlowSessionPage sessionId={sessionId!} artifacts={artifacts} repoUrl={session.repoUrl} />
+          <FlowSessionPage sessionId={sessionId!} artifacts={artifacts} repoUrl={session.repoUrl} projectId={session.projectId} />
         </main>
       </div>
     );
@@ -533,11 +544,12 @@ export function SessionPage() {
                       {isTauri() ? (
                         <ClaudeCodeHandoff
                           spec={session.outputs.spec!}
+                          codingPrompt={session.outputs.codingPrompt}
                           ideaTitle={session.idea}
                           onTerminalOpen={handleTerminalOpen}
                         />
                       ) : (
-                        <CursorHandoff spec={session.outputs.spec!} ideaTitle={session.idea} />
+                        <CursorHandoff spec={session.outputs.spec!} codingPrompt={session.outputs.codingPrompt} ideaTitle={session.idea} />
                       )}
                     </div>
                   </div>

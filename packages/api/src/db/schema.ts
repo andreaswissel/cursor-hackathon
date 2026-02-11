@@ -60,6 +60,7 @@ export const projects = pgTable("projects", {
   teamId: uuid("team_id").references(() => teams.id, { onDelete: "set null" }),
   name: text("name").default("Untitled Project").notNull(),
   description: text("description"),
+  repoUrl: text("repo_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -141,7 +142,7 @@ export const messages = pgTable("messages", {
 });
 
 // Integration types
-export type IntegrationProvider = "airtable" | "jira" | "notion" | "google" | "slack";
+export type IntegrationProvider = "airtable" | "jira" | "notion" | "google" | "slack" | "intercom";
 
 // User integrations (OAuth connections to external tools)
 export const integrations = pgTable("integrations", {

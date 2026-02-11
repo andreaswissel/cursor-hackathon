@@ -81,7 +81,7 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo }: FlowChatTh
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  // Load chat history on mount
+  // Load chat history on mount + auto-send pending message from flow page
   useEffect(() => {
     getChatHistory(sessionId, "flow-orchestrator")
       .then(({ messages: history }) => {
@@ -93,9 +93,17 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo }: FlowChatTh
           }))
         );
         setIsLoading(false);
+
+        // Check for pending message from /flow page
+        const pendingKey = `flow-pending-${sessionId}`;
+        const pendingMessage = sessionStorage.getItem(pendingKey);
+        if (pendingMessage && history.length === 0) {
+          sessionStorage.removeItem(pendingKey);
+          setTimeout(() => handleSend(pendingMessage), 0);
+        }
       })
       .catch(() => setIsLoading(false));
-  }, [sessionId]);
+  }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     scrollToBottom();

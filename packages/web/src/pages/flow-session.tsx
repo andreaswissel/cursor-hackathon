@@ -3,16 +3,17 @@ import { FlowChatThread } from "@/components/flow-chat-thread";
 import { FlowArtifactPanel } from "@/components/flow-artifact-panel";
 import { cn } from "@/lib/utils";
 import type { FlowArtifact } from "@product-os/shared";
-import { getFlowArtifacts, connectRepo } from "@/lib/api";
+import { getFlowArtifacts, connectRepo, updateProject } from "@/lib/api";
 import { Package, X } from "lucide-react";
 
 interface FlowSessionPageProps {
   sessionId: string;
   artifacts: FlowArtifact[];
   repoUrl?: string;
+  projectId?: string;
 }
 
-export function FlowSessionPage({ sessionId, artifacts: sseArtifacts, repoUrl: initialRepoUrl }: FlowSessionPageProps) {
+export function FlowSessionPage({ sessionId, artifacts: sseArtifacts, repoUrl: initialRepoUrl, projectId }: FlowSessionPageProps) {
   const [artifacts, setArtifacts] = useState<FlowArtifact[]>([]);
   const [showArtifacts, setShowArtifacts] = useState(true);
   const [repoUrl, setRepoUrl] = useState<string | undefined>(initialRepoUrl);
@@ -25,10 +26,14 @@ export function FlowSessionPage({ sessionId, artifacts: sseArtifacts, repoUrl: i
     try {
       await connectRepo(sessionId, url);
       setRepoUrl(url);
+      // Persist to project for future sessions
+      if (projectId) {
+        updateProject(projectId, { repoUrl: url }).catch(console.error);
+      }
     } catch (err) {
       console.error("Failed to connect repo:", err);
     }
-  }, [sessionId]);
+  }, [sessionId, projectId]);
 
   // Load initial artifacts from API, then overlay with SSE artifacts
   useEffect(() => {
