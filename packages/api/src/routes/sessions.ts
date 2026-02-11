@@ -20,8 +20,24 @@ import { videoUpload, deleteUploadedFile } from "../lib/upload";
 import { ensureDefaultProject } from "../lib/project-helpers";
 import { CodeAgent } from "../agents/code-agent";
 import { ReviewAgent } from "../agents/review-agent";
+import { ChangelogAgent } from "../agents/changelog-agent";
+import { DiscoveryAgent, StrategyAgent, SpecAgent, GTMAgent } from "../agents";
+import { ProductMarketingAgent } from "../agents/product-marketing-agent";
 import { resolveKnowledge, toSessionContext } from "../lib/knowledge-resolver";
 import { knowledgeSources } from "../db/schema";
+import type { AgentInput } from "../agents/base-agent";
+
+// Agent prefix map for flow mode triggers
+const AGENT_PREFIX_MAP: Record<string, { agentType: AgentType; requiresRepo: boolean; label: string }> = {
+  "@Code":      { agentType: "code-agent",        requiresRepo: true,  label: "Code" },
+  "@Review":    { agentType: "review-agent",       requiresRepo: true,  label: "Review" },
+  "@Discovery": { agentType: "discovery",          requiresRepo: false, label: "Discovery" },
+  "@Strategy":  { agentType: "strategy",           requiresRepo: false, label: "Strategy" },
+  "@Spec":      { agentType: "spec",               requiresRepo: false, label: "Spec" },
+  "@GTM":       { agentType: "gtm",                requiresRepo: false, label: "GTM" },
+  "@Marketing": { agentType: "product-marketing",  requiresRepo: false, label: "Marketing" },
+  "@Changelog": { agentType: "changelog-agent",    requiresRepo: false, label: "Changelog" },
+};
 
 const router = Router();
 
@@ -543,94 +559,124 @@ router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (
     return;
   }
 
-  // Detect @Code / @Review prefix in flow mode
-  if (session.mode === "flow" && (message.startsWith("@Code") || message.startsWith("@Review"))) {
-    const isCode = message.startsWith("@Code");
-    const agentPrefix = isCode ? "@Code" : "@Review";
-    const strippedMessage = message.slice(agentPrefix.length).trim();
+  // Detect @Agent prefix in flow mode
+  if (session.mode === "flow") {
+    const matchedPrefix = Object.keys(AGENT_PREFIX_MAP).find((prefix) =>
+      message.startsWith(prefix)
+    );
 
-    if (!session.repoUrl) {
-      // Return an error message asking to connect a repo
+    if (matchedPrefix) {
+      const { agentType: targetAgentType, requiresRepo, label: agentLabel } = AGENT_PREFIX_MAP[matchedPrefix];
+      const strippedMessage = message.slice(matchedPrefix.length).trim();
+
+      if (requiresRepo && !session.repoUrl) {
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+        res.flushHeaders();
+
+        await sessionStore.addMessage(sessionId, agentType, "user", message);
+        const errorMsg = `Please connect a repository first before using ${matchedPrefix}. Use the repo connector above the input area to link a GitHub repository.`;
+        await sessionStore.addMessage(sessionId, agentType, "assistant", errorMsg);
+        res.write(`data: ${JSON.stringify({ type: "text", content: errorMsg })}\n\n`);
+        res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+        res.end();
+        return;
+      }
+
+      // Save user message
+      await sessionStore.addMessage(sessionId, agentType, "user", message);
+
+      // Set up SSE for streaming agent logs
       res.setHeader("Content-Type", "text/event-stream");
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
       res.flushHeaders();
 
-      await sessionStore.addMessage(sessionId, agentType, "user", message);
-      const errorMsg = `Please connect a repository first before using ${agentPrefix}. Use the repo connector above the input area to link a GitHub repository.`;
-      await sessionStore.addMessage(sessionId, agentType, "assistant", errorMsg);
-      res.write(`data: ${JSON.stringify({ type: "text", content: errorMsg })}\n\n`);
-      res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
-      res.end();
+      // Send agent-thinking-start event
+      res.write(`data: ${JSON.stringify({ type: "agent-thinking-start", agentType: targetAgentType, agentLabel })}\n\n`);
+
+      // Get user's API key for BYOK
+      const [userRow] = await db
+        .select({ anthropicApiKey: users.anthropicApiKey })
+        .from(users)
+        .where(eq(users.id, userId));
+      const userApiKey = userRow?.anthropicApiKey || undefined;
+
+      // Subscribe to agent log events and stream them as thinking events
+      const unsubLog = sessionStore.events.on("agent:log", (data) => {
+        if (data.sessionId === sessionId && data.agentType === targetAgentType) {
+          res.write(`data: ${JSON.stringify({ type: "thinking", content: data.log.content, agentType: targetAgentType })}\n\n`);
+        }
+      });
+
+      const unsubStatus = sessionStore.events.on("agent:status", (data) => {
+        if (data.sessionId === sessionId && data.agentType === targetAgentType) {
+          if (data.status === "completed" || data.status === "failed") {
+            // Send agent-thinking-end
+            res.write(`data: ${JSON.stringify({ type: "agent-thinking-end", agentType: targetAgentType, status: data.status })}\n\n`);
+            // Send summary message
+            const summaryText = data.status === "completed"
+              ? `${agentLabel} agent completed successfully.`
+              : `${agentLabel} agent failed.`;
+            res.write(`data: ${JSON.stringify({ type: "text", content: summaryText })}\n\n`);
+            res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+            res.end();
+            unsubLog();
+            unsubStatus();
+          }
+        }
+      });
+
+      req.on("close", () => {
+        unsubLog();
+        unsubStatus();
+      });
+
+      // Run agent in background
+      if (targetAgentType === "code-agent") {
+        const codeAgent = new CodeAgent();
+        codeAgent.run({
+          sessionId,
+          userId,
+          message: strippedMessage || "Implement the requested changes",
+          repoUrl: session.repoUrl!,
+          apiKey: userApiKey,
+        }).catch((err) => console.error("CodeAgent error:", err));
+      } else if (targetAgentType === "review-agent") {
+        const reviewAgent = new ReviewAgent();
+        reviewAgent.run({
+          sessionId,
+          userId,
+          message: strippedMessage || "Review the codebase for issues",
+          repoUrl: session.repoUrl!,
+          apiKey: userApiKey,
+        }).catch((err) => console.error("ReviewAgent error:", err));
+      } else if (targetAgentType === "changelog-agent") {
+        // Parse $session-id references from message
+        const sessionIdRefs = [...strippedMessage.matchAll(/\$([0-9a-f-]{36})/gi)].map((m) => m[1]);
+        const changelogAgent = new ChangelogAgent();
+        changelogAgent.run({
+          sessionId,
+          userId,
+          message: strippedMessage || "Write a changelog based on recent work",
+          referencedSessionIds: sessionIdRefs.length > 0 ? sessionIdRefs : undefined,
+          apiKey: userApiKey,
+        }).catch((err) => console.error("ChangelogAgent error:", err));
+      } else {
+        // Pipeline agents (discovery, strategy, spec, gtm, product-marketing)
+        runPipelineAgentInFlowMode(
+          targetAgentType,
+          sessionId,
+          userId,
+          session,
+          strippedMessage,
+          agentLabel
+        ).catch((err) => console.error(`${agentLabel} agent error:`, err));
+      }
+
       return;
     }
-
-    // Save user message
-    await sessionStore.addMessage(sessionId, agentType, "user", message);
-
-    // Set up SSE for streaming agent logs
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-    res.flushHeaders();
-
-    // Get user's API key for BYOK
-    const [userRow] = await db
-      .select({ anthropicApiKey: users.anthropicApiKey })
-      .from(users)
-      .where(eq(users.id, userId));
-    const userApiKey = userRow?.anthropicApiKey || undefined;
-
-    // Subscribe to agent log events and stream them as SSE text
-    const agentKind = isCode ? "code-agent" as const : "review-agent" as const;
-    const unsubLog = sessionStore.events.on("agent:log", (data) => {
-      if (data.sessionId === sessionId && data.agentType === agentKind) {
-        res.write(`data: ${JSON.stringify({ type: "text", content: data.log.content + "\n" })}\n\n`);
-      }
-    });
-
-    const unsubStatus = sessionStore.events.on("agent:status", (data) => {
-      if (data.sessionId === sessionId && data.agentType === agentKind) {
-        if (data.status === "completed" || data.status === "failed") {
-          res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
-          res.end();
-          unsubLog();
-          unsubStatus();
-        }
-      }
-    });
-
-    req.on("close", () => {
-      unsubLog();
-      unsubStatus();
-    });
-
-    // Run agent in background
-    if (isCode) {
-      const codeAgent = new CodeAgent();
-      codeAgent.run({
-        sessionId,
-        userId,
-        message: strippedMessage || "Implement the requested changes",
-        repoUrl: session.repoUrl,
-        apiKey: userApiKey,
-      }).catch((err) => {
-        console.error("CodeAgent error:", err);
-      });
-    } else {
-      const reviewAgent = new ReviewAgent();
-      reviewAgent.run({
-        sessionId,
-        userId,
-        message: strippedMessage || "Review the codebase for issues",
-        repoUrl: session.repoUrl,
-        apiKey: userApiKey,
-      }).catch((err) => {
-        console.error("ReviewAgent error:", err);
-      });
-    }
-
-    return;
   }
 
   // Get user's LLM config (for BYOK)
@@ -724,6 +770,87 @@ router.get("/:sessionId/chat/:agentType", checkSessionOwnership, async (req: Req
   res.json({ messages });
 });
 
+// Helper to run pipeline agents (discovery, strategy, spec, gtm, product-marketing) in flow mode
+async function runPipelineAgentInFlowMode(
+  targetAgentType: AgentType,
+  sessionId: string,
+  userId: string,
+  session: NonNullable<Awaited<ReturnType<typeof sessionStore.get>>>,
+  userMessage: string,
+  agentLabel: string
+): Promise<void> {
+  // Build context from session + recent chat messages
+  const recentMessages = await sessionStore.getMessages(sessionId, "flow-orchestrator");
+  const last10 = recentMessages.slice(-10);
+  const chatContext = last10.map((m) => `${m.role}: ${m.content}`).join("\n\n");
+
+  // Gather previous outputs from existing agents on this session
+  const previousOutputs: Record<string, unknown> = {};
+  for (const [aType, aState] of session.agents.entries()) {
+    if (aState.output) {
+      previousOutputs[aType] = aState.output;
+    }
+  }
+
+  const agentInput: AgentInput = {
+    sessionId,
+    idea: userMessage || session.idea,
+    context: {
+      ...session.context,
+      additionalDocs: chatContext
+        ? `## Recent Flow Chat Context\n\n${chatContext}`
+        : session.context.additionalDocs,
+    },
+    previousOutputs,
+  };
+
+  // Create the appropriate agent instance
+  const agentMap: Partial<Record<AgentType, () => InstanceType<any>>> = {
+    discovery: () => new DiscoveryAgent(),
+    strategy: () => new StrategyAgent(),
+    spec: () => new SpecAgent(),
+    gtm: () => new GTMAgent(),
+    "product-marketing": () => new ProductMarketingAgent(),
+  };
+
+  const createAgent = agentMap[targetAgentType];
+  if (!createAgent) {
+    throw new Error(`Unknown pipeline agent type: ${targetAgentType}`);
+  }
+
+  const agent = createAgent();
+  const result = await agent.run(agentInput);
+
+  // On success, create an artifact from the output
+  if (result.success && result.output) {
+    const artifactTypeMap: Partial<Record<AgentType, string>> = {
+      discovery: "discovery",
+      strategy: "strategy",
+      spec: "spec",
+      gtm: "gtm",
+      "product-marketing": "product-marketing",
+    };
+
+    const artifactType = artifactTypeMap[targetAgentType] || "document";
+    const content = typeof result.output === "string"
+      ? result.output
+      : JSON.stringify(result.output, null, 2);
+
+    await sessionStore.createArtifact(sessionId, {
+      type: artifactType,
+      title: `${agentLabel} Output`,
+      content,
+      status: "ready",
+    });
+  }
+
+  // Save summary assistant message
+  const summaryContent = result.success
+    ? `${agentLabel} agent completed. Check the artifact panel for results.`
+    : `${agentLabel} agent failed.`;
+  await sessionStore.addMessage(sessionId, "flow-orchestrator", "assistant", summaryContent);
+}
+
 // Helper to build chat prompt for each agent type
 function buildAgentChatPrompt(
   agentType: AgentType,
@@ -740,7 +867,7 @@ OKRs: ${JSON.stringify(session?.context.okrs)}
 Customer Feedback: ${JSON.stringify(session?.context.customerFeedback)}
 `;
 
-  const agentContexts: Record<AgentType, string> = {
+  const agentContexts: Partial<Record<AgentType, string>> = {
     orchestrator: `You are the Orchestrator Agent. You coordinate the overall product development workflow.
 You have access to outputs from all other agents and can help the user understand the big picture,
 make changes to the overall strategy, or decide next steps.
@@ -851,6 +978,18 @@ Your job is to:
 - Review code for bugs, performance, and best practices
 - Suggest improvements
 - Identify potential issues`,
+
+    "changelog-agent": `You are a Changelog Agent. You write clear, user-facing changelog entries.
+
+${baseContext}
+
+${previousOutput ? `## Your Previous Output\n${JSON.stringify(previousOutput)}\n` : ""}
+
+Your job is to:
+- Write clear, concise changelog entries
+- Organize into Added/Changed/Fixed/Removed categories
+- Use non-technical language end users can understand
+- Focus on user impact, not implementation details`,
   };
 
   return agentContexts[agentType] || agentContexts["flow-orchestrator"];

@@ -3,7 +3,7 @@ import { db } from "../db";
 import { sessions, agentRuns, outputs, messages, documentationPieces, flowArtifacts } from "../db/schema";
 import { TypedEventEmitter } from "./event-emitter";
 
-export type AgentType = "orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "product-marketing" | "doc-orchestrator" | "transcription" | "doc-generator" | "flow-orchestrator" | "code-agent" | "review-agent";
+export type AgentType = "orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "product-marketing" | "doc-orchestrator" | "transcription" | "doc-generator" | "flow-orchestrator" | "code-agent" | "review-agent" | "changelog-agent";
 export type AgentStatus = "pending" | "running" | "waiting_input" | "completed" | "failed";
 export type SessionMode = "idea-to-spec" | "documentation" | "flow";
 

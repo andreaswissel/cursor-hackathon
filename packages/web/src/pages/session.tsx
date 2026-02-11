@@ -106,6 +106,10 @@ const AGENT_PROGRESS_INFO: Record<AgentType, { title: string; description: strin
     title: "Review Agent",
     description: "Reviewing code and providing feedback...",
   },
+  "changelog-agent": {
+    title: "Changelog Agent",
+    description: "Writing user-facing changelog entries...",
+  },
 };
 
 type TabType = "agents" | "outputs";

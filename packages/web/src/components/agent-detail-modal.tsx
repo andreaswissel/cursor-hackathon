@@ -123,6 +123,13 @@ const AGENT_CONFIG: Record<
     color: "text-blue-500",
     gradient: "from-blue-500/20 to-indigo-600/5",
   },
+  "changelog-agent": {
+    name: "Changelog Agent",
+    description: "Writes user-facing changelog entries",
+    icon: FileText,
+    color: "text-rose-500",
+    gradient: "from-rose-500/20 to-pink-600/5",
+  },
 };
 
 export function AgentDetailModal({

@@ -92,7 +92,7 @@ export const sessions = pgTable("sessions", {
 export const agentRuns = pgTable("agent_runs", {
   id: uuid("id").primaryKey().defaultRandom(),
   sessionId: uuid("session_id").references(() => sessions.id).notNull(),
-  agentType: text("agent_type").$type<"orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "doc-orchestrator" | "transcription" | "doc-generator" | "flow-orchestrator" | "code-agent" | "review-agent">().notNull(),
+  agentType: text("agent_type").$type<"orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "doc-orchestrator" | "transcription" | "doc-generator" | "flow-orchestrator" | "code-agent" | "review-agent" | "changelog-agent">().notNull(),
   status: text("status").$type<"pending" | "running" | "waiting_input" | "completed" | "failed">().default("pending").notNull(),
   output: jsonb("output"),
   logs: jsonb("logs").$type<Array<{ timestamp: string; content: string }>>().default([]),
@@ -134,7 +134,7 @@ export const documentationPieces = pgTable("documentation_pieces", {
 export const messages = pgTable("messages", {
   id: uuid("id").primaryKey().defaultRandom(),
   sessionId: uuid("session_id").references(() => sessions.id).notNull(),
-  agentType: text("agent_type").$type<"orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "flow-orchestrator" | "code-agent" | "review-agent">().notNull(),
+  agentType: text("agent_type").$type<"orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "flow-orchestrator" | "code-agent" | "review-agent" | "changelog-agent" | "product-marketing">().notNull(),
   role: text("role").$type<"user" | "assistant">().notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -237,7 +237,7 @@ export const knowledgeSources = pgTable("knowledge_sources", {
 export const flowArtifacts = pgTable("flow_artifacts", {
   id: uuid("id").primaryKey().defaultRandom(),
   sessionId: uuid("session_id").references(() => sessions.id, { onDelete: "cascade" }).notNull(),
-  type: text("type").$type<"plan" | "code-diff" | "review" | "spec" | "document" | "pr-link">().notNull(),
+  type: text("type").$type<"plan" | "code-diff" | "review" | "spec" | "document" | "pr-link" | "changelog" | "discovery" | "strategy" | "gtm" | "product-marketing">().notNull(),
   title: text("title").notNull(),
   content: text("content").notNull(),
   metadata: jsonb("metadata").$type<Record<string, unknown>>(),

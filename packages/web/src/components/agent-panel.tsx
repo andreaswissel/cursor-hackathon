@@ -93,6 +93,11 @@ const AGENT_CONFIG: Record<
     description: "Reviews code",
     icon: CheckCircle2,
   },
+  "changelog-agent": {
+    name: "Changelog Agent",
+    description: "Writes changelog entries",
+    icon: FileText,
+  },
 };
 
 const STATUS_CONFIG = {

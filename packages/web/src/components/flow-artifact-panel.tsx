@@ -15,6 +15,11 @@ import {
   Loader2,
   ChevronRight,
   Package,
+  ScrollText,
+  Search,
+  Target,
+  Megaphone,
+  Newspaper,
 } from "lucide-react";
 
 const DEFAULT_TYPE_CONFIG = { icon: FileText, color: "text-muted-foreground", label: "Artifact" };
@@ -26,6 +31,11 @@ const TYPE_CONFIG: Record<string, { icon: typeof FileText; color: string; label:
   spec: { icon: FileText, color: "text-purple-500", label: "Spec" },
   document: { icon: BookOpen, color: "text-cyan-500", label: "Document" },
   "pr-link": { icon: ExternalLink, color: "text-orange-500", label: "PR Link" },
+  changelog: { icon: ScrollText, color: "text-rose-500", label: "Changelog" },
+  discovery: { icon: Search, color: "text-indigo-500", label: "Discovery" },
+  strategy: { icon: Target, color: "text-teal-500", label: "Strategy" },
+  gtm: { icon: Megaphone, color: "text-yellow-500", label: "GTM" },
+  "product-marketing": { icon: Newspaper, color: "text-pink-500", label: "Marketing" },
 };
 
 function getTypeConfig(type: string) {

@@ -176,13 +176,20 @@ export async function answerQuestion(
 }
 
 // Chat with an agent - returns an EventSource for streaming
+export interface ChatWithAgentOptions {
+  onAgentThinkingStart?: (agentType: string, label: string) => void;
+  onThinking?: (content: string, agentType: string) => void;
+  onAgentThinkingEnd?: (agentType: string, status: string) => void;
+}
+
 export function chatWithAgent(
   sessionId: string,
   agentType: AgentType,
   message: string,
   onText: (text: string) => void,
   onDone: () => void,
-  onError: (error: string) => void
+  onError: (error: string) => void,
+  options?: ChatWithAgentOptions
 ): () => void {
   const controller = new AbortController();
 
@@ -225,6 +232,12 @@ export function chatWithAgent(
               onDone();
             } else if (data.type === "error") {
               onError(data.error);
+            } else if (data.type === "agent-thinking-start" && options?.onAgentThinkingStart) {
+              options.onAgentThinkingStart(data.agentType, data.agentLabel);
+            } else if (data.type === "thinking" && options?.onThinking) {
+              options.onThinking(data.content, data.agentType);
+            } else if (data.type === "agent-thinking-end" && options?.onAgentThinkingEnd) {
+              options.onAgentThinkingEnd(data.agentType, data.status);
             }
           } catch {
             // Ignore parse errors
