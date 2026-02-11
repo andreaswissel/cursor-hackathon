@@ -490,66 +490,66 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo }: FlowChatTh
           />
         )}
 
-        <div className="flex items-center gap-2">
-          {/* + button with agent popup */}
-          <div className="relative" ref={agentMenuRef}>
-            <button
-              onClick={() => setShowAgentMenu(!showAgentMenu)}
-              disabled={isStreaming}
-              className="p-2 rounded-xl border bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-50 flex-shrink-0"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
+        <div className="rounded-xl border bg-secondary/50 focus-within:ring-2 focus-within:ring-ring transition-shadow">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Describe what you want to build..."
+            rows={1}
+            className="w-full resize-none bg-transparent px-4 pt-3 pb-2 text-sm placeholder:text-muted-foreground focus:outline-none min-h-[44px] max-h-[160px]"
+            style={{ height: "auto", overflow: "hidden" }}
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              target.style.height = "auto";
+              target.style.height = Math.min(target.scrollHeight, 160) + "px";
+            }}
+            disabled={isStreaming}
+          />
+          <div className="flex items-center justify-between px-3 pb-2">
+            {/* + button with agent popup */}
+            <div className="relative" ref={agentMenuRef}>
+              <button
+                onClick={() => setShowAgentMenu(!showAgentMenu)}
+                disabled={isStreaming}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors disabled:opacity-50"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
 
-            {showAgentMenu && (
-              <div className="absolute bottom-full left-0 mb-2 w-56 rounded-xl border bg-popover shadow-lg py-1.5 z-50">
-                <div className="px-3 py-1.5 text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">
-                  Agents
+              {showAgentMenu && (
+                <div className="absolute bottom-full left-0 mb-2 w-56 rounded-xl border bg-popover shadow-lg py-1.5 z-50">
+                  <div className="px-3 py-1.5 text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">
+                    Agents
+                  </div>
+                  {AGENT_COMMANDS.map((cmd) => {
+                    const Icon = cmd.icon;
+                    return (
+                      <button
+                        key={cmd.prefix}
+                        onClick={() => handleAgentTrigger(cmd.prefix, cmd.requiresRepo)}
+                        disabled={isStreaming}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-secondary transition-colors disabled:opacity-50"
+                      >
+                        <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium">{cmd.label}</div>
+                          <div className="text-[11px] text-muted-foreground">{cmd.description}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
-                {AGENT_COMMANDS.map((cmd) => {
-                  const Icon = cmd.icon;
-                  return (
-                    <button
-                      key={cmd.prefix}
-                      onClick={() => handleAgentTrigger(cmd.prefix, cmd.requiresRepo)}
-                      disabled={isStreaming}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-secondary transition-colors disabled:opacity-50"
-                    >
-                      <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium">{cmd.label}</div>
-                        <div className="text-[11px] text-muted-foreground">{cmd.description}</div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+              )}
+            </div>
 
-          {/* Input */}
-          <div className="flex-1 relative">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Describe what you want to build..."
-              rows={1}
-              className="w-full resize-none rounded-xl border bg-secondary/50 px-4 py-3 pr-12 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[44px] max-h-[160px]"
-              style={{ height: "auto", overflow: "hidden" }}
-              onInput={(e) => {
-                const target = e.target as HTMLTextAreaElement;
-                target.style.height = "auto";
-                target.style.height = Math.min(target.scrollHeight, 160) + "px";
-              }}
-              disabled={isStreaming}
-            />
+            {/* Send button */}
             <button
               onClick={() => handleSend()}
               disabled={!input.trim() || isStreaming}
               className={cn(
-                "absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors",
+                "p-1.5 rounded-lg transition-colors",
                 input.trim() && !isStreaming
                   ? "bg-foreground text-background hover:bg-foreground/90"
                   : "text-muted-foreground"

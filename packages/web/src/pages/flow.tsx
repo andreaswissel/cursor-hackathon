@@ -9,6 +9,7 @@ import {
   Loader2,
   Bot,
   Send,
+  Plus,
   Code2,
   ShieldCheck,
   FileText,
@@ -19,15 +20,15 @@ import {
   ScrollText,
 } from "lucide-react";
 
-const AGENT_BUTTONS = [
-  { prefix: "@Code", label: "@Code", icon: Code2 },
-  { prefix: "@Review", label: "@Review", icon: ShieldCheck },
-  { prefix: "@Spec", label: "@Spec", icon: FileText },
-  { prefix: "@Strategy", label: "@Strategy", icon: Target },
-  { prefix: "@Discovery", label: "@Discovery", icon: Search },
-  { prefix: "@GTM", label: "@GTM", icon: Megaphone },
-  { prefix: "@Marketing", label: "@Marketing", icon: Newspaper },
-  { prefix: "@Changelog", label: "@Changelog", icon: ScrollText },
+const AGENT_COMMANDS = [
+  { prefix: "@Code", label: "Code", description: "Implement code changes", icon: Code2 },
+  { prefix: "@Review", label: "Review", description: "Review code for issues", icon: ShieldCheck },
+  { prefix: "@Spec", label: "Spec", description: "Write a feature spec", icon: FileText },
+  { prefix: "@Strategy", label: "Strategy", description: "Assess strategic fit", icon: Target },
+  { prefix: "@Discovery", label: "Discovery", description: "Run discovery research", icon: Search },
+  { prefix: "@GTM", label: "GTM", description: "Plan go-to-market", icon: Megaphone },
+  { prefix: "@Marketing", label: "Marketing", description: "Write product update", icon: Newspaper },
+  { prefix: "@Changelog", label: "Changelog", description: "Write changelog entries", icon: ScrollText },
 ];
 
 export function FlowPage() {
@@ -41,7 +42,9 @@ export function FlowPage() {
     query: string;
     position: { bottom: number; left: number };
   } | null>(null);
+  const [showAgentMenu, setShowAgentMenu] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const agentMenuRef = useRef<HTMLDivElement>(null);
 
   const refreshProjects = () => {
     getAllProjects()
@@ -57,6 +60,19 @@ export function FlowPage() {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Click outside to close agent menu
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (agentMenuRef.current && !agentMenuRef.current.contains(e.target as Node)) {
+        setShowAgentMenu(false);
+      }
+    }
+    if (showAgentMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [showAgentMenu]);
 
   const handleSend = async (messageText?: string) => {
     const text = (messageText ?? input).trim();
@@ -100,6 +116,7 @@ export function FlowPage() {
       ? `${agentPrefix} ${currentInput}`
       : `${agentPrefix} `;
     setInput(newInput);
+    setShowAgentMenu(false);
     inputRef.current?.focus();
   };
 
@@ -198,29 +215,65 @@ export function FlowPage() {
           )}
 
           <div className="max-w-3xl mx-auto">
-            <div className="flex items-end gap-2">
-              <div className="flex-1 relative">
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Describe what you want to build..."
-                  rows={1}
-                  className="w-full resize-none rounded-xl border bg-secondary/50 px-4 py-3 pr-12 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[44px] max-h-[160px]"
-                  style={{ height: "auto", overflow: "hidden" }}
-                  onInput={(e) => {
-                    const target = e.target as HTMLTextAreaElement;
-                    target.style.height = "auto";
-                    target.style.height = Math.min(target.scrollHeight, 160) + "px";
-                  }}
-                  disabled={isLoading}
-                />
+            <div className="rounded-xl border bg-secondary/50 focus-within:ring-2 focus-within:ring-ring transition-shadow">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Describe what you want to build..."
+                rows={1}
+                className="w-full resize-none bg-transparent px-4 pt-3 pb-2 text-sm placeholder:text-muted-foreground focus:outline-none min-h-[44px] max-h-[160px]"
+                style={{ height: "auto", overflow: "hidden" }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = "auto";
+                  target.style.height = Math.min(target.scrollHeight, 160) + "px";
+                }}
+                disabled={isLoading}
+              />
+              <div className="flex items-center justify-between px-3 pb-2">
+                {/* + button with agent popup */}
+                <div className="relative" ref={agentMenuRef}>
+                  <button
+                    onClick={() => setShowAgentMenu(!showAgentMenu)}
+                    disabled={isLoading}
+                    className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors disabled:opacity-50"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+
+                  {showAgentMenu && (
+                    <div className="absolute bottom-full left-0 mb-2 w-56 rounded-xl border bg-popover shadow-lg py-1.5 z-50">
+                      <div className="px-3 py-1.5 text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">
+                        Agents
+                      </div>
+                      {AGENT_COMMANDS.map((cmd) => {
+                        const Icon = cmd.icon;
+                        return (
+                          <button
+                            key={cmd.prefix}
+                            onClick={() => handleAgentTrigger(cmd.prefix)}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-secondary transition-colors"
+                          >
+                            <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium">{cmd.label}</div>
+                              <div className="text-[11px] text-muted-foreground">{cmd.description}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Send button */}
                 <button
                   onClick={() => handleSend()}
                   disabled={!input.trim() || isLoading}
                   className={cn(
-                    "absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors",
+                    "p-1.5 rounded-lg transition-colors",
                     input.trim() && !isLoading
                       ? "bg-foreground text-background hover:bg-foreground/90"
                       : "text-muted-foreground"
@@ -233,24 +286,6 @@ export function FlowPage() {
                   )}
                 </button>
               </div>
-            </div>
-
-            {/* Agent trigger buttons */}
-            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-              {AGENT_BUTTONS.map((btn) => {
-                const Icon = btn.icon;
-                return (
-                  <button
-                    key={btn.prefix}
-                    onClick={() => handleAgentTrigger(btn.prefix)}
-                    disabled={isLoading}
-                    className="flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
-                  >
-                    <Icon className="w-3 h-3" />
-                    {btn.label}
-                  </button>
-                );
-              })}
             </div>
           </div>
         </div>
