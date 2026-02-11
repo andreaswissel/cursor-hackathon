@@ -7,6 +7,7 @@ import { ContextMenuPopup } from "./context-menu-popup";
 import {
   Send,
   Loader2,
+  Plus,
   Code2,
   ShieldCheck,
   User,
@@ -41,20 +42,15 @@ interface FlowChatThreadProps {
   onConnectRepo?: (url: string) => void;
 }
 
-const AGENT_BUTTONS: Array<{
-  prefix: string;
-  label: string;
-  icon: typeof Code2;
-  requiresRepo: boolean;
-}> = [
-  { prefix: "@Code", label: "@Code", icon: Code2, requiresRepo: true },
-  { prefix: "@Review", label: "@Review", icon: ShieldCheck, requiresRepo: true },
-  { prefix: "@Spec", label: "@Spec", icon: FileText, requiresRepo: false },
-  { prefix: "@Strategy", label: "@Strategy", icon: Target, requiresRepo: false },
-  { prefix: "@Discovery", label: "@Discovery", icon: Search, requiresRepo: false },
-  { prefix: "@GTM", label: "@GTM", icon: Megaphone, requiresRepo: false },
-  { prefix: "@Marketing", label: "@Marketing", icon: Newspaper, requiresRepo: false },
-  { prefix: "@Changelog", label: "@Changelog", icon: ScrollText, requiresRepo: false },
+const AGENT_COMMANDS = [
+  { prefix: "@Code", label: "Code", description: "Implement code changes", icon: Code2, requiresRepo: true },
+  { prefix: "@Review", label: "Review", description: "Review code for issues", icon: ShieldCheck, requiresRepo: true },
+  { prefix: "@Spec", label: "Spec", description: "Write a feature spec", icon: FileText, requiresRepo: false },
+  { prefix: "@Strategy", label: "Strategy", description: "Assess strategic fit", icon: Target, requiresRepo: false },
+  { prefix: "@Discovery", label: "Discovery", description: "Run discovery research", icon: Search, requiresRepo: false },
+  { prefix: "@GTM", label: "GTM", description: "Plan go-to-market", icon: Megaphone, requiresRepo: false },
+  { prefix: "@Marketing", label: "Marketing", description: "Write product update", icon: Newspaper, requiresRepo: false },
+  { prefix: "@Changelog", label: "Changelog", description: "Write changelog entries", icon: ScrollText, requiresRepo: false },
 ];
 
 export function FlowChatThread({ sessionId, repoUrl, onConnectRepo }: FlowChatThreadProps) {
@@ -71,8 +67,10 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo }: FlowChatTh
     query: string;
     position: { bottom: number; left: number };
   } | null>(null);
+  const [showAgentMenu, setShowAgentMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const agentMenuRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<(() => void) | null>(null);
   const streamingContentRef = useRef("");
   const thinkingRef = useRef<AgentThinking | null>(null);
@@ -108,6 +106,19 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo }: FlowChatTh
   useEffect(() => {
     scrollToBottom();
   }, [messages, streamingContent, scrollToBottom]);
+
+  // Click outside to close agent menu
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (agentMenuRef.current && !agentMenuRef.current.contains(e.target as Node)) {
+        setShowAgentMenu(false);
+      }
+    }
+    if (showAgentMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [showAgentMenu]);
 
   const handleSend = useCallback(
     (messageText?: string) => {
@@ -235,6 +246,7 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo }: FlowChatTh
   const handleAgentTrigger = (agentPrefix: string, requiresRepo: boolean) => {
     if (requiresRepo && !repoUrl) {
       setShowRepoPrompt(true);
+      setShowAgentMenu(false);
       return;
     }
     const currentInput = input.trim();
@@ -242,6 +254,7 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo }: FlowChatTh
       ? `${agentPrefix} ${currentInput}`
       : `${agentPrefix} `;
     setInput(newInput);
+    setShowAgentMenu(false);
     inputRef.current?.focus();
   };
 
@@ -477,14 +490,51 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo }: FlowChatTh
           />
         )}
 
-        <div className="flex items-end gap-2">
+        <div className="flex items-center gap-2">
+          {/* + button with agent popup */}
+          <div className="relative" ref={agentMenuRef}>
+            <button
+              onClick={() => setShowAgentMenu(!showAgentMenu)}
+              disabled={isStreaming}
+              className="p-2 rounded-xl border bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-50 flex-shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+
+            {showAgentMenu && (
+              <div className="absolute bottom-full left-0 mb-2 w-56 rounded-xl border bg-popover shadow-lg py-1.5 z-50">
+                <div className="px-3 py-1.5 text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">
+                  Agents
+                </div>
+                {AGENT_COMMANDS.map((cmd) => {
+                  const Icon = cmd.icon;
+                  return (
+                    <button
+                      key={cmd.prefix}
+                      onClick={() => handleAgentTrigger(cmd.prefix, cmd.requiresRepo)}
+                      disabled={isStreaming}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-secondary transition-colors disabled:opacity-50"
+                    >
+                      <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium">{cmd.label}</div>
+                        <div className="text-[11px] text-muted-foreground">{cmd.description}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Input */}
           <div className="flex-1 relative">
             <textarea
               ref={inputRef}
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder="Describe what you want to build... (@ agents, $ sessions, # skills)"
+              placeholder="Describe what you want to build..."
               rows={1}
               className="w-full resize-none rounded-xl border bg-secondary/50 px-4 py-3 pr-12 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring min-h-[44px] max-h-[160px]"
               style={{ height: "auto", overflow: "hidden" }}
@@ -499,7 +549,7 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo }: FlowChatTh
               onClick={() => handleSend()}
               disabled={!input.trim() || isStreaming}
               className={cn(
-                "absolute right-2 bottom-2 p-1.5 rounded-lg transition-colors",
+                "absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors",
                 input.trim() && !isStreaming
                   ? "bg-foreground text-background hover:bg-foreground/90"
                   : "text-muted-foreground"
@@ -512,24 +562,6 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo }: FlowChatTh
               )}
             </button>
           </div>
-        </div>
-
-        {/* Agent trigger buttons */}
-        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-          {AGENT_BUTTONS.map((btn) => {
-            const Icon = btn.icon;
-            return (
-              <button
-                key={btn.prefix}
-                onClick={() => handleAgentTrigger(btn.prefix, btn.requiresRepo)}
-                disabled={isStreaming}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg border text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:opacity-50"
-              >
-                <Icon className="w-3 h-3" />
-                {btn.label}
-              </button>
-            );
-          })}
         </div>
       </div>
     </div>
