@@ -43,9 +43,11 @@ const AGENT_PREFIX_MAP: Record<string, { agentType: AgentType; requiresRepo: boo
 };
 
 // Generate a short title from the user's first message using Haiku
-async function generateSessionTitle(message: string): Promise<string> {
+async function generateSessionTitle(message: string, userApiKey?: string): Promise<string> {
+  const apiKey = userApiKey || process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return message.slice(0, 60);
   try {
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || "" });
+    const client = new Anthropic({ apiKey });
     const response = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 30,
@@ -216,8 +218,9 @@ router.post("/flow", checkSessionLimit, async (req: Request, res: Response) => {
   const userId = req.user!.id;
   const resolvedProjectId = projectId || await ensureDefaultProject(userId);
 
-  // Generate title from message via LLM
-  const generatedTitle = message ? await generateSessionTitle(message) : userMessage;
+  // Look up user's API key for title generation
+  const [userRow] = await db.select({ anthropicApiKey: users.anthropicApiKey }).from(users).where(eq(users.id, userId));
+  const generatedTitle = message ? await generateSessionTitle(message, userRow?.anthropicApiKey || undefined) : userMessage;
 
   // Fall back to project's repoUrl if none provided
   let resolvedRepoUrl = repoUrl;
@@ -254,7 +257,8 @@ router.post("/guided-tours", checkSessionLimit, async (req: Request, res: Respon
 
   const userId = req.user!.id;
   const resolvedProjectId = projectId || await ensureDefaultProject(userId);
-  const generatedTitle = await generateSessionTitle(message);
+  const [gtUser] = await db.select({ anthropicApiKey: users.anthropicApiKey }).from(users).where(eq(users.id, userId));
+  const generatedTitle = await generateSessionTitle(message, gtUser?.anthropicApiKey || undefined);
 
   const sessionId = uuid();
   const context: SessionContext = { okrs: [], customerFeedback: [] };
@@ -279,7 +283,8 @@ router.post("/feedback-forms", checkSessionLimit, async (req: Request, res: Resp
 
   const userId = req.user!.id;
   const resolvedProjectId = projectId || await ensureDefaultProject(userId);
-  const generatedTitle = await generateSessionTitle(message);
+  const [ffUser] = await db.select({ anthropicApiKey: users.anthropicApiKey }).from(users).where(eq(users.id, userId));
+  const generatedTitle = await generateSessionTitle(message, ffUser?.anthropicApiKey || undefined);
 
   const sessionId = uuid();
   const context: SessionContext = { okrs: [], customerFeedback: [] };

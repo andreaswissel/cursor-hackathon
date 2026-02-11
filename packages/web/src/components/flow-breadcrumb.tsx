@@ -48,7 +48,7 @@ export function FlowBreadcrumb({
         </button>
 
         {showDropdown && (
-          <div className="absolute top-full left-0 mt-1 w-56 rounded-lg border bg-popover shadow-lg z-50 py-1">
+          <div className="absolute top-full left-0 mt-1 w-56 rounded-lg border border-border bg-background shadow-xl z-[100] py-1">
             <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
               Assign to project
             </div>
