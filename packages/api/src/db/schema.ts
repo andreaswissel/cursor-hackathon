@@ -1,5 +1,5 @@
-import { pgTable, text, timestamp, jsonb, uuid, integer, real, unique } from "drizzle-orm/pg-core";
-import type { UserPreferences, KnowledgeFilter, KnowledgeVisibility } from "@product-os/shared";
+import { pgTable, text, timestamp, jsonb, uuid, integer, real, unique, date } from "drizzle-orm/pg-core";
+import type { UserPreferences, KnowledgeFilter, KnowledgeVisibility, RoadmapItemStatus, RoadmapItemPriority } from "@product-os/shared";
 
 // Users table for demo auth
 export const users = pgTable("users", {
@@ -244,6 +244,33 @@ export const flowArtifacts = pgTable("flow_artifacts", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// Roadmap items — global timeline planning
+export const roadmapItems = pgTable("roadmap_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  teamId: uuid("team_id").references(() => teams.id, { onDelete: "set null" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: text("status").$type<RoadmapItemStatus>().default("backlog").notNull(),
+  priority: text("priority").$type<RoadmapItemPriority>().default("medium").notNull(),
+  targetQuarter: text("target_quarter"),
+  startDate: date("start_date"),
+  endDate: date("end_date"),
+  order: integer("order").default(0).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Roadmap item ↔ session join table
+export const roadmapItemSessions = pgTable("roadmap_item_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  roadmapItemId: uuid("roadmap_item_id").references(() => roadmapItems.id, { onDelete: "cascade" }).notNull(),
+  sessionId: uuid("session_id").references(() => sessions.id, { onDelete: "cascade" }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+  unique("roadmap_item_sessions_unique").on(t.roadmapItemId, t.sessionId),
+]);
 
 // Session knowledge overrides — per-session add/remove relative to project
 export const sessionKnowledgeOverrides = pgTable("session_knowledge_overrides", {

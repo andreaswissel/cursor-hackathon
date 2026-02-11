@@ -186,6 +186,28 @@ export interface SSEEvent {
   payload: unknown;
 }
 
+// Roadmap types
+export type RoadmapItemStatus = "backlog" | "planned" | "in-progress" | "done";
+export type RoadmapItemPriority = "low" | "medium" | "high" | "critical";
+
+export interface RoadmapItem {
+  id: string;
+  userId: string;
+  teamId?: string | null;
+  title: string;
+  description?: string | null;
+  status: RoadmapItemStatus;
+  priority: RoadmapItemPriority;
+  targetQuarter?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  order: number;
+  linkedSessionIds: string[];
+  linkedSessions?: Array<{ id: string; idea: string; status: string; mode?: string }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Knowledge types
 export type KnowledgeVisibility = "team" | "private";
 

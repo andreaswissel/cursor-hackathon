@@ -9,6 +9,7 @@ import adminRouter from "./admin";
 import teamsRouter, { inviteRouter } from "./teams";
 import knowledgeRouter from "./knowledge";
 import flowArtifactsRouter from "./flow-artifacts";
+import roadmapRouter from "./roadmap";
 
 const router = Router();
 
@@ -23,6 +24,7 @@ router.use("/integrations", integrationsRouter);
 router.use("/discovery", discoveryRouter);
 router.use("/admin", adminRouter);
 router.use(knowledgeRouter);
+router.use("/roadmap", roadmapRouter);
 
 // Health check
 router.get("/health", (_, res) => {

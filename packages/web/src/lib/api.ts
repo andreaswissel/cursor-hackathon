@@ -1,4 +1,4 @@
-import type { SessionContext, Session, AgentType, DocumentationPiece, DocPieceStatus, SessionMode, DiscoveryDashboard, DiscoveryRun, ProjectWithSessions, UserPreferences, KnowledgeSource, KnowledgeFilter, KnowledgeVisibility, SessionKnowledgeOverride, FlowArtifact } from "@product-os/shared";
+import type { SessionContext, Session, AgentType, DocumentationPiece, DocPieceStatus, SessionMode, DiscoveryDashboard, DiscoveryRun, ProjectWithSessions, UserPreferences, KnowledgeSource, KnowledgeFilter, KnowledgeVisibility, SessionKnowledgeOverride, FlowArtifact, RoadmapItem, RoadmapItemStatus, RoadmapItemPriority } from "@product-os/shared";
 
 // In production, use the full API URL; in dev, proxy through Vite
 const API_BASE = import.meta.env.VITE_API_URL ||
@@ -827,4 +827,84 @@ export async function deleteFlowArtifact(sessionId: string, artifactId: string):
   if (!res.ok) {
     throw new Error("Failed to delete artifact");
   }
+}
+
+// ============================================================
+// Roadmap API
+// ============================================================
+
+export async function getRoadmapItems(): Promise<{ items: RoadmapItem[] }> {
+  const res = await fetch(`${API_BASE}/roadmap`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to fetch roadmap items");
+  return res.json();
+}
+
+export async function createRoadmapItem(data: {
+  title: string;
+  description?: string;
+  status?: RoadmapItemStatus;
+  priority?: RoadmapItemPriority;
+  targetQuarter?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  order?: number;
+  linkedSessionIds?: string[];
+}): Promise<RoadmapItem> {
+  const res = await fetch(`${API_BASE}/roadmap`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to create roadmap item" }));
+    throw new Error(error.error || "Failed to create roadmap item");
+  }
+  return res.json();
+}
+
+export async function updateRoadmapItem(
+  id: string,
+  data: Partial<{
+    title: string;
+    description: string | null;
+    status: RoadmapItemStatus;
+    priority: RoadmapItemPriority;
+    targetQuarter: string | null;
+    startDate: string | null;
+    endDate: string | null;
+    order: number;
+    linkedSessionIds: string[];
+  }>
+): Promise<RoadmapItem> {
+  const res = await fetch(`${API_BASE}/roadmap/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to update roadmap item" }));
+    throw new Error(error.error || "Failed to update roadmap item");
+  }
+  return res.json();
+}
+
+export async function deleteRoadmapItem(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/roadmap/${id}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to delete roadmap item" }));
+    throw new Error(error.error || "Failed to delete roadmap item");
+  }
+}
+
+export async function searchSessionsForLinking(query: string): Promise<{ sessions: Array<{ id: string; idea: string; status: string; mode?: string }> }> {
+  const res = await fetch(`${API_BASE}/roadmap/sessions/search?q=${encodeURIComponent(query)}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to search sessions");
+  return res.json();
 }

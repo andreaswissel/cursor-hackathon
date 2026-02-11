@@ -24,6 +24,7 @@ import {
   Lightbulb,
   Video,
   Workflow,
+  Map,
   FolderOpen,
   Folder,
   ChevronRight,
@@ -471,6 +472,19 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
         >
           <Workflow className="w-4 h-4" />
           Flow
+        </Link>
+        <Link
+          to="/roadmap"
+          onClick={() => setIsOpen(false)}
+          className={cn(
+            "flex items-center gap-2 px-3 py-2 w-full text-sm font-medium rounded-lg transition-colors",
+            location.pathname === "/roadmap"
+              ? "bg-secondary text-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+          )}
+        >
+          <Map className="w-4 h-4" />
+          Roadmap
         </Link>
         <Link
           to="/discover"

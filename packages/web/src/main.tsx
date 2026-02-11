@@ -19,6 +19,7 @@ import { TeamSettingsPage } from "./pages/team-settings";
 import { InvitePage } from "./pages/invite";
 import { ProjectKnowledgePage } from "./pages/project-knowledge";
 import { FlowPage } from "./pages/flow";
+import { RoadmapPage } from "./pages/roadmap";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -75,6 +76,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             element={
               <ProtectedRoute>
                 <FlowPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/roadmap"
+            element={
+              <ProtectedRoute>
+                <RoadmapPage />
               </ProtectedRoute>
             }
           />
