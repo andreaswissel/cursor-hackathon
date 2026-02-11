@@ -490,7 +490,44 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo }: FlowChatTh
           />
         )}
 
-        <div className="rounded-xl border bg-secondary/50 focus-within:ring-2 focus-within:ring-ring transition-shadow">
+        <div className="flex items-center gap-2 rounded-xl border bg-secondary/50 px-3 py-2 focus-within:ring-2 focus-within:ring-ring transition-shadow">
+          {/* + button with agent popup */}
+          <div className="relative flex-shrink-0" ref={agentMenuRef}>
+            <button
+              onClick={() => setShowAgentMenu(!showAgentMenu)}
+              disabled={isStreaming}
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors disabled:opacity-50"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+
+            {showAgentMenu && (
+              <div className="absolute bottom-full left-0 mb-2 w-56 max-h-[70vh] overflow-y-auto rounded-xl border bg-popover shadow-lg py-1.5 z-50">
+                <div className="px-3 py-1.5 text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">
+                  Agents
+                </div>
+                {AGENT_COMMANDS.map((cmd) => {
+                  const Icon = cmd.icon;
+                  return (
+                    <button
+                      key={cmd.prefix}
+                      onClick={() => handleAgentTrigger(cmd.prefix, cmd.requiresRepo)}
+                      disabled={isStreaming}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-secondary transition-colors disabled:opacity-50"
+                    >
+                      <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium">{cmd.label}</div>
+                        <div className="text-[11px] text-muted-foreground">{cmd.description}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Textarea */}
           <textarea
             ref={inputRef}
             value={input}
@@ -498,7 +535,7 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo }: FlowChatTh
             onKeyDown={handleKeyDown}
             placeholder="Describe what you want to build..."
             rows={1}
-            className="w-full resize-none bg-transparent px-4 pt-3 pb-2 text-sm placeholder:text-muted-foreground focus:outline-none min-h-[44px] max-h-[160px]"
+            className="flex-1 resize-none bg-transparent py-1 text-sm placeholder:text-muted-foreground focus:outline-none min-h-[28px] max-h-[160px]"
             style={{ height: "auto", overflow: "hidden" }}
             onInput={(e) => {
               const target = e.target as HTMLTextAreaElement;
@@ -507,61 +544,24 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo }: FlowChatTh
             }}
             disabled={isStreaming}
           />
-          <div className="flex items-center justify-between px-3 pb-2">
-            {/* + button with agent popup */}
-            <div className="relative" ref={agentMenuRef}>
-              <button
-                onClick={() => setShowAgentMenu(!showAgentMenu)}
-                disabled={isStreaming}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors disabled:opacity-50"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
 
-              {showAgentMenu && (
-                <div className="absolute bottom-full left-0 mb-2 w-56 rounded-xl border bg-popover shadow-lg py-1.5 z-50">
-                  <div className="px-3 py-1.5 text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">
-                    Agents
-                  </div>
-                  {AGENT_COMMANDS.map((cmd) => {
-                    const Icon = cmd.icon;
-                    return (
-                      <button
-                        key={cmd.prefix}
-                        onClick={() => handleAgentTrigger(cmd.prefix, cmd.requiresRepo)}
-                        disabled={isStreaming}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-secondary transition-colors disabled:opacity-50"
-                      >
-                        <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium">{cmd.label}</div>
-                          <div className="text-[11px] text-muted-foreground">{cmd.description}</div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Send button */}
-            <button
-              onClick={() => handleSend()}
-              disabled={!input.trim() || isStreaming}
-              className={cn(
-                "p-1.5 rounded-lg transition-colors",
-                input.trim() && !isStreaming
-                  ? "bg-foreground text-background hover:bg-foreground/90"
-                  : "text-muted-foreground"
-              )}
-            >
-              {isStreaming ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
-            </button>
-          </div>
+          {/* Send button */}
+          <button
+            onClick={() => handleSend()}
+            disabled={!input.trim() || isStreaming}
+            className={cn(
+              "p-1.5 rounded-lg transition-colors flex-shrink-0",
+              input.trim() && !isStreaming
+                ? "bg-foreground text-background hover:bg-foreground/90"
+                : "text-muted-foreground"
+            )}
+          >
+            {isStreaming ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+          </button>
         </div>
       </div>
     </div>
