@@ -23,6 +23,7 @@ import {
   Compass,
   Lightbulb,
   Video,
+  Workflow,
   FolderOpen,
   Folder,
   ChevronRight,
@@ -457,6 +458,19 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
         >
           <Video className="w-4 h-4" />
           Document
+        </Link>
+        <Link
+          to="/flow"
+          onClick={() => setIsOpen(false)}
+          className={cn(
+            "flex items-center gap-2 px-3 py-2 w-full text-sm font-medium rounded-lg transition-colors",
+            location.pathname === "/flow"
+              ? "bg-secondary text-foreground"
+              : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+          )}
+        >
+          <Workflow className="w-4 h-4" />
+          Flow
         </Link>
         <Link
           to="/discover"

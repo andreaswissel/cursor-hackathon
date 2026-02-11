@@ -1,11 +1,23 @@
 import { eq } from "drizzle-orm";
 import { db } from "../db";
-import { sessions, agentRuns, outputs, messages, documentationPieces } from "../db/schema";
+import { sessions, agentRuns, outputs, messages, documentationPieces, flowArtifacts } from "../db/schema";
 import { TypedEventEmitter } from "./event-emitter";
 
-export type AgentType = "orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "product-marketing" | "doc-orchestrator" | "transcription" | "doc-generator";
+export type AgentType = "orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "product-marketing" | "doc-orchestrator" | "transcription" | "doc-generator" | "flow-orchestrator" | "code-agent" | "review-agent";
 export type AgentStatus = "pending" | "running" | "waiting_input" | "completed" | "failed";
-export type SessionMode = "idea-to-spec" | "documentation";
+export type SessionMode = "idea-to-spec" | "documentation" | "flow";
+
+export interface FlowArtifactRecord {
+  id: string;
+  sessionId: string;
+  type: string;
+  title: string;
+  content: string;
+  metadata?: Record<string, unknown> | null;
+  status: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 export type DocPieceType = "feature" | "workflow" | "use-case" | "tutorial" | "reference";
 export type DocPieceStatus = "pending" | "accepted" | "declined" | "refined";
 
@@ -111,6 +123,9 @@ export interface SessionEvents {
   "session:output": { sessionId: string; type: keyof Session["outputs"]; content: string };
   "documentation:piece": { sessionId: string; piece: DocumentationPieceRecord };
   "documentation:piece:updated": { sessionId: string; pieceId: string; piece: DocumentationPieceRecord };
+  "artifact:created": { sessionId: string; artifact: FlowArtifactRecord };
+  "artifact:updated": { sessionId: string; artifactId: string; artifact: FlowArtifactRecord };
+  "artifact:deleted": { sessionId: string; artifactId: string };
 }
 
 const CACHE_EVICTION_DELAY_MS = 5 * 60 * 1000; // 5 minutes after completion
@@ -487,6 +502,7 @@ class SessionStore {
   // Delete a session and all related data
   async delete(sessionId: string): Promise<boolean> {
     // Delete from database (cascade will handle related tables if set up, otherwise delete manually)
+    await db.delete(flowArtifacts).where(eq(flowArtifacts.sessionId, sessionId));
     await db.delete(documentationPieces).where(eq(documentationPieces.sessionId, sessionId));
     await db.delete(messages).where(eq(messages.sessionId, sessionId));
     await db.delete(outputs).where(eq(outputs.sessionId, sessionId));
@@ -744,6 +760,100 @@ class SessionStore {
     if (!session) return undefined;
     const agent = session.agents.get(agentType);
     return agent?.currentQuestion;
+  }
+
+  // Flow artifact methods
+  async createArtifact(
+    sessionId: string,
+    data: { type: string; title: string; content: string; metadata?: Record<string, unknown>; status?: string }
+  ): Promise<FlowArtifactRecord> {
+    const [inserted] = await db
+      .insert(flowArtifacts)
+      .values({
+        sessionId,
+        type: data.type as any,
+        title: data.title,
+        content: data.content,
+        metadata: data.metadata,
+        status: (data.status || "ready") as any,
+      })
+      .returning();
+
+    const record: FlowArtifactRecord = {
+      id: inserted.id,
+      sessionId: inserted.sessionId,
+      type: inserted.type,
+      title: inserted.title,
+      content: inserted.content,
+      metadata: inserted.metadata,
+      status: inserted.status,
+      createdAt: inserted.createdAt,
+      updatedAt: inserted.updatedAt,
+    };
+
+    this.events.emit("artifact:created", { sessionId, artifact: record });
+    return record;
+  }
+
+  async getArtifacts(sessionId: string): Promise<FlowArtifactRecord[]> {
+    const rows = await db
+      .select()
+      .from(flowArtifacts)
+      .where(eq(flowArtifacts.sessionId, sessionId))
+      .orderBy(flowArtifacts.createdAt);
+
+    return rows.map((r) => ({
+      id: r.id,
+      sessionId: r.sessionId,
+      type: r.type,
+      title: r.title,
+      content: r.content,
+      metadata: r.metadata,
+      status: r.status,
+      createdAt: r.createdAt,
+      updatedAt: r.updatedAt,
+    }));
+  }
+
+  async updateArtifact(
+    sessionId: string,
+    artifactId: string,
+    data: Partial<{ title: string; content: string; status: string; metadata: Record<string, unknown> }>
+  ): Promise<FlowArtifactRecord | undefined> {
+    const [updated] = await db
+      .update(flowArtifacts)
+      .set({ ...data, updatedAt: new Date() } as any)
+      .where(eq(flowArtifacts.id, artifactId))
+      .returning();
+
+    if (!updated || updated.sessionId !== sessionId) return undefined;
+
+    const record: FlowArtifactRecord = {
+      id: updated.id,
+      sessionId: updated.sessionId,
+      type: updated.type,
+      title: updated.title,
+      content: updated.content,
+      metadata: updated.metadata,
+      status: updated.status,
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+    };
+
+    this.events.emit("artifact:updated", { sessionId, artifactId, artifact: record });
+    return record;
+  }
+
+  async deleteArtifact(sessionId: string, artifactId: string): Promise<boolean> {
+    const [deleted] = await db
+      .delete(flowArtifacts)
+      .where(eq(flowArtifacts.id, artifactId))
+      .returning();
+
+    if (!deleted || deleted.sessionId !== sessionId) return false;
+
+    this.events.emit("artifact:deleted", { sessionId, artifactId });
+    return true;
   }
 }
 

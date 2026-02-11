@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import type { Session, AgentType, AgentLog, AgentStatus, AgentState, SSEEvent } from "@product-os/shared";
+import type { Session, AgentType, AgentLog, AgentStatus, AgentState, SSEEvent, FlowArtifact } from "@product-os/shared";
 import { getAuthToken } from "@/lib/api";
 
 const API_BASE = import.meta.env.VITE_API_URL ||
@@ -11,12 +11,14 @@ interface UseSessionStreamResult {
   error: string | null;
   /** True if we have session data but lost connection (content still usable) */
   isReconnecting: boolean;
+  artifacts: FlowArtifact[];
 }
 
 export function useSessionStream(sessionId: string): UseSessionStreamResult {
   const [session, setSession] = useState<Session | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [artifacts, setArtifacts] = useState<FlowArtifact[]>([]);
   const eventSourceRef = useRef<EventSource | null>(null);
   const retryCountRef = useRef(0);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -210,6 +212,26 @@ export function useSessionStream(sessionId: string): UseSessionStreamResult {
             });
             break;
           }
+
+          case "artifact:created": {
+            const payload = data.payload as { sessionId: string; artifact: FlowArtifact };
+            setArtifacts((prev) => [...prev, payload.artifact]);
+            break;
+          }
+
+          case "artifact:updated": {
+            const payload = data.payload as { sessionId: string; artifactId: string; artifact: FlowArtifact };
+            setArtifacts((prev) =>
+              prev.map((a) => (a.id === payload.artifactId ? payload.artifact : a))
+            );
+            break;
+          }
+
+          case "artifact:deleted": {
+            const payload = data.payload as { sessionId: string; artifactId: string };
+            setArtifacts((prev) => prev.filter((a) => a.id !== payload.artifactId));
+            break;
+          }
         }
       } catch (e) {
         console.error("Failed to parse SSE event:", e);
@@ -246,5 +268,5 @@ export function useSessionStream(sessionId: string): UseSessionStreamResult {
   // If we have session data but lost connection, we're reconnecting (not fatally errored)
   const isReconnecting = !isConnected && session !== null && error !== null;
 
-  return { session, isConnected, error, isReconnecting };
+  return { session, isConnected, error, isReconnecting, artifacts };
 }

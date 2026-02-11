@@ -75,7 +75,7 @@ export const sessions = pgTable("sessions", {
   }>(),
   status: text("status").$type<"pending" | "running" | "waiting_input" | "completed" | "failed">().default("pending").notNull(),
   promptCount: integer("prompt_count").default(1).notNull(),
-  mode: text("mode").$type<"idea-to-spec" | "documentation">().default("idea-to-spec").notNull(),
+  mode: text("mode").$type<"idea-to-spec" | "documentation" | "flow">().default("idea-to-spec").notNull(),
   videoMetadata: jsonb("video_metadata").$type<{
     filename: string;
     originalName: string;
@@ -91,7 +91,7 @@ export const sessions = pgTable("sessions", {
 export const agentRuns = pgTable("agent_runs", {
   id: uuid("id").primaryKey().defaultRandom(),
   sessionId: uuid("session_id").references(() => sessions.id).notNull(),
-  agentType: text("agent_type").$type<"orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "doc-orchestrator" | "transcription" | "doc-generator">().notNull(),
+  agentType: text("agent_type").$type<"orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "doc-orchestrator" | "transcription" | "doc-generator" | "flow-orchestrator" | "code-agent" | "review-agent">().notNull(),
   status: text("status").$type<"pending" | "running" | "waiting_input" | "completed" | "failed">().default("pending").notNull(),
   output: jsonb("output"),
   logs: jsonb("logs").$type<Array<{ timestamp: string; content: string }>>().default([]),
@@ -133,7 +133,7 @@ export const documentationPieces = pgTable("documentation_pieces", {
 export const messages = pgTable("messages", {
   id: uuid("id").primaryKey().defaultRandom(),
   sessionId: uuid("session_id").references(() => sessions.id).notNull(),
-  agentType: text("agent_type").$type<"orchestrator" | "discovery" | "strategy" | "spec" | "gtm">().notNull(),
+  agentType: text("agent_type").$type<"orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "flow-orchestrator" | "code-agent" | "review-agent">().notNull(),
   role: text("role").$type<"user" | "assistant">().notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -228,6 +228,19 @@ export const knowledgeSources = pgTable("knowledge_sources", {
   aiSummary: text("ai_summary"),
   aiSummaryGeneratedAt: timestamp("ai_summary_generated_at"),
   enabled: integer("enabled").default(1).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Flow artifacts — dynamic artifacts created during flow mode sessions
+export const flowArtifacts = pgTable("flow_artifacts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  sessionId: uuid("session_id").references(() => sessions.id, { onDelete: "cascade" }).notNull(),
+  type: text("type").$type<"plan" | "code-diff" | "review" | "spec" | "document" | "pr-link">().notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+  status: text("status").$type<"generating" | "ready" | "error">().default("generating").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

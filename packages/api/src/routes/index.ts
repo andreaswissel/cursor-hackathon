@@ -8,11 +8,13 @@ import projectsRouter from "./projects";
 import adminRouter from "./admin";
 import teamsRouter, { inviteRouter } from "./teams";
 import knowledgeRouter from "./knowledge";
+import flowArtifactsRouter from "./flow-artifacts";
 
 const router = Router();
 
 router.use("/auth", authRouter);
 router.use("/sessions", sessionsRouter);
+router.use("/sessions", flowArtifactsRouter);
 router.use("/projects", projectsRouter);
 router.use("/teams", teamsRouter);
 router.use("/invites", inviteRouter);

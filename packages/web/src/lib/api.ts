@@ -1,4 +1,4 @@
-import type { SessionContext, Session, AgentType, DocumentationPiece, DocPieceStatus, SessionMode, DiscoveryDashboard, DiscoveryRun, ProjectWithSessions, UserPreferences, KnowledgeSource, KnowledgeFilter, KnowledgeVisibility, SessionKnowledgeOverride } from "@product-os/shared";
+import type { SessionContext, Session, AgentType, DocumentationPiece, DocPieceStatus, SessionMode, DiscoveryDashboard, DiscoveryRun, ProjectWithSessions, UserPreferences, KnowledgeSource, KnowledgeFilter, KnowledgeVisibility, SessionKnowledgeOverride, FlowArtifact } from "@product-os/shared";
 
 // In production, use the full API URL; in dev, proxy through Vite
 const API_BASE = import.meta.env.VITE_API_URL ||
@@ -781,4 +781,50 @@ export async function removeSessionKnowledgeOverride(sessionId: string, id: stri
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error("Failed to remove override");
+}
+
+// ============================================================
+// Flow Mode API
+// ============================================================
+
+export async function createFlowSession(
+  title: string,
+  projectId?: string,
+  repoUrl?: string
+): Promise<{ sessionId: string }> {
+  const res = await fetch(`${API_BASE}/sessions/flow`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({ title, projectId, repoUrl }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to create flow session" }));
+    throw new Error(error.message || error.error || "Failed to create flow session");
+  }
+
+  return res.json();
+}
+
+export async function getFlowArtifacts(sessionId: string): Promise<{ artifacts: FlowArtifact[] }> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/artifacts`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to get artifacts");
+  }
+
+  return res.json();
+}
+
+export async function deleteFlowArtifact(sessionId: string, artifactId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/artifacts/${artifactId}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to delete artifact");
+  }
 }

@@ -15,10 +15,25 @@ export interface UserPreferences {
   completedAt?: string;
 }
 
-export type AgentType = "orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "product-marketing" | "doc-orchestrator" | "transcription" | "doc-generator";
+export type AgentType = "orchestrator" | "discovery" | "strategy" | "spec" | "gtm" | "product-marketing" | "doc-orchestrator" | "transcription" | "doc-generator" | "flow-orchestrator" | "code-agent" | "review-agent";
 export type AgentStatus = "pending" | "running" | "waiting_input" | "completed" | "failed";
 export type SessionStatus = "pending" | "running" | "waiting_input" | "completed" | "failed";
-export type SessionMode = "idea-to-spec" | "documentation" | "discover";
+export type SessionMode = "idea-to-spec" | "documentation" | "discover" | "flow";
+
+// Flow Mode types
+export type FlowArtifactType = "plan" | "code-diff" | "review" | "spec" | "document" | "pr-link";
+
+export interface FlowArtifact {
+  id: string;
+  sessionId: string;
+  type: FlowArtifactType;
+  title: string;
+  content: string;
+  metadata?: Record<string, unknown>;
+  status: "generating" | "ready" | "error";
+  createdAt: string;
+  updatedAt: string;
+}
 export type DocPieceType = "feature" | "workflow" | "use-case" | "tutorial" | "reference";
 export type DocPieceStatus = "pending" | "accepted" | "declined" | "refined";
 
@@ -164,7 +179,10 @@ export interface SSEEvent {
     | "session:status"
     | "session:output"
     | "documentation:piece"
-    | "documentation:piece:updated";
+    | "documentation:piece:updated"
+    | "artifact:created"
+    | "artifact:updated"
+    | "artifact:deleted";
   payload: unknown;
 }
 

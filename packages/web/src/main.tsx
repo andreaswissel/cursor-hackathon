@@ -18,6 +18,7 @@ import { OnboardingPage } from "./pages/onboarding";
 import { TeamSettingsPage } from "./pages/team-settings";
 import { InvitePage } from "./pages/invite";
 import { ProjectKnowledgePage } from "./pages/project-knowledge";
+import { FlowPage } from "./pages/flow";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -66,6 +67,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             element={
               <ProtectedRoute>
                 <DocumentPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/flow"
+            element={
+              <ProtectedRoute>
+                <FlowPage />
               </ProtectedRoute>
             }
           />

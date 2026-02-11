@@ -4,6 +4,7 @@ import { AgentPanel } from "@/components/agent-panel";
 import { AgentDetailModal } from "@/components/agent-detail-modal";
 import { Sidebar } from "@/components/sidebar";
 import { DocumentationPieces } from "@/components/documentation-pieces";
+import { FlowSessionPage } from "@/pages/flow-session";
 import type { AgentType, DocumentationPiece } from "@product-os/shared";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
@@ -93,13 +94,25 @@ const AGENT_PROGRESS_INFO: Record<AgentType, { title: string; description: strin
     title: "Generating Documentation",
     description: "Creating structured documentation pieces from the transcription...",
   },
+  "flow-orchestrator": {
+    title: "Flow Orchestrator",
+    description: "Coordinating flow mode conversation...",
+  },
+  "code-agent": {
+    title: "Code Agent",
+    description: "Implementing features and writing code...",
+  },
+  "review-agent": {
+    title: "Review Agent",
+    description: "Reviewing code and providing feedback...",
+  },
 };
 
 type TabType = "agents" | "outputs";
 
 export function SessionPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
-  const { session, isConnected, error, isReconnecting } = useSessionStream(sessionId ?? "");
+  const { session, isConnected, error, isReconnecting, artifacts } = useSessionStream(sessionId ?? "");
   const [copied, setCopied] = useState(false);
   const [copiedUpdate, setCopiedUpdate] = useState(false);
   const [projects, setProjects] = useState<ProjectWithSessions[]>([]);
@@ -117,6 +130,7 @@ export function SessionPage() {
     setTerminalVisible(true);
   }, []);
 
+  const isFlowMode = session?.mode === "flow";
   const isDocumentationMode = session?.mode === "documentation";
 
   const refreshProjects = () => {
@@ -241,6 +255,31 @@ export function SessionPage() {
         <div className="flex-1 flex items-center justify-center pt-14 md:pt-0">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
+      </div>
+    );
+  }
+
+  // Flow mode has its own dedicated layout
+  if (isFlowMode) {
+    return (
+      <div className="flex h-screen">
+        <Sidebar projects={projects} onProjectCreated={refreshProjects} onProjectDeleted={refreshProjects} onSessionDeleted={refreshProjects} />
+        <main className="flex-1 flex flex-col overflow-hidden pt-14 md:pt-0">
+          {/* Minimal header for flow */}
+          <div className="px-4 md:px-6 py-3 border-b bg-background/95 backdrop-blur flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <h1 className="font-semibold text-sm truncate">{session.idea}</h1>
+              <div className="flex items-center gap-1.5">
+                <div className={cn("w-2 h-2 rounded-full", isConnected ? "bg-emerald-500" : "bg-red-500")} />
+                <span className="text-xs text-muted-foreground">{isConnected ? "Connected" : "Disconnected"}</span>
+              </div>
+            </div>
+            <div className="px-2 py-0.5 rounded-full text-xs font-medium bg-violet-500/10 text-violet-600">
+              Flow
+            </div>
+          </div>
+          <FlowSessionPage sessionId={sessionId!} artifacts={artifacts} />
+        </main>
       </div>
     );
   }

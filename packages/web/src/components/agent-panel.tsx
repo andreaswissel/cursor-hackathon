@@ -78,6 +78,21 @@ const AGENT_CONFIG: Record<
     description: "Creates documentation pieces",
     icon: BookOpen,
   },
+  "flow-orchestrator": {
+    name: "Flow Orchestrator",
+    description: "Orchestrates flow conversations",
+    icon: Compass,
+  },
+  "code-agent": {
+    name: "Code Agent",
+    description: "Implements features",
+    icon: FileText,
+  },
+  "review-agent": {
+    name: "Review Agent",
+    description: "Reviews code",
+    icon: CheckCircle2,
+  },
 };
 
 const STATUS_CONFIG = {

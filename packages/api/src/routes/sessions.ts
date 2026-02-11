@@ -157,6 +157,33 @@ router.post(
   }
 );
 
+// Create a new flow session
+router.post("/flow", checkSessionLimit, async (req: Request, res: Response) => {
+  const { title, projectId, repoUrl } = req.body as {
+    title: string;
+    projectId?: string;
+    repoUrl?: string;
+  };
+
+  if (!title) {
+    res.status(400).json({ error: "Missing title" });
+    return;
+  }
+
+  const userId = req.user!.id;
+  const resolvedProjectId = projectId || await ensureDefaultProject(userId);
+
+  const sessionId = uuid();
+  const context: SessionContext = { okrs: [], customerFeedback: [] };
+  const metadata = repoUrl ? { repoUrl } : undefined;
+
+  await sessionStore.create(sessionId, title, context, userId, "flow", undefined, resolvedProjectId);
+  // Flow sessions are immediately ready for chat — set status to completed
+  await sessionStore.setSessionStatus(sessionId, "completed");
+
+  res.json({ sessionId });
+});
+
 // Get documentation pieces for a session
 router.get("/:sessionId/documentation-pieces", checkSessionOwnership, async (req: Request, res: Response) => {
   const { sessionId } = req.params;
@@ -434,6 +461,9 @@ router.get("/:sessionId/stream", checkSessionOwnership, async (req: Request, res
     "session:output",
     "documentation:piece",
     "documentation:piece:updated",
+    "artifact:created",
+    "artifact:updated",
+    "artifact:deleted",
   ];
 
   for (const eventType of eventTypes) {
@@ -520,6 +550,20 @@ router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (
         // Save assistant message and increment prompt count
         await sessionStore.addMessage(sessionId, agentType, "assistant", fullResponse);
         await incrementPromptCount(sessionId);
+
+        // For flow mode, parse and save any artifacts from the response
+        if (session!.mode === "flow") {
+          const artifacts = parseArtifacts(fullResponse);
+          for (const artifact of artifacts) {
+            await sessionStore.createArtifact(sessionId, {
+              type: artifact.type,
+              title: artifact.title,
+              content: artifact.content,
+              status: "ready",
+            });
+          }
+        }
+
         res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
         res.end();
       },
@@ -636,9 +680,63 @@ Your job is to:
 - Refine the announcement for Teams/Slack
 - Help clarify the message for different audiences
 - Suggest improvements to make the update more engaging`,
+
+    "flow-orchestrator": `You are a senior product engineering assistant in Flow Mode. You help users build, plan, and ship product features through continuous conversation.
+
+${baseContext}
+
+You can create artifacts during your responses using this format:
+[ARTIFACT:type:title]
+content here
+[/ARTIFACT]
+
+Artifact types: plan, code-diff, review, spec, document, pr-link
+
+When the user asks you to:
+- Plan something → create a "plan" artifact with structured steps
+- Write code → create a "code-diff" artifact with the code
+- Review something → create a "review" artifact with findings
+- Write a spec → create a "spec" artifact
+- Write documentation → create a "document" artifact
+
+When a user mentions @Code or @Review, acknowledge the agent trigger.
+Keep your chat responses conversational and concise. Use artifacts for substantial content.`,
+
+    "code-agent": `You are a Code Agent. You help implement features by writing code.
+
+${baseContext}
+
+Your job is to:
+- Write clean, well-structured code
+- Follow existing code patterns
+- Create implementation plans when asked`,
+
+    "review-agent": `You are a Review Agent. You review code and provide feedback.
+
+${baseContext}
+
+Your job is to:
+- Review code for bugs, performance, and best practices
+- Suggest improvements
+- Identify potential issues`,
   };
 
-  return agentContexts[agentType];
+  return agentContexts[agentType] || agentContexts["flow-orchestrator"];
+}
+
+// Parse artifacts from assistant response text
+function parseArtifacts(text: string): Array<{ type: string; title: string; content: string }> {
+  const artifacts: Array<{ type: string; title: string; content: string }> = [];
+  const regex = /\[ARTIFACT:(\w[\w-]*):([^\]]+)\]\n?([\s\S]*?)\[\/ARTIFACT\]/g;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    artifacts.push({
+      type: match[1],
+      title: match[2].trim(),
+      content: match[3].trim(),
+    });
+  }
+  return artifacts;
 }
 
 export default router;

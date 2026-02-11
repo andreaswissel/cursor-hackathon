@@ -102,6 +102,27 @@ const AGENT_CONFIG: Record<
     color: "text-emerald-500",
     gradient: "from-emerald-500/20 to-teal-600/5",
   },
+  "flow-orchestrator": {
+    name: "Flow Orchestrator",
+    description: "Orchestrates flow mode conversations",
+    icon: Compass,
+    color: "text-violet-500",
+    gradient: "from-violet-500/20 to-purple-600/5",
+  },
+  "code-agent": {
+    name: "Code Agent",
+    description: "Implements features and writes code",
+    icon: Zap,
+    color: "text-emerald-500",
+    gradient: "from-emerald-500/20 to-teal-600/5",
+  },
+  "review-agent": {
+    name: "Review Agent",
+    description: "Reviews code and provides feedback",
+    icon: MessageSquare,
+    color: "text-blue-500",
+    gradient: "from-blue-500/20 to-indigo-600/5",
+  },
 };
 
 export function AgentDetailModal({
