@@ -13,6 +13,7 @@ import {
   FileText,
   File,
   MessageSquare,
+  MessageCircle,
   Plus,
   Settings2,
 } from "lucide-react";
@@ -20,7 +21,7 @@ import {
 const API_BASE = import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV ? "/api" : "https://api.product-os.ai/api");
 
-type Provider = "airtable" | "jira" | "notion" | "google" | "slack";
+type Provider = "airtable" | "jira" | "notion" | "google" | "slack" | "intercom";
 
 interface Integration {
   id: string;
@@ -59,6 +60,7 @@ const PROVIDER_ICONS: Record<Provider, typeof Table> = {
   notion: FileText,
   google: File,
   slack: MessageSquare,
+  intercom: MessageCircle,
 };
 
 export function IntegrationsPanel() {

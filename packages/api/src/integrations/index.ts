@@ -4,6 +4,7 @@ import { jiraAdapter } from "./jira";
 import { notionAdapter } from "./notion";
 import { googleAdapter } from "./google";
 import { slackAdapter } from "./slack";
+import { intercomAdapter } from "./intercom";
 
 export * from "./types";
 
@@ -14,6 +15,7 @@ export const integrationAdapters: Record<IntegrationProvider, IntegrationAdapter
   notion: notionAdapter,
   google: googleAdapter,
   slack: slackAdapter,
+  intercom: intercomAdapter,
 };
 
 // Get adapter by provider

@@ -91,4 +91,10 @@ export const PROVIDER_INFO: Record<IntegrationProvider, {
     icon: "message-square",
     color: "#4A154B",
   },
+  intercom: {
+    name: "Intercom",
+    description: "Import customer conversations and feedback from Intercom",
+    icon: "message-circle",
+    color: "#286EFA",
+  },
 };
