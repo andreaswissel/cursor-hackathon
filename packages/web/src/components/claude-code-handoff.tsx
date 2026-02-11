@@ -14,6 +14,7 @@ import {
 
 interface ClaudeCodeHandoffProps {
   spec: string;
+  codingPrompt?: string;
   ideaTitle: string;
   cwd?: string;
   onTerminalOpen: (command: string, cwd?: string) => void;
@@ -21,6 +22,7 @@ interface ClaudeCodeHandoffProps {
 
 export function ClaudeCodeHandoff({
   spec,
+  codingPrompt,
   ideaTitle,
   cwd,
   onTerminalOpen,
@@ -31,10 +33,10 @@ export function ClaudeCodeHandoff({
 
   // Fall back to CursorHandoff when not in Tauri
   if (!isTauri()) {
-    return <CursorHandoff spec={spec} ideaTitle={ideaTitle} />;
+    return <CursorHandoff spec={spec} codingPrompt={codingPrompt} ideaTitle={ideaTitle} />;
   }
 
-  const prompt = `Implement this feature based on the following specification:\n\n# ${ideaTitle}\n\n${spec}\n\n---\n\nPlease implement this feature following best practices. Start by analyzing the spec and proposing an implementation plan, then proceed with the code changes.`;
+  const prompt = codingPrompt || `Implement this feature based on the following specification:\n\n# ${ideaTitle}\n\n${spec}\n\n---\n\nPlease implement this feature following best practices.`;
 
   const handlePickDirectory = async () => {
     try {
@@ -49,11 +51,11 @@ export function ClaudeCodeHandoff({
   };
 
   const handleRunClaudeCode = () => {
-    const escapedTitle = ideaTitle.replace(/"/g, '\\"');
-    const command = `claude "Implement: ${escapedTitle}. See the spec pasted below:\\n\\n${spec
-      .substring(0, 2000)
+    const promptText = codingPrompt || `Implement: ${ideaTitle}. See the spec pasted below:\\n\\n${spec.substring(0, 2000)}`;
+    const escapedPrompt = promptText
       .replace(/"/g, '\\"')
-      .replace(/\n/g, "\\n")}"`;
+      .replace(/\n/g, "\\n");
+    const command = `claude "${escapedPrompt}"`;
     onTerminalOpen(command, selectedCwd);
     setIsOpen(false);
   };

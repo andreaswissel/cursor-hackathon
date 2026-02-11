@@ -12,24 +12,17 @@ import {
 
 interface CursorHandoffProps {
   spec: string;
+  codingPrompt?: string;
   ideaTitle: string;
 }
 
-export function CursorHandoff({ spec, ideaTitle }: CursorHandoffProps) {
+export function CursorHandoff({ spec, codingPrompt, ideaTitle }: CursorHandoffProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copiedCli, setCopiedCli] = useState(false);
   const [copiedPrompt, setCopiedPrompt] = useState(false);
 
-  // Build the prompt for Cursor
-  const cursorPrompt = `Implement this feature based on the following specification:
-
-# ${ideaTitle}
-
-${spec}
-
----
-
-Please implement this feature following best practices. Start by analyzing the spec and proposing an implementation plan, then proceed with the code changes.`;
+  // Build the prompt for Cursor — use concise coding prompt when available, fall back to full spec
+  const cursorPrompt = codingPrompt || `Implement this feature based on the following specification:\n\n# ${ideaTitle}\n\n${spec}\n\n---\n\nPlease implement this feature following best practices.`;
 
   // CLI command for terminal
   const cliCommand = `cursor agent "$(cat <<'EOF'
