@@ -60,6 +60,11 @@ export function ChangelogPage() {
           <h3 className="text-lg font-medium mt-6 mb-3">Improvements</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
+              <strong>Home page redesign</strong> &mdash; Vertical layout with
+              visual preview mockups for each mode (Flow, Imagine, Tools,
+              Discover) showing what the UI looks like before clicking through
+            </li>
+            <li>
               <strong>Sidebar project names</strong> &mdash; Show full project
               name on hover tooltip, use more space for text, align session count
               to the right; session names also get tooltips

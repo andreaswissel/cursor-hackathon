@@ -13,6 +13,7 @@ All notable changes to Product OS are documented here.
 
 ### Improvements
 
+- **Home page redesign** — Vertical layout with visual preview mockups for each mode (Flow, Imagine, Tools, Discover) showing what the UI looks like before clicking through
 - **Sidebar project names** — Show full project name on hover tooltip, use more space for text, align session count to the right; session names also get tooltips
 - **Flow chat UX** — Replace agent button row with + popup menu in chat thread; move + button inside textarea container to match ChatGPT layout
 
