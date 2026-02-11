@@ -36,6 +36,10 @@ export function ChangelogPage() {
               and Contacts via OAuth with refresh token support
             </li>
             <li>
+              <strong>New Flow in Project</strong> &mdash; Start a Flow session
+              directly from a project via hover action button in the sidebar
+            </li>
+            <li>
               <strong>Tools Marketplace</strong> &mdash; New{" "}
               <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
                 /tools
@@ -55,6 +59,11 @@ export function ChangelogPage() {
 
           <h3 className="text-lg font-medium mt-6 mb-3">Improvements</h3>
           <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Sidebar project names</strong> &mdash; Show full project
+              name on hover tooltip, use more space for text, align session count
+              to the right; session names also get tooltips
+            </li>
             <li>
               <strong>Flow chat UX</strong> &mdash; Replace agent button row
               with + popup menu in chat thread; move + button inside textarea

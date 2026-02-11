@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { createFlowSession, getAllProjects } from "@/lib/api";
 import { Sidebar } from "@/components/sidebar";
 import { ContextMenuPopup } from "@/components/context-menu-popup";
@@ -33,6 +33,8 @@ const AGENT_COMMANDS = [
 
 export function FlowPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const projectIdFromUrl = searchParams.get("projectId") || undefined;
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,7 +84,7 @@ export function FlowPage() {
     setError(null);
 
     try {
-      const { sessionId } = await createFlowSession(text);
+      const { sessionId } = await createFlowSession(text, projectIdFromUrl);
       // Store the pending message for auto-send on mount
       sessionStorage.setItem(`flow-pending-${sessionId}`, text);
       navigate(`/session/${sessionId}`, { replace: true });
