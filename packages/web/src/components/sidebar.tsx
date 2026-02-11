@@ -236,12 +236,11 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
 
   function renderProject(project: ProjectWithSessions) {
     const isExpanded = expandedProjects.has(project.id);
-    const isDefault = project.name === "Drafts";
 
     return (
       <div key={project.id} className="mb-1">
         {/* Project header */}
-        <div className="group flex items-center gap-1 px-3 py-1.5 hover:bg-secondary/50 transition-colors rounded-md mx-1">
+        <div className="group relative flex items-center gap-1 px-3 py-1.5 hover:bg-secondary/50 transition-colors rounded-md mx-1">
           <button
             onClick={() => toggleProject(project.id)}
             className="flex items-center gap-1.5 flex-1 min-w-0 text-left"
@@ -277,9 +276,13 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
             )}
           </button>
 
-          {/* Project actions (hover) */}
+          <span className="text-xs text-muted-foreground bg-secondary px-1.5 py-0.5 rounded flex-shrink-0 group-hover:invisible">
+            {project.sessions.length}
+          </span>
+
+          {/* Project actions (hover) — absolutely positioned to avoid shrinking the name */}
           {renamingProjectId !== project.id && (
-            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-secondary/80 rounded-md px-0.5">
               <button
                 onClick={(e) => {
                   e.preventDefault();
@@ -315,21 +318,15 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
                   <Users className="w-3 h-3" />
                 </button>
               )}
-              {!isDefault && (
-                <button
-                  onClick={(e) => handleDeleteProjectClick(e, project.id, project.name)}
-                  className="p-1 rounded text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
-                  title="Delete project"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              )}
+              <button
+                onClick={(e) => handleDeleteProjectClick(e, project.id, project.name)}
+                className="p-1 rounded text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
+                title="Delete project"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
             </div>
           )}
-
-          <span className="text-xs text-muted-foreground bg-secondary px-1.5 py-0.5 rounded flex-shrink-0 ml-auto">
-            {project.sessions.length}
-          </span>
         </div>
 
         {/* Nested sessions */}
