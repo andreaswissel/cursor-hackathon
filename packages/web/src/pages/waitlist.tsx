@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Zap, ArrowRight, Loader2, CheckCircle2, ChevronDown } from "lucide-react";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const API_BASE = import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? "/api" : "https://api.product-os.ai/api");
 
 const ROLES = ["Product Manager", "Developer", "Executive", "Other"] as const;
 const USE_CASES = [
@@ -18,6 +19,7 @@ export function WaitlistPage() {
   const [roleOther, setRoleOther] = useState("");
   const [useCase, setUseCase] = useState("");
   const [useCaseOther, setUseCaseOther] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -30,7 +32,7 @@ export function WaitlistPage() {
     setError(null);
 
     try {
-      const res = await fetch(`${API_URL}/api/waitlist`, {
+      const res = await fetch(`${API_BASE}/waitlist`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -216,10 +218,32 @@ export function WaitlistPage() {
             </div>
           )}
 
+          {/* Consent */}
+          <div className="flex items-start gap-2.5">
+            <input
+              id="consent"
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="mt-1 h-4 w-4 rounded border border-border bg-card text-primary focus:ring-2 focus:ring-primary/20"
+            />
+            <label htmlFor="consent" className="text-sm text-muted-foreground leading-snug">
+              I agree to the{" "}
+              <Link to="/privacy" className="underline hover:text-foreground">
+                Privacy Policy
+              </Link>{" "}
+              and{" "}
+              <Link to="/terms" className="underline hover:text-foreground">
+                Terms of Service
+              </Link>
+              .
+            </label>
+          </div>
+
           {/* Submit */}
           <button
             type="submit"
-            disabled={isLoading || !name.trim() || !email.trim() || !role || !useCase}
+            disabled={isLoading || !name.trim() || !email.trim() || !role || !useCase || !agreed}
             className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-medium text-background hover:bg-foreground/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isLoading ? (

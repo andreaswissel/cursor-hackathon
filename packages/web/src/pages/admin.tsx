@@ -15,7 +15,8 @@ interface WaitlistEntry {
   createdAt: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const API_BASE = import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV ? "/api" : "https://api.product-os.ai/api");
 
 export function AdminPage() {
   const { user, token, isLoading: authLoading } = useAuth();
@@ -37,7 +38,7 @@ export function AdminPage() {
   async function fetchEntries() {
     try {
       setError(null);
-      const res = await fetch(`${API_URL}/api/admin/waitlist`, {
+      const res = await fetch(`${API_BASE}/admin/waitlist`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to fetch waitlist");
@@ -53,7 +54,7 @@ export function AdminPage() {
   async function updateStatus(id: string, status: "invited" | "rejected") {
     try {
       setUpdatingId(id);
-      const res = await fetch(`${API_URL}/api/admin/waitlist/${id}`, {
+      const res = await fetch(`${API_BASE}/admin/waitlist/${id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
