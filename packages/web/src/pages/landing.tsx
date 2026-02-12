@@ -321,6 +321,14 @@ export function LandingPage() {
       {/* ─── Full-screen Video Hero ─── */}
       <section className="relative h-screen w-full overflow-hidden bg-black">
         <video
+          ref={(el) => {
+            if (!el) return;
+            el.play().catch(() => {});
+            el.addEventListener("ended", () => {
+              el.currentTime = 0;
+              el.play().catch(() => {});
+            });
+          }}
           autoPlay
           loop
           muted
