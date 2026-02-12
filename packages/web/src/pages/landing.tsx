@@ -18,7 +18,6 @@ import {
   FileText,
   Search,
   LayoutGrid,
-  Megaphone,
   ChevronDown,
 } from "lucide-react";
 import {
@@ -285,7 +284,6 @@ const INTEGRATIONS = [
   { name: "Intercom", icon: IntercomIcon },
   { name: "Salesforce", icon: SalesforceIcon },
   { name: "Google", icon: GoogleIcon },
-  { name: "Megaphone", icon: Megaphone },
 ];
 
 // ── Main component ──────────────────────────────────────────────────────────
@@ -336,6 +334,7 @@ export function LandingPage() {
           className="absolute inset-0 w-full h-full object-cover"
         >
           <source src="/hero-animation.webm" type="video/webm" />
+          <source src="/hero-animation.mp4" type="video/mp4" />
         </video>
 
         {/* Scroll indicator */}
