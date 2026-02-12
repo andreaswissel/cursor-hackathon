@@ -31,6 +31,12 @@ export function ChangelogPage() {
           <h3 className="text-lg font-medium mt-6 mb-3">Features</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
+              <strong>Stop Running Agents</strong> &mdash; Added a stop button to
+              cancel agents (@Code, @Review, etc.) while they&apos;re running in
+              flow mode. Clicking stop immediately ends the SSE stream and
+              re-enables the input area.
+            </li>
+            <li>
               <strong>E2B Cloud Sandbox</strong> &mdash; Code and review agents
               now run in isolated E2B cloud sandboxes (Firecracker microVMs)
               instead of executing commands directly on the API server.

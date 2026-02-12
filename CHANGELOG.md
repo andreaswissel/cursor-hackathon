@@ -6,6 +6,8 @@ All notable changes to Product OS are documented here.
 
 ### Features
 
+- **Stop Running Agents** — Added a stop button to cancel agents (@Code, @Review, etc.) while they're running in flow mode. Clicking stop immediately ends the SSE stream and re-enables the input area.
+
 - **E2B Cloud Sandbox** — Code and review agents now run in isolated E2B cloud sandboxes (Firecracker microVMs) instead of executing commands directly on the API server. Automatically falls back to local sandbox when `E2B_API_KEY` is not set.
 
 - **Admin Waitlist Management** — Admin page at `/admin` to view, approve, and reject waitlist signups. Includes API endpoints (`GET /admin/waitlist`, `PATCH /admin/waitlist/:id`) protected by admin middleware.

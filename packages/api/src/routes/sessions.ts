@@ -510,6 +510,31 @@ router.post("/:sessionId/answer", checkSessionOwnership, async (req: Request, re
   res.status(400).json({ error: "Unknown question type" });
 });
 
+// Cancel a running agent
+router.post("/:sessionId/agents/:agentType/cancel", checkSessionOwnership, async (req: Request, res: Response) => {
+  const { sessionId, agentType } = req.params;
+
+  const session = await sessionStore.get(sessionId);
+  if (!session) {
+    res.status(404).json({ error: "Session not found" });
+    return;
+  }
+
+  const agent = session.agents.get(agentType as AgentType);
+  if (!agent) {
+    res.status(404).json({ error: "Agent not found" });
+    return;
+  }
+
+  if (agent.status !== "running") {
+    res.status(400).json({ error: "Agent is not running" });
+    return;
+  }
+
+  sessionStore.setAgentStatus(sessionId, agentType as AgentType, "failed");
+  res.json({ success: true });
+});
+
 // Get session state
 router.get("/:sessionId", checkSessionOwnership, async (req: Request, res: Response) => {
   const { sessionId } = req.params;

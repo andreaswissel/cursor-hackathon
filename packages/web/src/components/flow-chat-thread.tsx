@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { chatWithAgent, getChatHistory } from "@/lib/api";
+import { chatWithAgent, getChatHistory, cancelAgent } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { CollapsibleThinking } from "./collapsible-thinking";
@@ -452,6 +452,15 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents }: Fl
                   agentLabel={msg.agentThinking.agentLabel}
                   logs={msg.agentThinking.logs}
                   status={msg.agentThinking.status}
+                  onStop={
+                    isStreaming && msg.agentThinking.status === "running"
+                      ? () => {
+                          cancelAgent(sessionId, msg.agentThinking!.agentType).catch(() => {});
+                          abortRef.current?.();
+                          setIsStreaming(false);
+                        }
+                      : undefined
+                  }
                 />
               </div>
             );

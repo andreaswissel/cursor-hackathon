@@ -270,6 +270,13 @@ export function chatWithAgent(
   return () => controller.abort();
 }
 
+export async function cancelAgent(sessionId: string, agentType: string): Promise<void> {
+  await fetch(`${API_BASE}/sessions/${sessionId}/agents/${agentType}/cancel`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+  });
+}
+
 export async function getChatHistory(
   sessionId: string,
   agentType: AgentType

@@ -1,18 +1,20 @@
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { Loader2, CheckCircle, XCircle, ChevronRight } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, ChevronRight, Square } from "lucide-react";
 
 interface CollapsibleThinkingProps {
   agentType: string;
   agentLabel: string;
   logs: string[];
   status: "running" | "completed" | "failed";
+  onStop?: () => void;
 }
 
 export function CollapsibleThinking({
   agentLabel,
   logs,
   status,
+  onStop,
 }: CollapsibleThinkingProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const logsEndRef = useRef<HTMLDivElement>(null);
@@ -61,9 +63,21 @@ export function CollapsibleThinking({
           )}
         />
         {statusIcon}
-        <span className="text-xs font-medium text-muted-foreground">
+        <span className="text-xs font-medium text-muted-foreground flex-1">
           {statusText}
         </span>
+        {status === "running" && onStop && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onStop();
+            }}
+            className="p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+            title="Stop agent"
+          >
+            <Square className="w-3 h-3 fill-current" />
+          </button>
+        )}
       </button>
 
       {/* Collapsible body */}
