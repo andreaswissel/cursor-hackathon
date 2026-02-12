@@ -31,6 +31,23 @@ export function ChangelogPage() {
           <h3 className="text-lg font-medium mt-6 mb-3">Features</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
+              <strong>Full-screen Video Hero</strong> &mdash; Landing page opens
+              with a full-viewport typographic animation with scroll indicator to
+              reveal the rest of the page
+            </li>
+            <li>
+              <strong>Real Brand Icons</strong> &mdash; Replaced generic Lucide
+              icons with official brand SVGs (Airtable, Jira, Notion, Google,
+              Slack, Intercom, Salesforce, Linear) across integrations panel,
+              landing page, and onboarding
+            </li>
+            <li>
+              <strong>Legal Compliance</strong> &mdash; Added Impressum (DDG
+              &sect;5), Terms of Service, GDPR legal basis mapping in Privacy
+              Policy, and privacy/terms consent on waitlist form. Standardized
+              contact email.
+            </li>
+            <li>
               <strong>Waitlist</strong> &mdash; Beta signup waitlist at{" "}
               <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
                 /waitlist

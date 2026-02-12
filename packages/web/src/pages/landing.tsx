@@ -18,12 +18,17 @@ import {
   FileText,
   Search,
   LayoutGrid,
-  Users,
-  TicketCheck,
-  BookOpen,
   Megaphone,
-  Mail,
+  ChevronDown,
 } from "lucide-react";
+import {
+  JiraIcon,
+  SlackIcon,
+  NotionIcon,
+  IntercomIcon,
+  SalesforceIcon,
+  GoogleIcon,
+} from "@/components/provider-icons";
 
 // ── Fade-in on scroll hook ──────────────────────────────────────────────────
 
@@ -274,12 +279,12 @@ const STEPS = [
 // ── Integration icons ───────────────────────────────────────────────────────
 
 const INTEGRATIONS = [
-  { name: "Jira", icon: TicketCheck },
-  { name: "Slack", icon: MessageSquare },
-  { name: "Notion", icon: BookOpen },
-  { name: "Intercom", icon: MessageCircle },
-  { name: "Salesforce", icon: Users },
-  { name: "Google", icon: Mail },
+  { name: "Jira", icon: JiraIcon },
+  { name: "Slack", icon: SlackIcon },
+  { name: "Notion", icon: NotionIcon },
+  { name: "Intercom", icon: IntercomIcon },
+  { name: "Salesforce", icon: SalesforceIcon },
+  { name: "Google", icon: GoogleIcon },
   { name: "Megaphone", icon: Megaphone },
 ];
 
@@ -289,22 +294,22 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* ─── Sticky Nav ─── */}
-      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border/50">
+      <nav className="fixed top-0 left-0 right-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-primary" />
-            <span className="font-semibold text-sm tracking-tight">Product OS</span>
+            <Zap className="w-5 h-5 text-white" />
+            <span className="font-semibold text-sm tracking-tight text-white">Product OS</span>
           </div>
           <div className="flex items-center gap-3">
             <Link
               to="/login"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="text-sm text-white/70 hover:text-white transition-colors"
             >
               Sign in
             </Link>
             <Link
               to="/waitlist"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-foreground text-background px-4 py-2 text-sm font-medium hover:bg-foreground/90 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-white text-black px-4 py-2 text-sm font-medium hover:bg-white/90 transition-colors"
             >
               Join the Waitlist
               <ArrowRight className="w-3.5 h-3.5" />
@@ -313,41 +318,26 @@ export function LandingPage() {
         </div>
       </nav>
 
-      {/* ─── Hero ─── */}
-      <section className="relative overflow-hidden">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-20 pb-16 md:pt-28 md:pb-24 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-secondary text-xs text-muted-foreground mb-6">
-            <Zap className="w-3 h-3" />
-            Now in beta — free to use
-          </div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] mb-6 max-w-3xl mx-auto">
-            Ship products 10x faster with AI agents that think like your best PM
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-            Stop writing specs from scratch, chasing scattered feedback, and spending weeks on discovery.
-            Let AI agents do the heavy lifting while you make the decisions.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-16">
-            <Link
-              to="/waitlist"
-              className="inline-flex items-center gap-2 rounded-xl bg-foreground text-background px-6 py-3 text-sm font-medium hover:bg-foreground/90 transition-colors"
-            >
-              Join the Waitlist
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <a
-              href="#features"
-              className="inline-flex items-center gap-2 rounded-xl border border-border px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors"
-            >
-              See how it works
-            </a>
-          </div>
+      {/* ─── Full-screen Video Hero ─── */}
+      <section className="relative h-screen w-full overflow-hidden bg-black">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover"
+        >
+          <source src="/hero-animation.webm" type="video/webm" />
+        </video>
 
-          {/* Hero mockup — wider Flow preview */}
-          <div className="max-w-lg mx-auto">
-            <FlowMockup />
-          </div>
-        </div>
+        {/* Scroll indicator */}
+        <a
+          href="#features"
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-white/60 hover:text-white/90 transition-colors"
+        >
+          <span className="text-xs font-medium tracking-wide uppercase">Scroll</span>
+          <ChevronDown className="w-5 h-5 animate-bounce" />
+        </a>
       </section>
 
       {/* ─── Feature Showcase ─── */}
@@ -399,6 +389,12 @@ export function LandingPage() {
           <div className="flex items-center gap-4">
             <Link to="/privacy" className="hover:text-foreground transition-colors">
               Privacy Policy
+            </Link>
+            <Link to="/terms" className="hover:text-foreground transition-colors">
+              Terms
+            </Link>
+            <Link to="/imprint" className="hover:text-foreground transition-colors">
+              Imprint
             </Link>
             <Link to="/changelog" className="hover:text-foreground transition-colors">
               Changelog

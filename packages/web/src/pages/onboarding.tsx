@@ -24,6 +24,14 @@ import {
   Check,
   X,
 } from "lucide-react";
+import {
+  JiraIcon,
+  SlackIcon,
+  NotionIcon,
+  GoogleIcon,
+  LinearIcon,
+  AirtableIcon,
+} from "@/components/provider-icons";
 
 // Step 1: Role cards
 const ROLE_OPTIONS: Array<{
@@ -91,12 +99,12 @@ const AGENT_MODE_OPTIONS: Array<{
 
 // Step 3: Tool integrations
 const TOOL_OPTIONS = [
-  { name: "Jira", icon: "https://cdn.simpleicons.org/jira/0052CC" },
-  { name: "Slack", icon: "https://cdn.simpleicons.org/slack/4A154B" },
-  { name: "Notion", icon: "https://cdn.simpleicons.org/notion/000000" },
-  { name: "Google Workspace", icon: "https://cdn.simpleicons.org/google/4285F4" },
-  { name: "Linear", icon: "https://cdn.simpleicons.org/linear/5E6AD2" },
-  { name: "Airtable", icon: "https://cdn.simpleicons.org/airtable/18BFFF" },
+  { name: "Jira", icon: JiraIcon, color: "#0052CC" },
+  { name: "Slack", icon: SlackIcon, color: "#4A154B" },
+  { name: "Notion", icon: NotionIcon, color: "#000000" },
+  { name: "Google Workspace", icon: GoogleIcon, color: "#4285F4" },
+  { name: "Linear", icon: LinearIcon, color: "#5E6AD2" },
+  { name: "Airtable", icon: AirtableIcon, color: "#18BFFF" },
 ];
 
 // Step 4: Framework toggles
@@ -360,7 +368,9 @@ export function OnboardingPage() {
               subtitle="Pull in real data from the tools you already use. You can always do this later."
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {TOOL_OPTIONS.map((tool) => (
+                {TOOL_OPTIONS.map((tool) => {
+                  const Icon = tool.icon;
+                  return (
                   <button
                     key={tool.name}
                     onClick={() => window.open("/settings", "_blank")}
@@ -370,14 +380,15 @@ export function OnboardingPage() {
                     )}
                   >
                     <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
-                      <img src={tool.icon} alt={tool.name} className="w-5 h-5" />
+                      <Icon className="w-5 h-5" style={{ color: tool.color }} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{tool.name}</p>
                     </div>
                     <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                   </button>
-                ))}
+                  );
+                })}
               </div>
               <p className="text-sm text-muted-foreground text-center mt-4">
                 Opens Settings in a new tab to configure integrations

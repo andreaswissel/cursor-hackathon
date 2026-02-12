@@ -8,16 +8,10 @@ import {
   X,
   RefreshCw,
   Trash2,
-  Table,
-  Ticket,
-  FileText,
-  File,
-  MessageSquare,
-  MessageCircle,
-  Cloud,
   Plus,
   Settings2,
 } from "lucide-react";
+import { PROVIDER_ICONS } from "./provider-icons";
 
 const API_BASE = import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV ? "/api" : "https://api.product-os.ai/api");
@@ -54,16 +48,6 @@ interface Source {
   name: string;
   type: string;
 }
-
-const PROVIDER_ICONS: Record<Provider, typeof Table> = {
-  airtable: Table,
-  jira: Ticket,
-  notion: FileText,
-  google: File,
-  slack: MessageSquare,
-  intercom: MessageCircle,
-  salesforce: Cloud,
-};
 
 export function IntegrationsPanel() {
   const { token } = useAuth();
@@ -346,7 +330,7 @@ export function IntegrationsPanel() {
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted-foreground">Connected</h3>
           {connected.map((integration) => {
-            const Icon = PROVIDER_ICONS[integration.provider];
+            const Icon = PROVIDER_ICONS[integration.provider]!;
             const selectedCount = integration.metadata.selectedSources?.length || 0;
             return (
               <div
@@ -425,7 +409,7 @@ export function IntegrationsPanel() {
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted-foreground">Available</h3>
           {available.map((provider) => {
-            const Icon = PROVIDER_ICONS[provider.provider as Provider];
+            const Icon = PROVIDER_ICONS[provider.provider as Provider]!;
             return (
               <button
                 key={provider.provider}
