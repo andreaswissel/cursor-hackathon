@@ -6,7 +6,12 @@ dist
 *.log
 .DS_Store
 .turbo
+.cursor
 
 # Video uploads (keep directory, ignore contents)
 packages/api/uploads/*
 !packages/api/uploads/.gitkeep
+
+# Tauri / Desktop build output
+packages/desktop/target
+packages/desktop/gen

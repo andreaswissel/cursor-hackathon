@@ -120,6 +120,15 @@ export class OrchestratorAgent {
     previousOutputs.spec = specMarkdown;
     await sessionStore.setSessionOutput(sessionId, "spec", specMarkdown);
 
+    // Generate concise coding prompt for handoff
+    await sessionStore.appendLog(sessionId, "orchestrator", "\nGenerating coding handoff prompt...\n");
+    try {
+      const codingPrompt = await this.generateCodingPrompt(idea, specMarkdown, previousOutputs.discovery as string);
+      await sessionStore.setSessionOutput(sessionId, "codingPrompt", codingPrompt);
+    } catch (err) {
+      console.error("Failed to generate coding prompt:", err);
+    }
+
     // Phase 4: GTM
     await sessionStore.appendLog(sessionId, "orchestrator", "\nPhase 4: Running GTM Agent...\n");
     const gtmResult = await this.gtmAgent.run({
@@ -252,6 +261,15 @@ export class OrchestratorAgent {
     previousOutputs.spec = specMarkdown;
     await sessionStore.setSessionOutput(sessionId, "spec", specMarkdown);
 
+    // Generate concise coding prompt for handoff
+    await sessionStore.appendLog(sessionId, "orchestrator", "\nGenerating coding handoff prompt...\n");
+    try {
+      const codingPrompt = await this.generateCodingPrompt(idea, specMarkdown, previousOutputs.discovery as string);
+      await sessionStore.setSessionOutput(sessionId, "codingPrompt", codingPrompt);
+    } catch (err) {
+      console.error("Failed to generate coding prompt:", err);
+    }
+
     // Phase 4: GTM
     await sessionStore.appendLog(sessionId, "orchestrator", "\nPhase 4: Running GTM Agent...\n");
     const gtmResult = await this.gtmAgent.run({
@@ -333,6 +351,40 @@ export class OrchestratorAgent {
     );
     await sessionStore.setAgentStatus(sessionId, "orchestrator", "completed");
     await sessionStore.setSessionStatus(sessionId, "completed");
+  }
+
+  private async generateCodingPrompt(idea: string, spec: string, discoveryOutput: string): Promise<string> {
+    const { completion } = await import("../lib/claude");
+
+    const systemPrompt = `You generate concise coding prompts for AI coding assistants (Cursor, Claude Code).
+Given a product spec and discovery research, produce a SHORT prompt (under 300 words) in this exact format:
+
+Let's build [one-sentence description of what to build].
+
+Customer signals suggest that:
+- [2-5 concise bullet points summarizing key customer pain points and desired outcomes from discovery]
+
+[2-3 sentences of key technical requirements from the spec - just the essentials]
+
+After you are finished, check that everything is working with agent-browser based on:
+- [2-5 success criteria extracted from the spec's acceptance criteria / success metrics]
+
+Do you have any questions you need to ask me?
+
+RULES:
+- Keep it SHORT and actionable - this is a prompt for a coding agent, not a spec
+- Summarize customer signals from discovery into plain-language bullet points
+- Extract only the most important success criteria (testable, observable)
+- Do NOT include user stories, non-functional requirements, or out-of-scope sections
+- If no relevant customer signals exist, skip that section entirely
+- Write in second person ("you should", "build a...")`;
+
+    const result = await completion(systemPrompt, [{
+      role: "user",
+      content: `## Product Idea\n${idea}\n\n## Feature Spec\n${spec}\n\n## Discovery Research\n${discoveryOutput || "No discovery data available."}`
+    }]);
+
+    return result;
   }
 
   private async generateSlides(

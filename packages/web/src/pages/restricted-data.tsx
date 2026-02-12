@@ -50,7 +50,7 @@ export function RestrictedDataPage() {
           <section>
             <h2 className="font-semibold mb-2">Uploaded by mistake?</h2>
             <p className="text-sm text-muted-foreground">
-              Contact <a href="mailto:privacy@product-os.ai" className="underline hover:text-foreground">privacy@product-os.ai</a> and include your workspace ID so we can help remove restricted content quickly.
+              Contact <a href="mailto:hello@andreaswissel.com" className="underline hover:text-foreground">hello@andreaswissel.com</a> and include your workspace ID so we can help remove restricted content quickly.
             </p>
           </section>
         </div>

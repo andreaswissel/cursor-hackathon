@@ -22,15 +22,20 @@ export function PrivacyPage() {
       <main className="max-w-4xl mx-auto px-4 py-8">
         <div className="prose prose-neutral dark:prose-invert max-w-none">
           <p className="text-sm text-muted-foreground">
-            Last updated: February 11, 2026
+            Last updated: February 12, 2026
           </p>
 
           <h2 className="text-xl font-semibold mt-8 mb-4">1. Introduction</h2>
           <p>
             Product OS (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;) is a
-            multi-agent AI product management platform operated by Product OS.
-            This Privacy Policy explains how we collect, use, disclose, and
-            safeguard your personal information when you use our platform at{" "}
+            multi-agent AI product management platform operated by{" "}
+            <strong>
+              b25 Ventures UG (haftungsbeschr&auml;nkt)
+            </strong>
+            , Kaltenberg 3, 63776 M&ouml;mbris, Germany
+            (&quot;Controller&quot;). This Privacy Policy explains how we
+            collect, use, disclose, and safeguard your personal information when
+            you use our platform at{" "}
             <strong>productos.dev</strong> and related services (collectively,
             the &quot;Service&quot;).
           </p>
@@ -154,11 +159,96 @@ export function PrivacyPage() {
           </p>
 
           <h2 className="text-xl font-semibold mt-8 mb-4">
-            3. How We Use Your Information
+            3. Legal Basis for Processing
+          </h2>
+          <p>
+            Under the EU General Data Protection Regulation (GDPR), we process
+            your personal data on the following legal bases:
+          </p>
+          <table className="w-full border-collapse border border-border text-sm my-4">
+            <thead>
+              <tr className="bg-muted/50">
+                <th className="border border-border px-3 py-2 text-left">
+                  Processing Activity
+                </th>
+                <th className="border border-border px-3 py-2 text-left">
+                  Legal Basis
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="border border-border px-3 py-2">
+                  Account creation &amp; authentication
+                </td>
+                <td className="border border-border px-3 py-2">
+                  Art. 6(1)(b) GDPR &mdash; performance of a contract
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-border px-3 py-2">
+                  AI agent processing of your product ideas
+                </td>
+                <td className="border border-border px-3 py-2">
+                  Art. 6(1)(b) GDPR &mdash; performance of a contract
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-border px-3 py-2">
+                  Integration data sync (Slack, Jira, etc.)
+                </td>
+                <td className="border border-border px-3 py-2">
+                  Art. 6(1)(a) GDPR &mdash; your consent
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-border px-3 py-2">
+                  Transactional emails (invites, account changes)
+                </td>
+                <td className="border border-border px-3 py-2">
+                  Art. 6(1)(b) GDPR &mdash; performance of a contract
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-border px-3 py-2">
+                  Rate limiting &amp; usage counts
+                </td>
+                <td className="border border-border px-3 py-2">
+                  Art. 6(1)(f) GDPR &mdash; legitimate interest (service
+                  security)
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-border px-3 py-2">
+                  Aggregated usage metrics
+                </td>
+                <td className="border border-border px-3 py-2">
+                  Art. 6(1)(f) GDPR &mdash; legitimate interest (service
+                  improvement)
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-border px-3 py-2">
+                  Waitlist data collection
+                </td>
+                <td className="border border-border px-3 py-2">
+                  Art. 6(1)(a) GDPR &mdash; your consent
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p>
+            Where processing is based on consent, you may withdraw your consent
+            at any time by contacting us. Withdrawal does not affect the
+            lawfulness of processing carried out before the withdrawal.
+          </p>
+
+          <h2 className="text-xl font-semibold mt-8 mb-4">
+            4. How We Use Your Information
           </h2>
 
           <h3 className="text-lg font-medium mt-6 mb-3">
-            3.1 Service Provision
+            4.1 Service Provision
           </h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
@@ -180,7 +270,7 @@ export function PrivacyPage() {
             <li>Store and serve generated outputs, documents, and artifacts</li>
           </ul>
 
-          <h3 className="text-lg font-medium mt-6 mb-3">3.2 Communication</h3>
+          <h3 className="text-lg font-medium mt-6 mb-3">4.2 Communication</h3>
           <p>
             We may use your email address to send transactional notifications
             (team invites, account changes). We do not send marketing emails
@@ -188,7 +278,7 @@ export function PrivacyPage() {
           </p>
 
           <h3 className="text-lg font-medium mt-6 mb-3">
-            3.3 Service Improvement
+            4.3 Service Improvement
           </h3>
           <p>
             We use aggregated, non-identifiable usage metrics (session counts,
@@ -197,7 +287,7 @@ export function PrivacyPage() {
           </p>
 
           <h2 className="text-xl font-semibold mt-8 mb-4">
-            4. AI Processing & Third-Party AI Providers
+            5. AI Processing & Third-Party AI Providers
           </h2>
           <p>
             This is central to how our Service works. When you run a session,
@@ -214,7 +304,7 @@ export function PrivacyPage() {
           </ul>
 
           <h3 className="text-lg font-medium mt-6 mb-3">
-            4.1 AI Providers We Use
+            5.1 AI Providers We Use
           </h3>
           <table className="w-full border-collapse border border-border text-sm my-4">
             <thead>
@@ -262,7 +352,7 @@ export function PrivacyPage() {
           </table>
 
           <h3 className="text-lg font-medium mt-6 mb-3">
-            4.2 What We Do NOT Send to AI Providers
+            5.2 What We Do NOT Send to AI Providers
           </h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>Your email address or account credentials</li>
@@ -274,7 +364,7 @@ export function PrivacyPage() {
           </ul>
 
           <h3 className="text-lg font-medium mt-6 mb-3">
-            4.3 No Model Training
+            5.3 No Model Training
           </h3>
           <p>
             All AI provider API usage is covered by their respective business
@@ -283,7 +373,7 @@ export function PrivacyPage() {
           </p>
 
           <h2 className="text-xl font-semibold mt-8 mb-4">
-            5. Data Sharing & Disclosure
+            6. Data Sharing & Disclosure
           </h2>
           <p>
             <strong>
@@ -293,7 +383,7 @@ export function PrivacyPage() {
           <p>We may share your information only in these circumstances:</p>
           <ul className="list-disc pl-6 space-y-1">
             <li>
-              <strong>AI Providers</strong> &mdash; As described in Section 4,
+              <strong>AI Providers</strong> &mdash; As described in Section 5,
               to process your product sessions
             </li>
             <li>
@@ -319,7 +409,7 @@ export function PrivacyPage() {
           </ul>
 
           <h2 className="text-xl font-semibold mt-8 mb-4">
-            6. Data Security
+            7. Data Security
           </h2>
           <ul className="list-disc pl-6 space-y-1">
             <li>
@@ -348,7 +438,7 @@ export function PrivacyPage() {
           </ul>
 
           <h2 className="text-xl font-semibold mt-8 mb-4">
-            7. Data Retention
+            8. Data Retention
           </h2>
           <ul className="list-disc pl-6 space-y-1">
             <li>
@@ -374,7 +464,7 @@ export function PrivacyPage() {
           </ul>
 
           <h2 className="text-xl font-semibold mt-8 mb-4">
-            8. Multi-Tenant Data Isolation
+            9. Multi-Tenant Data Isolation
           </h2>
           <p>
             Product OS is a multi-tenant platform. Your data is logically
@@ -396,7 +486,7 @@ export function PrivacyPage() {
           </ul>
 
           <h2 className="text-xl font-semibold mt-8 mb-4">
-            9. Your Rights & Choices
+            10. Your Rights & Choices
           </h2>
           <p>
             Depending on your jurisdiction, you may have the following rights:
@@ -437,7 +527,7 @@ export function PrivacyPage() {
           </p>
 
           <h3 className="text-lg font-medium mt-6 mb-3">
-            9.1 Account-Level Controls
+            10.1 Account-Level Controls
           </h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
@@ -458,7 +548,7 @@ export function PrivacyPage() {
           </ul>
 
           <h2 className="text-xl font-semibold mt-8 mb-4">
-            10. International Data Transfers
+            11. International Data Transfers
           </h2>
           <p>
             Our Service infrastructure and AI providers may process data in
@@ -474,7 +564,7 @@ export function PrivacyPage() {
           </p>
 
           <h2 className="text-xl font-semibold mt-8 mb-4">
-            11. Data Processing Agreement
+            12. Data Processing Agreement
           </h2>
           <p>
             For organizations requiring a formal Data Processing Agreement (DPA)
@@ -498,7 +588,7 @@ export function PrivacyPage() {
           </p>
 
           <h2 className="text-xl font-semibold mt-8 mb-4">
-            12. Children&apos;s Privacy
+            13. Children&apos;s Privacy
           </h2>
           <p>
             The Service is not directed at individuals under the age of 16. We
@@ -508,7 +598,7 @@ export function PrivacyPage() {
           </p>
 
           <h2 className="text-xl font-semibold mt-8 mb-4">
-            13. Changes to This Policy
+            14. Changes to This Policy
           </h2>
           <p>
             We may update this Privacy Policy from time to time. When we make
@@ -518,17 +608,27 @@ export function PrivacyPage() {
             notification. We encourage you to review this policy periodically.
           </p>
 
-          <h2 className="text-xl font-semibold mt-8 mb-4">14. Contact Us</h2>
+          <h2 className="text-xl font-semibold mt-8 mb-4">15. Contact Us</h2>
           <p>
             If you have questions about this Privacy Policy or wish to exercise
             your data rights, contact us at:
           </p>
           <ul className="list-none pl-0 space-y-1 mt-4">
             <li>
-              <strong>Email:</strong> privacy@productos.dev
+              <strong>b25 Ventures UG (haftungsbeschr&auml;nkt)</strong>
+            </li>
+            <li>Kaltenberg 3, 63776 M&ouml;mbris, Germany</li>
+            <li>
+              <strong>Email:</strong>{" "}
+              <a
+                href="mailto:hello@andreaswissel.com"
+                className="underline hover:text-foreground"
+              >
+                hello@andreaswissel.com
+              </a>
             </li>
             <li>
-              <strong>Product OS</strong>
+              <strong>Gesch&auml;ftsf&uuml;hrer:</strong> Andreas Wissel
             </li>
           </ul>
         </div>
