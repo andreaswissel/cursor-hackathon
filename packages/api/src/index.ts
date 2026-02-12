@@ -15,6 +15,9 @@ console.log("Loaded routes");
 import { cleanupStaleRuns } from "./lib/discovery-analyzer";
 console.log("Loaded discovery analyzer");
 
+import { sandboxRegistry } from "./lib/sandbox";
+console.log("Loaded sandbox registry");
+
 const app = express();
 const PORT = process.env.PORT ?? 3001;
 console.log(`Using port: ${PORT}`);
@@ -50,4 +53,7 @@ app.listen(PORT, () => {
   setInterval(() => {
     cleanupStaleRuns().catch(err => console.error("Discovery cleanup error:", err));
   }, 5 * 60 * 1000);
+
+  // Periodic cleanup of stale E2B sandboxes (every 60 seconds, 10-min TTL)
+  sandboxRegistry.startReaper();
 });

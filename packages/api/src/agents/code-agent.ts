@@ -46,7 +46,7 @@ export class CodeAgent {
       status: "generating",
     });
 
-    const sandbox = createSandbox({ repoUrl });
+    const sandbox = createSandbox({ repoUrl }, { sessionId, agentType: "code-agent" });
 
     try {
       await sessionStore.appendLog(sessionId, "code-agent", `Cloning repository: ${repoUrl}`);

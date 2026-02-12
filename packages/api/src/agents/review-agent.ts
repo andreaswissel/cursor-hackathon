@@ -53,7 +53,7 @@ export class ReviewAgent {
       status: "generating",
     });
 
-    const sandbox = createSandbox({ repoUrl });
+    const sandbox = createSandbox({ repoUrl }, { sessionId, agentType: "review-agent" });
 
     try {
       await sessionStore.appendLog(sessionId, "review-agent", `Cloning repository: ${repoUrl}`);
