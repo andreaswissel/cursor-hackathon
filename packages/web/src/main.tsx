@@ -22,6 +22,7 @@ import { InvitePage } from "./pages/invite";
 import { ProjectKnowledgePage } from "./pages/project-knowledge";
 import { FlowPage } from "./pages/flow";
 import { RoadmapPage } from "./pages/roadmap";
+import { WaitlistPage } from "./pages/waitlist";
 import { ToolsPage } from "./pages/tools";
 import { ToolsGuidedToursPage } from "./pages/tools-guided-tours";
 import { ToolsFeedbackFormsPage } from "./pages/tools-feedback-forms";
@@ -59,6 +60,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/restricted-data" element={<RestrictedDataPage />} />
           <Route path="/changelog" element={<ChangelogPage />} />
+          <Route path="/waitlist" element={<WaitlistPage />} />
           <Route path="/invite/:token" element={<InvitePage />} />
           <Route
             path="/onboarding"

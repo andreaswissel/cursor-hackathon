@@ -120,6 +120,13 @@
       "when": 1770852721282,
       "tag": "0016_colorful_betty_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1770854728401,
+      "tag": "0017_magenta_gertrude_yorkes",
+      "breakpoints": true
     }
   ]
 }

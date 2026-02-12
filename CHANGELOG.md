@@ -6,6 +6,7 @@ All notable changes to Product OS are documented here.
 
 ### Features
 
+- **Waitlist** — Beta signup waitlist at `/waitlist` with name, email, role, and use-case collection. Landing page CTAs now point to the waitlist instead of direct signup. Existing users can still sign in via `/login`.
 - **Landing Page** — Public marketing landing page at `/` for unauthenticated visitors with hero, feature showcase, how it works, integrations, and CTA sections. Authenticated users still see the home dashboard.
 - **Salesforce Integration** — New integration adapter to import sales feedback from Cases, Opportunities, Leads, and Contacts via OAuth with refresh token support
 - **New Flow in Project** — Start a Flow session directly from a project via hover action button in the sidebar

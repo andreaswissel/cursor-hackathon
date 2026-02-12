@@ -274,6 +274,19 @@ export const roadmapItemSessions = pgTable("roadmap_item_sessions", {
   unique("roadmap_item_sessions_unique").on(t.roadmapItemId, t.sessionId),
 ]);
 
+// Waitlist — beta signup queue
+export const waitlist = pgTable("waitlist", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  role: text("role").notNull(),
+  roleOther: text("role_other"),
+  useCase: text("use_case").notNull(),
+  useCaseOther: text("use_case_other"),
+  status: text("status").$type<"pending" | "invited" | "rejected">().default("pending").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Session knowledge overrides — per-session add/remove relative to project
 export const sessionKnowledgeOverrides = pgTable("session_knowledge_overrides", {
   id: uuid("id").primaryKey().defaultRandom(),

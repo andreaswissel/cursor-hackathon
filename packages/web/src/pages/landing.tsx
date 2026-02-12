@@ -303,10 +303,10 @@ export function LandingPage() {
               Sign in
             </Link>
             <Link
-              to="/login"
+              to="/waitlist"
               className="inline-flex items-center gap-1.5 rounded-lg bg-foreground text-background px-4 py-2 text-sm font-medium hover:bg-foreground/90 transition-colors"
             >
-              Get Started Free
+              Join the Waitlist
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -329,10 +329,10 @@ export function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-16">
             <Link
-              to="/login"
+              to="/waitlist"
               className="inline-flex items-center gap-2 rounded-xl bg-foreground text-background px-6 py-3 text-sm font-medium hover:bg-foreground/90 transition-colors"
             >
-              Get Started Free
+              Join the Waitlist
               <ArrowRight className="w-4 h-4" />
             </Link>
             <a
@@ -527,10 +527,10 @@ function FinalCTA() {
           Join the beta and let AI agents handle the busywork while you focus on decisions that move the needle.
         </p>
         <Link
-          to="/login"
+          to="/waitlist"
           className="inline-flex items-center gap-2 rounded-xl bg-foreground text-background px-6 py-3 text-sm font-medium hover:bg-foreground/90 transition-colors"
         >
-          Get Started Free
+          Join the Waitlist
           <ArrowRight className="w-4 h-4" />
         </Link>
         <p className="text-xs text-muted-foreground mt-4">

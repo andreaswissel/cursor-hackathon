@@ -31,6 +31,19 @@ export function ChangelogPage() {
           <h3 className="text-lg font-medium mt-6 mb-3">Features</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
+              <strong>Waitlist</strong> &mdash; Beta signup waitlist at{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                /waitlist
+              </code>{" "}
+              with name, email, role, and use-case collection. Landing page CTAs
+              now point to the waitlist instead of direct signup. Existing users
+              can still sign in via{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                /login
+              </code>
+              .
+            </li>
+            <li>
               <strong>Landing Page</strong> &mdash; Public marketing landing page
               at{" "}
               <code className="text-sm bg-muted px-1.5 py-0.5 rounded">/</code>{" "}
