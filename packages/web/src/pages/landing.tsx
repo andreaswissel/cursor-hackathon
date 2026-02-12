@@ -537,7 +537,7 @@ function FinalCTA() {
           <ArrowRight className="w-4 h-4" />
         </Link>
         <p className="text-xs text-muted-foreground mt-4">
-          Free during beta. No credit card required.
+          Free $25 credits during beta. No credit card required.
         </p>
       </div>
     </section>
