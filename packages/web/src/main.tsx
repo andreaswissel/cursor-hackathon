@@ -23,9 +23,12 @@ import { ProjectKnowledgePage } from "./pages/project-knowledge";
 import { FlowPage } from "./pages/flow";
 import { RoadmapPage } from "./pages/roadmap";
 import { WaitlistPage } from "./pages/waitlist";
+import { ImprintPage } from "./pages/imprint";
+import { TermsPage } from "./pages/terms";
 import { ToolsPage } from "./pages/tools";
 import { ToolsGuidedToursPage } from "./pages/tools-guided-tours";
 import { ToolsFeedbackFormsPage } from "./pages/tools-feedback-forms";
+import { AdminPage } from "./pages/admin";
 import { Loader2 } from "lucide-react";
 
 function RootRoute() {
@@ -61,6 +64,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/restricted-data" element={<RestrictedDataPage />} />
           <Route path="/changelog" element={<ChangelogPage />} />
           <Route path="/waitlist" element={<WaitlistPage />} />
+          <Route path="/imprint" element={<ImprintPage />} />
+          <Route path="/terms" element={<TermsPage />} />
           <Route path="/invite/:token" element={<InvitePage />} />
           <Route
             path="/onboarding"
@@ -164,6 +169,14 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
             element={
               <ProtectedRoute>
                 <ProjectKnowledgePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminPage />
               </ProtectedRoute>
             }
           />

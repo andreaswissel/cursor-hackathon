@@ -31,6 +31,14 @@ export function ChangelogPage() {
           <h3 className="text-lg font-medium mt-6 mb-3">Features</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
+              <strong>Admin Waitlist Management</strong> &mdash; Admin page at{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                /admin
+              </code>{" "}
+              to view, approve, and reject waitlist signups with status badges
+              and real-time updates
+            </li>
+            <li>
               <strong>Full-screen Video Hero</strong> &mdash; Landing page opens
               with a full-viewport typographic animation with scroll indicator to
               reveal the rest of the page

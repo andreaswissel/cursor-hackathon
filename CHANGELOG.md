@@ -6,6 +6,8 @@ All notable changes to Product OS are documented here.
 
 ### Features
 
+- **Admin Waitlist Management** — Admin page at `/admin` to view, approve, and reject waitlist signups. Includes API endpoints (`GET /admin/waitlist`, `PATCH /admin/waitlist/:id`) protected by admin middleware.
+
 - **Full-screen Video Hero** — Landing page opens with a full-viewport typographic animation ("anyone can be a PM.") with scroll indicator to reveal the rest of the page
 - **Real Brand Icons** — Replaced generic Lucide icons with official brand SVGs (Airtable, Jira, Notion, Google, Slack, Intercom, Salesforce, Linear) across integrations panel, landing page, and onboarding
 - **Legal Compliance** — Added Impressum (DDG §5), Terms of Service, GDPR legal basis mapping in Privacy Policy, and privacy/terms consent on waitlist form. Standardized contact email to hello@andreaswissel.com.

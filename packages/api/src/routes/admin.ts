@@ -16,8 +16,9 @@ import {
   teamInvites,
   sessionKnowledgeOverrides,
   knowledgeSources,
+  waitlist,
 } from "../db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq, desc, inArray } from "drizzle-orm";
 
 const router = Router();
 
@@ -168,6 +169,50 @@ router.delete("/users/:id", async (req, res) => {
   } catch (err) {
     console.error("Failed to delete user:", err);
     res.status(500).json({ error: "Failed to delete user" });
+  }
+});
+
+// GET /admin/waitlist — list all waitlist entries
+router.get("/waitlist", async (_req, res) => {
+  try {
+    const entries = await db
+      .select()
+      .from(waitlist)
+      .orderBy(desc(waitlist.createdAt));
+
+    res.json({ entries });
+  } catch (err) {
+    console.error("Failed to list waitlist:", err);
+    res.status(500).json({ error: "Failed to list waitlist entries" });
+  }
+});
+
+// PATCH /admin/waitlist/:id — update waitlist entry status
+router.patch("/waitlist/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status || !["invited", "rejected"].includes(status)) {
+      res.status(400).json({ error: "Status must be 'invited' or 'rejected'" });
+      return;
+    }
+
+    const [updated] = await db
+      .update(waitlist)
+      .set({ status })
+      .where(eq(waitlist.id, id))
+      .returning();
+
+    if (!updated) {
+      res.status(404).json({ error: "Waitlist entry not found" });
+      return;
+    }
+
+    res.json({ entry: updated });
+  } catch (err) {
+    console.error("Failed to update waitlist entry:", err);
+    res.status(500).json({ error: "Failed to update waitlist entry" });
   }
 });
 
