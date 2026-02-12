@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { CollapsibleThinking } from "./collapsible-thinking";
 import { ContextMenuPopup } from "./context-menu-popup";
+import type { AgentType, AgentState } from "@product-os/shared";
 import {
   Send,
   Loader2,
@@ -40,6 +41,7 @@ interface FlowChatThreadProps {
   sessionId: string;
   repoUrl?: string;
   onConnectRepo?: (url: string) => void;
+  agents?: Record<AgentType, AgentState>;
 }
 
 const AGENT_COMMANDS = [
@@ -53,7 +55,7 @@ const AGENT_COMMANDS = [
   { prefix: "@Changelog", label: "Changelog", description: "Write changelog entries", icon: ScrollText, requiresRepo: false },
 ];
 
-export function FlowChatThread({ sessionId, repoUrl, onConnectRepo }: FlowChatThreadProps) {
+export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents }: FlowChatThreadProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -106,6 +108,95 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo }: FlowChatTh
   useEffect(() => {
     scrollToBottom();
   }, [messages, streamingContent, scrollToBottom]);
+
+  // Reconstruct thinking blocks from SSE agent state after initial load
+  useEffect(() => {
+    if (isLoading || !agents) return;
+
+    // Map agent types to their @prefix and label (mirrors backend AGENT_PREFIX_MAP)
+    const agentMeta: Record<string, { prefix: string; label: string }> = {
+      "code-agent":        { prefix: "@Code",      label: "Code" },
+      "review-agent":      { prefix: "@Review",    label: "Review" },
+      "changelog-agent":   { prefix: "@Changelog", label: "Changelog" },
+      "discovery":         { prefix: "@Discovery",  label: "Discovery" },
+      "strategy":          { prefix: "@Strategy",   label: "Strategy" },
+      "spec":              { prefix: "@Spec",        label: "Spec" },
+      "gtm":               { prefix: "@GTM",         label: "GTM" },
+      "product-marketing": { prefix: "@Marketing",  label: "Marketing" },
+    };
+
+    setMessages(prev => {
+      const updated = [...prev];
+      let inserted = false;
+
+      for (const [type, meta] of Object.entries(agentMeta)) {
+        const agent = agents[type as AgentType];
+        if (!agent || agent.logs.length === 0) continue;
+
+        const hasThinking = updated.some(m => m.agentThinking?.agentType === type);
+        if (hasThinking) continue;
+
+        const thinking: AgentThinking = {
+          agentType: type,
+          agentLabel: meta.label,
+          logs: agent.logs.map(l => l.content),
+          status: agent.status === "running" ? "running" : agent.status === "completed" ? "completed" : "failed",
+        };
+
+        if (agent.status === "running") {
+          thinkingRef.current = thinking;
+        }
+
+        const thinkingMsg: ChatMessage = {
+          role: "assistant",
+          content: "",
+          createdAt: agent.logs[0]?.timestamp,
+          agentThinking: thinking,
+        };
+
+        // Find the triggering user message (uses includes to match backend behavior)
+        const triggerIdx = updated.findIndex(
+          m => m.role === "user" && m.content.includes(meta.prefix)
+        );
+
+        if (triggerIdx >= 0) {
+          // Insert right after the triggering user message
+          updated.splice(triggerIdx + 1, 0, thinkingMsg);
+        } else {
+          // Fallback: append at end
+          updated.push(thinkingMsg);
+        }
+        inserted = true;
+      }
+
+      return inserted ? updated : prev;
+    });
+  }, [isLoading, agents]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Keep thinking blocks in sync with live SSE agent state updates
+  useEffect(() => {
+    if (!agents) return;
+
+    setMessages(prev => prev.map(msg => {
+      if (!msg.agentThinking) return msg;
+      const agent = agents[msg.agentThinking.agentType as AgentType];
+      if (!agent) return msg;
+
+      const newStatus = agent.status === "running" ? "running" : agent.status === "completed" ? "completed" : "failed";
+      const newLogs = agent.logs.map(l => l.content);
+
+      if (newLogs.length === msg.agentThinking.logs.length && newStatus === msg.agentThinking.status) return msg;
+
+      return {
+        ...msg,
+        agentThinking: {
+          ...msg.agentThinking,
+          logs: newLogs,
+          status: newStatus,
+        },
+      };
+    }));
+  }, [agents]);
 
   // Click outside to close agent menu
   useEffect(() => {

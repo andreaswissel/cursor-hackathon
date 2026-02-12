@@ -113,6 +113,16 @@ export function ChangelogPage() {
             </li>
           </ul>
 
+          <h3 className="text-lg font-medium mt-6 mb-3">Fixes</h3>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Flow agent messages persist on refresh</strong> &mdash;
+              Agent commands (@Code, @Review, etc.) now persist their completion
+              summary to the database so messages survive page refresh. Thinking
+              blocks are reconstructed at the correct position in the thread.
+            </li>
+          </ul>
+
           <h3 className="text-lg font-medium mt-6 mb-3">Improvements</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>

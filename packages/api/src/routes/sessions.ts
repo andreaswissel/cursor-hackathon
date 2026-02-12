@@ -756,6 +756,9 @@ router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (
             const summaryText = data.status === "completed"
               ? `${agentLabel} agent completed successfully.`
               : `${agentLabel} agent failed.`;
+            // Persist summary as flow-orchestrator assistant message so it survives refresh
+            sessionStore.addMessage(sessionId, agentType, "assistant", summaryText)
+              .catch(err => console.error("Failed to persist agent summary:", err));
             res.write(`data: ${JSON.stringify({ type: "text", content: summaryText })}\n\n`);
             res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
             res.end();

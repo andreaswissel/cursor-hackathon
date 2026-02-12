@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { FlowChatThread } from "@/components/flow-chat-thread";
 import { FlowArtifactPanel } from "@/components/flow-artifact-panel";
 import { cn } from "@/lib/utils";
-import type { FlowArtifact } from "@product-os/shared";
+import type { FlowArtifact, AgentType, AgentState } from "@product-os/shared";
 import { getFlowArtifacts, connectRepo, updateProject } from "@/lib/api";
 import { Package, X } from "lucide-react";
 
@@ -11,9 +11,10 @@ interface FlowSessionPageProps {
   artifacts: FlowArtifact[];
   repoUrl?: string;
   projectId?: string;
+  agents?: Record<AgentType, AgentState>;
 }
 
-export function FlowSessionPage({ sessionId, artifacts: sseArtifacts, repoUrl: initialRepoUrl, projectId }: FlowSessionPageProps) {
+export function FlowSessionPage({ sessionId, artifacts: sseArtifacts, repoUrl: initialRepoUrl, projectId, agents }: FlowSessionPageProps) {
   const [artifacts, setArtifacts] = useState<FlowArtifact[]>([]);
   const [showArtifacts, setShowArtifacts] = useState(true);
   const [repoUrl, setRepoUrl] = useState<string | undefined>(initialRepoUrl);
@@ -60,7 +61,7 @@ export function FlowSessionPage({ sessionId, artifacts: sseArtifacts, repoUrl: i
     <div className="flex h-full">
       {/* Chat Thread */}
       <div className="flex-1 flex flex-col min-w-0">
-        <FlowChatThread sessionId={sessionId} repoUrl={repoUrl} onConnectRepo={handleConnectRepo} />
+        <FlowChatThread sessionId={sessionId} repoUrl={repoUrl} onConnectRepo={handleConnectRepo} agents={agents} />
       </div>
 
       {/* Artifact Panel Toggle (mobile + when hidden) */}

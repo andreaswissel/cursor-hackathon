@@ -20,6 +20,10 @@ All notable changes to Product OS are documented here.
 - **Tools Marketplace** — New `/tools` hub consolidating Documents, Roadmap, and two new AI-powered tools: Guided Tours (product tour designer) and Feedback Forms (survey/form designer)
 - **Changelog** — Public `/changelog` page accessible without authentication
 
+### Fixes
+
+- **Flow agent messages persist on refresh** — `@Code`, `@Review`, and other agent commands now persist their completion summary to the database so messages survive page refresh. Thinking blocks are reconstructed at the correct position (after the triggering user message) instead of at the end of the thread. All agent types (including pipeline agents like Discovery, Strategy, Spec, GTM, Marketing) are now supported in reconstruction.
+
 ### Improvements
 
 - **Home page redesign** — Vertical layout with visual preview mockups for each mode (Flow, Imagine, Tools, Discover) showing what the UI looks like before clicking through
