@@ -680,15 +680,31 @@ router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (
     return;
   }
 
-  // Detect @Agent prefix in flow mode
+  // Detect @Agent mention anywhere in flow mode
   if (session.mode === "flow") {
     const matchedPrefix = Object.keys(AGENT_PREFIX_MAP).find((prefix) =>
-      message.startsWith(prefix)
+      message.includes(prefix)
     );
 
     if (matchedPrefix) {
       const { agentType: targetAgentType, requiresRepo, label: agentLabel } = AGENT_PREFIX_MAP[matchedPrefix];
-      const strippedMessage = message.slice(matchedPrefix.length).trim();
+      const strippedMessage = message
+        .replace(matchedPrefix, "")
+        .replace(/https?:\/\/(?:github\.com|gitlab\.com|bitbucket\.org)\/[^\s,)]+/gi, "")
+        .trim();
+
+      // Auto-extract repo URL from message if none connected yet
+      if (!session.repoUrl) {
+        const repoUrlMatch = message.match(/https?:\/\/(?:github\.com|gitlab\.com|bitbucket\.org)\/[^\s,)]+/i);
+        if (repoUrlMatch) {
+          const extractedUrl = repoUrlMatch[0].replace(/\.git$/, "");
+          await db
+            .update(sessionsTable)
+            .set({ repoUrl: extractedUrl, updatedAt: new Date() })
+            .where(eq(sessionsTable.id, sessionId));
+          session.repoUrl = extractedUrl;
+        }
+      }
 
       if (requiresRepo && !session.repoUrl) {
         res.setHeader("Content-Type", "text/event-stream");

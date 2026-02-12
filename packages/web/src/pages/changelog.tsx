@@ -31,6 +31,16 @@ export function ChangelogPage() {
           <h3 className="text-lg font-medium mt-6 mb-3">Features</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
+              <strong>E2B Cloud Sandbox</strong> &mdash; Code and review agents
+              now run in isolated E2B cloud sandboxes (Firecracker microVMs)
+              instead of executing commands directly on the API server.
+              Automatically falls back to local sandbox when{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                E2B_API_KEY
+              </code>{" "}
+              is not set.
+            </li>
+            <li>
               <strong>Admin Waitlist Management</strong> &mdash; Admin page at{" "}
               <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
                 /admin

@@ -133,6 +133,7 @@ Key env vars needed for the API:
 - `ANTHROPIC_API_KEY` — Default Claude API key
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — OAuth
 - `VITE_API_URL` — Frontend API base URL (build-time)
+- `E2B_API_KEY` — E2B cloud sandbox API key (optional — falls back to LocalSandbox if unset)
 
 ## Skills & Workflow Requirements
 

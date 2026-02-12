@@ -1,6 +1,6 @@
 import { v4 as uuid } from "uuid";
 import { sessionStore } from "../lib/session-store";
-import { LocalSandbox, SANDBOX_TOOLS } from "../lib/sandbox";
+import { createSandbox, SANDBOX_TOOLS } from "../lib/sandbox";
 import { runAgentLoop } from "../lib/agent-loop";
 
 const SYSTEM_PROMPT = `You are an expert software engineer agent. You are given a task to implement in a codebase that has been cloned to your working directory.
@@ -46,7 +46,7 @@ export class CodeAgent {
       status: "generating",
     });
 
-    const sandbox = new LocalSandbox({ repoUrl });
+    const sandbox = createSandbox({ repoUrl });
 
     try {
       await sessionStore.appendLog(sessionId, "code-agent", `Cloning repository: ${repoUrl}`);

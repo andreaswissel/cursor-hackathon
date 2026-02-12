@@ -1,6 +1,6 @@
 import { v4 as uuid } from "uuid";
 import { sessionStore } from "../lib/session-store";
-import { LocalSandbox, getReadOnlyTools } from "../lib/sandbox";
+import { createSandbox, getReadOnlyTools } from "../lib/sandbox";
 import { runAgentLoop } from "../lib/agent-loop";
 
 const SYSTEM_PROMPT = `You are an expert code reviewer agent. You are given a codebase to review and a specific review request. The repository has been cloned to your working directory.
@@ -53,7 +53,7 @@ export class ReviewAgent {
       status: "generating",
     });
 
-    const sandbox = new LocalSandbox({ repoUrl });
+    const sandbox = createSandbox({ repoUrl });
 
     try {
       await sessionStore.appendLog(sessionId, "review-agent", `Cloning repository: ${repoUrl}`);
