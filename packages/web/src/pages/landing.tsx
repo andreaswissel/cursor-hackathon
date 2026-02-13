@@ -1062,10 +1062,7 @@ function FinalCTA() {
   const fade = useFadeIn<HTMLDivElement>({ direction: "scale" });
   return (
     <section
-      className="py-20 md:py-28"
-      style={{
-        background: "linear-gradient(135deg, #3b82f6 0%, #60a5fa 50%, #93c5fd 100%)",
-      }}
+      className="py-20 md:py-28 bg-[#111111]"
     >
       <div
         ref={fade.ref}
@@ -1075,18 +1072,18 @@ function FinalCTA() {
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight mb-4">
           Stop managing busywork. Start shipping products.
         </h2>
-        <p className="text-white/80 mb-8 max-w-lg mx-auto text-lg">
+        <p className="text-gray-400 mb-8 max-w-lg mx-auto text-lg">
           Join the beta and go from idea to MVP in minutes — so you can focus on
           decisions that move the needle.
         </p>
         <Link
           to="/waitlist"
-          className="inline-flex items-center gap-2 rounded-full bg-white text-gray-900 px-8 py-3.5 text-sm font-semibold hover:bg-white/90 transition-colors shadow-lg shadow-blue-900/20"
+          className="inline-flex items-center gap-2 rounded-full bg-white text-gray-900 px-8 py-3.5 text-sm font-semibold hover:bg-gray-200 transition-colors shadow-lg shadow-black/30"
         >
           Join the Waitlist
           <ArrowRight className="w-4 h-4" />
         </Link>
-        <p className="text-xs text-white/60 mt-4">
+        <p className="text-xs text-gray-500 mt-4">
           Free $25 credits during beta. No credit card required.
         </p>
       </div>
