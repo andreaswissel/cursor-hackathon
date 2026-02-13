@@ -6,7 +6,9 @@ All notable changes to Product OS are documented here.
 
 ### Improvements
 
-- **Landing Page Redesign** — Dreelio-inspired premium redesign with cream/off-white backgrounds, Instrument Serif display font, floating pill navbar that transitions on scroll, second hero section with large app screenshot mockup, social proof bar with 8 integration icons, gradient-backed feature sections with alternating layouts and slide-in animations, staggered how-it-works cards, testimonial quote section, blue gradient CTA, and footer in a card. Light-mode only with hardcoded colors.
+- **Landing Page — Bento Grid & Copy Refresh** — Added Dreelio-inspired bento feature grid with two large mockup cards and three icon cards in warm cream styling. Removed serif display font (Instrument Serif) in favour of DM Sans for all headings. Updated all landing page copy to focus on the "operating system for product managers" proposition — idea to MVP in minutes, eliminate busywork, focus on decisions that move the needle. Feature deep-dive sections restyled with warm cream card wrappers.
+
+- **Landing Page Redesign** — Dreelio-inspired premium redesign with cream/off-white backgrounds, floating pill navbar that transitions on scroll, second hero section with large app screenshot mockup, social proof bar with 8 integration icons, alternating feature sections with slide-in animations, staggered how-it-works cards, testimonial quote section, blue gradient CTA, and footer in a card. Light-mode only with hardcoded colors.
 
 ## [2026-02-12]
 

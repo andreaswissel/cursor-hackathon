@@ -31,14 +31,21 @@ export function ChangelogPage() {
           <h3 className="text-lg font-medium mt-6 mb-3">Improvements</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
+              <strong>Landing Page &mdash; Bento Grid &amp; Copy Refresh</strong>{" "}
+              &mdash; Added Dreelio-inspired bento feature grid with two large
+              mockup cards and three icon cards in warm cream styling. Removed
+              serif display font in favour of DM Sans for all headings. Updated
+              copy to focus on the &quot;operating system for product
+              managers&quot; proposition.
+            </li>
+            <li>
               <strong>Landing Page Redesign</strong> &mdash; Dreelio-inspired
-              premium redesign with cream/off-white backgrounds, Instrument
-              Serif display font, floating pill navbar that transitions on
-              scroll, second hero section with large app screenshot mockup,
-              social proof bar with 8 integration icons, gradient-backed feature
-              sections with alternating layouts and slide-in animations,
-              staggered how-it-works cards, testimonial quote section, blue
-              gradient CTA, and footer in a card.
+              premium redesign with cream/off-white backgrounds, floating pill
+              navbar that transitions on scroll, second hero section with large
+              app screenshot mockup, social proof bar with 8 integration icons,
+              alternating feature sections with slide-in animations, staggered
+              how-it-works cards, testimonial quote section, blue gradient CTA,
+              and footer in a card.
             </li>
           </ul>
 

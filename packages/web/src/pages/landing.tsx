@@ -334,7 +334,6 @@ function ImagineMockup() {
 function DiscoverMockup() {
   return (
     <div className="rounded-xl bg-white border border-gray-200 p-5 pointer-events-none select-none w-full max-w-md shadow-sm">
-      {/* Discovery card #1 */}
       <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 mb-2.5">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">
@@ -352,7 +351,6 @@ function DiscoverMockup() {
           <span className="text-[10px] text-emerald-600 font-medium">85%</span>
         </div>
       </div>
-      {/* Discovery card #2 */}
       <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 mb-3">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">
@@ -370,7 +368,6 @@ function DiscoverMockup() {
           <span className="text-[10px] text-emerald-600 font-medium">72%</span>
         </div>
       </div>
-      {/* Signal pills */}
       <div className="flex gap-1.5 flex-wrap">
         {["Pain Severity", "Money Quotes", "Frequency", "Reach"].map(
           (pill) => (
@@ -420,9 +417,9 @@ const FEATURES = [
   {
     id: "flow",
     category: "Conversational AI",
-    title: "Your AI copilot for product work",
+    title: "Talk to your product, not about it",
     description:
-      "Chat with specialized AI agents that understand product strategy, market research, and technical specs. They collaborate in real-time — just like your best PM, strategist, and writer rolled into one thread.",
+      "Chat with specialized AI agents that handle strategy, research, and spec writing. They work together in real-time — like having your best PM, strategist, and writer in one thread.",
     accent: "violet",
     icon: Workflow,
     preview: FlowMockup,
@@ -432,9 +429,9 @@ const FEATURES = [
   {
     id: "imagine",
     category: "Ideation Engine",
-    title: "From napkin idea to validated spec in minutes",
+    title: "From rough idea to shippable spec",
     description:
-      "Paste a product idea, customer feedback, or a rough brief. AI agents run discovery, competitive analysis, and strategy — then produce a spec you'd actually ship.",
+      "Paste a product idea, customer feedback, or a rough brief. AI agents run discovery, competitive analysis, and strategy — then produce a spec you can hand straight to engineering.",
     accent: "amber",
     icon: Lightbulb,
     preview: ImagineMockup,
@@ -444,9 +441,9 @@ const FEATURES = [
   {
     id: "discover",
     category: "Signal Intelligence",
-    title: "Stop guessing what to build next",
+    title: "Know exactly what to build next",
     description:
-      "Surface the highest-impact opportunities from your customer signals. AI ranks them by pain severity, frequency, and revenue potential — so you build what matters.",
+      "Surface the highest-impact opportunities from your customer signals. AI ranks them by pain severity, frequency, and revenue potential — so you never waste a sprint.",
     accent: "emerald",
     icon: Compass,
     preview: DiscoverMockup,
@@ -456,9 +453,9 @@ const FEATURES = [
   {
     id: "tools",
     category: "Productivity Suite",
-    title: "Extend your workflow",
+    title: "Every tool a PM needs, built in",
     description:
-      "Generate guided product tours, feedback collection forms, living documents, and roadmaps. Every tool is designed to keep your product moving — not just documented.",
+      "Generate guided product tours, feedback collection forms, living documents, and roadmaps. Everything is designed to keep your product moving — not just documented.",
     accent: "purple",
     icon: Blocks,
     preview: ToolsMockup,
@@ -472,23 +469,23 @@ const FEATURES = [
 const STEPS = [
   {
     num: "01",
-    title: "Describe your idea or paste customer feedback",
+    title: "Drop in an idea, feedback, or signal",
     description:
-      "Drop in a rough idea, Slack thread, support ticket, or competitive intel. No templates required.",
+      "Paste a rough idea, Slack thread, support ticket, or competitive intel. No templates, no setup — just start.",
     icon: MessageCircle,
   },
   {
     num: "02",
-    title: "AI agents research, strategize, and write",
+    title: "AI agents do the heavy lifting",
     description:
-      "Specialized agents run discovery, competitive analysis, strategy, spec writing, and GTM planning — in parallel.",
+      "Specialized agents run discovery, competitive analysis, strategy, and spec writing — all in parallel, in minutes.",
     icon: Search,
   },
   {
     num: "03",
-    title: "Ship a validated spec with GTM plan",
+    title: "Ship a spec your team can actually use",
     description:
-      "Get a structured output you can hand to engineering, marketing, and sales. Iterate in chat or export.",
+      "Get structured output ready for engineering, marketing, and sales. Iterate in chat or export — no busywork.",
     icon: CheckCircle2,
   },
 ];
@@ -656,20 +653,19 @@ export function LandingPage() {
           <div className="flex justify-center mb-6">
             <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white border border-gray-200 text-xs font-medium text-gray-600 shadow-sm">
               <Zap className="w-3 h-3 text-blue-500" />
-              AI-Powered Product Management
+              The Operating System for Product Managers
             </span>
           </div>
 
           {/* Headline */}
-          <h1 className="font-display text-5xl md:text-6xl lg:text-7xl text-center text-gray-900 leading-[1.1] mb-6 max-w-4xl mx-auto">
-            Build products that{" "}
-            <em className="italic">actually matter</em>
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-center text-gray-900 leading-[1.1] mb-6 max-w-4xl mx-auto">
+            From idea to MVP in minutes, not months
           </h1>
 
           {/* Subtitle */}
           <p className="text-lg md:text-xl text-gray-500 text-center max-w-2xl mx-auto mb-10 leading-relaxed">
-            From napkin idea to validated spec in minutes. AI agents handle
-            discovery, strategy, and spec writing — so you can focus on
+            Product OS eliminates the busywork of product management. AI agents
+            handle discovery, strategy, and spec writing — so you can focus on
             decisions that move the needle.
           </p>
 
@@ -700,8 +696,11 @@ export function LandingPage() {
       {/* ─── Social Proof Bar ─── */}
       <SocialProofBar />
 
-      {/* ─── Feature Sections ─── */}
-      <section id="features">
+      {/* ─── Bento Feature Grid ─── */}
+      <BentoFeatures />
+
+      {/* ─── Feature Deep Dives ─── */}
+      <section>
         {FEATURES.map((feature, idx) => (
           <FeatureSection key={feature.id} feature={feature} index={idx} />
         ))}
@@ -786,6 +785,110 @@ function SocialProofBar() {
   );
 }
 
+function BentoFeatures() {
+  const headingFade = useFadeIn<HTMLDivElement>();
+  return (
+    <section id="features" className="py-20 md:py-28 bg-[#f9f8f6]">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        {/* Section header */}
+        <div ref={headingFade.ref} style={headingFade.style} className="text-center mb-12">
+          <span className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3 block">
+            Features
+          </span>
+          <h2 className="text-3xl md:text-4xl font-semibold text-gray-900 leading-tight mb-4">
+            Everything you need to ship, nothing you don't
+          </h2>
+          <p className="text-gray-500 max-w-lg mx-auto">
+            An AI-powered operating system that handles the busywork so you can focus on what matters.
+          </p>
+        </div>
+
+        {/* Row 1 — Two large cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+          <StaggerCard delay={0}>
+            <div className="rounded-2xl bg-[#f1ebe5] p-8 md:p-10 h-full flex flex-col">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Your AI copilot for product work
+              </h3>
+              <div className="flex-1 flex items-center justify-center py-4">
+                <FlowMockup />
+              </div>
+              <div className="mt-4">
+                <p className="text-sm font-semibold text-gray-900 mb-1">Flow</p>
+                <p className="text-sm text-gray-500 leading-relaxed">
+                  Chat with specialized agents that handle strategy, research, and writing — like having your best PM, strategist, and writer in one thread.
+                </p>
+              </div>
+            </div>
+          </StaggerCard>
+
+          <StaggerCard delay={100}>
+            <div className="rounded-2xl bg-[#f1ebe5] p-8 md:p-10 h-full flex flex-col">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                From napkin idea to validated spec
+              </h3>
+              <div className="flex-1 flex items-center justify-center py-4">
+                <ImagineMockup />
+              </div>
+              <div className="mt-4">
+                <p className="text-sm font-semibold text-gray-900 mb-1">Imagine</p>
+                <p className="text-sm text-gray-500 leading-relaxed">
+                  Paste a rough idea or customer feedback. AI agents run the full pipeline — discovery, strategy, spec — and produce something you can ship.
+                </p>
+              </div>
+            </div>
+          </StaggerCard>
+        </div>
+
+        {/* Row 2 — Three smaller icon cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <StaggerCard delay={200}>
+            <div className="rounded-2xl bg-[#f1ebe5] p-8 md:p-10 h-full">
+              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center mb-5">
+                <Compass className="w-5 h-5 text-gray-700" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900 mb-2">
+                Know what to build next
+              </h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                Surface high-impact opportunities from customer signals. AI ranks by pain severity, frequency, and revenue potential.
+              </p>
+            </div>
+          </StaggerCard>
+
+          <StaggerCard delay={300}>
+            <div className="rounded-2xl bg-[#f1ebe5] p-8 md:p-10 h-full">
+              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center mb-5">
+                <Blocks className="w-5 h-5 text-gray-700" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900 mb-2">
+                Every tool a PM needs
+              </h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                Generate product tours, feedback forms, living docs, and roadmaps. Everything keeps your product moving, not just documented.
+              </p>
+            </div>
+          </StaggerCard>
+
+          <StaggerCard delay={400}>
+            <div className="rounded-2xl bg-[#f1ebe5] p-8 md:p-10 h-full">
+              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center mb-5">
+                <Zap className="w-5 h-5 text-gray-700" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900 mb-2">
+                Seamless integrations
+              </h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                Connect Jira, Slack, Notion, Linear, and more. Import data, sync outputs, and keep everything in one place.
+              </p>
+            </div>
+          </StaggerCard>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function FeatureSection({
   feature,
   index,
@@ -804,7 +907,7 @@ function FeatureSection({
   return (
     <section
       className={`py-20 md:py-28 ${
-        index % 2 === 0 ? "bg-white" : "bg-[#fafaf8]"
+        index % 2 === 0 ? "bg-white" : "bg-[#faf9f7]"
       }`}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -820,7 +923,7 @@ function FeatureSection({
             >
               {feature.category}
             </span>
-            <h3 className="font-display text-3xl md:text-4xl text-gray-900 leading-tight mb-4">
+            <h3 className="text-3xl md:text-4xl font-semibold text-gray-900 leading-tight mb-4">
               {feature.title}
             </h3>
             <p className="text-gray-500 leading-relaxed max-w-md mb-6">
@@ -837,9 +940,7 @@ function FeatureSection({
 
           {/* Preview side */}
           <div ref={previewFade.ref} style={previewFade.style} className="flex-1 flex justify-center">
-            <div
-              className={`rounded-3xl bg-gradient-to-br ${feature.gradient} p-6 md:p-8`}
-            >
+            <div className="rounded-2xl bg-[#f1ebe5] p-6 md:p-8">
               <Preview />
             </div>
           </div>
@@ -859,11 +960,11 @@ function HowItWorks() {
           <span className="text-xs font-semibold uppercase tracking-widest text-blue-600 mb-3 block">
             How it works
           </span>
-          <h2 className="font-display text-3xl md:text-4xl text-gray-900 leading-tight mb-4">
-            Three steps to shipping
+          <h2 className="text-3xl md:text-4xl font-semibold text-gray-900 leading-tight mb-4">
+            Idea to MVP in three steps
           </h2>
           <p className="text-gray-500 max-w-lg mx-auto">
-            From raw idea to validated product spec — no templates, no busywork.
+            No templates, no busywork. Just results you can ship.
           </p>
         </div>
 
@@ -907,9 +1008,9 @@ function TestimonialSection() {
         style={fade.style}
         className="max-w-4xl mx-auto px-4 sm:px-6 text-center"
       >
-        <blockquote className="font-display text-2xl md:text-3xl lg:text-4xl text-gray-900 italic leading-snug mb-8">
-          "Product OS replaced our entire spec-writing process. What used to
-          take a week now takes an afternoon — and the output is better."
+        <blockquote className="text-2xl md:text-3xl lg:text-4xl text-gray-900 italic leading-snug mb-8">
+          "Product OS eliminated the busywork that used to eat our sprints. Now
+          I focus on decisions that actually move the needle."
         </blockquote>
         <div className="flex items-center justify-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-violet-500" />
@@ -935,7 +1036,7 @@ function IntegrationsSection() {
         <span className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3 block">
           Integrations
         </span>
-        <h2 className="font-display text-3xl md:text-4xl text-gray-900 leading-tight mb-4">
+        <h2 className="text-3xl md:text-4xl font-semibold text-gray-900 leading-tight mb-4">
           Works with your stack
         </h2>
         <p className="text-gray-500 max-w-lg mx-auto mb-12">
@@ -971,11 +1072,11 @@ function FinalCTA() {
         style={fade.style}
         className="max-w-6xl mx-auto px-4 sm:px-6 text-center"
       >
-        <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-white leading-tight mb-4">
-          Ready to build products that matter?
+        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight mb-4">
+          Stop managing busywork. Start shipping products.
         </h2>
         <p className="text-white/80 mb-8 max-w-lg mx-auto text-lg">
-          Join the beta and let AI agents handle the busywork while you focus on
+          Join the beta and go from idea to MVP in minutes — so you can focus on
           decisions that move the needle.
         </p>
         <Link
