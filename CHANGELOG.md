@@ -2,6 +2,12 @@
 
 All notable changes to Product OS are documented here.
 
+## [2026-02-13]
+
+### Improvements
+
+- **Landing Page Redesign** — Dreelio-inspired premium redesign with cream/off-white backgrounds, Instrument Serif display font, floating pill navbar that transitions on scroll, second hero section with large app screenshot mockup, social proof bar with 8 integration icons, gradient-backed feature sections with alternating layouts and slide-in animations, staggered how-it-works cards, testimonial quote section, blue gradient CTA, and footer in a card. Light-mode only with hardcoded colors.
+
 ## [2026-02-12]
 
 ### Features
