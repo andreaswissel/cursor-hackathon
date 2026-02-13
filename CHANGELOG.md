@@ -6,6 +6,8 @@ All notable changes to Product OS are documented here.
 
 ### Improvements
 
+- **Landing Page — Dark Theme** — Converted the entire landing page from light/cream to a permanent dark theme. All backgrounds use dark grays (#0a0a0a, #111111, #1a1a1a), text is white/light gray, navbar scrolled state is dark with inverted CTA, and accent colors (violet, amber, emerald, purple) are preserved. App mockup cards inside bento grid and feature sections remain light-themed.
+
 - **Landing Page — Bento Grid & Copy Refresh** — Added Dreelio-inspired bento feature grid with two large mockup cards and three icon cards in warm cream styling. Removed serif display font (Instrument Serif) in favour of DM Sans for all headings. Updated all landing page copy to focus on the "operating system for product managers" proposition — idea to MVP in minutes, eliminate busywork, focus on decisions that move the needle. Feature deep-dive sections restyled with warm cream card wrappers.
 
 - **Landing Page Redesign** — Dreelio-inspired premium redesign with cream/off-white backgrounds, floating pill navbar that transitions on scroll, second hero section with large app screenshot mockup, social proof bar with 8 integration icons, alternating feature sections with slide-in animations, staggered how-it-works cards, testimonial quote section, blue gradient CTA, and footer in a card. Light-mode only with hardcoded colors.

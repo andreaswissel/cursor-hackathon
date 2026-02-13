@@ -537,24 +537,24 @@ export function LandingPage() {
   const parallax = useParallax(0.06);
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen bg-[#0a0a0a] text-white">
       {/* ─── Floating Pill Navbar ─── */}
       <nav
         className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 px-2 py-1.5 rounded-full transition-all duration-500 ${
           scrolled
-            ? "bg-white/90 backdrop-blur-xl shadow-lg shadow-black/5 border border-gray-200/60"
+            ? "bg-[#0a0a0a]/90 backdrop-blur-xl shadow-lg shadow-black/20 border border-gray-800/60"
             : "bg-white/10 backdrop-blur-md border border-white/20"
         }`}
       >
         <div className="flex items-center gap-2 px-3">
           <Zap
             className={`w-4 h-4 transition-colors duration-500 ${
-              scrolled ? "text-gray-900" : "text-white"
+              scrolled ? "text-white" : "text-white"
             }`}
           />
           <span
             className={`font-semibold text-sm tracking-tight transition-colors duration-500 ${
-              scrolled ? "text-gray-900" : "text-white"
+              scrolled ? "text-white" : "text-white"
             }`}
           >
             Product OS
@@ -573,7 +573,7 @@ export function LandingPage() {
               href={href}
               className={`px-3 py-1.5 rounded-full text-sm transition-colors duration-500 ${
                 scrolled
-                  ? "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  ? "text-gray-400 hover:text-white hover:bg-white/10"
                   : "text-white/70 hover:text-white hover:bg-white/10"
               }`}
             >
@@ -587,7 +587,7 @@ export function LandingPage() {
             to="/login"
             className={`px-3 py-1.5 rounded-full text-sm transition-colors duration-500 ${
               scrolled
-                ? "text-gray-600 hover:text-gray-900"
+                ? "text-gray-400 hover:text-white"
                 : "text-white/70 hover:text-white"
             }`}
           >
@@ -597,7 +597,7 @@ export function LandingPage() {
             to="/waitlist"
             className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-500 ${
               scrolled
-                ? "bg-gray-900 text-white hover:bg-gray-800"
+                ? "bg-white text-gray-900 hover:bg-gray-200"
                 : "bg-white text-gray-900 hover:bg-white/90"
             }`}
           >
@@ -645,25 +645,25 @@ export function LandingPage() {
         className="relative py-20 md:py-28 overflow-hidden"
         style={{
           background:
-            "linear-gradient(180deg, #f9f8f6 0%, #f0f4f8 50%, #e8eef5 100%)",
+            "linear-gradient(180deg, #111111 0%, #0e0e0e 50%, #0a0a0a 100%)",
         }}
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           {/* Category pill */}
           <div className="flex justify-center mb-6">
-            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white border border-gray-200 text-xs font-medium text-gray-600 shadow-sm">
+            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/10 border border-gray-700 text-xs font-medium text-gray-300 shadow-sm">
               <Zap className="w-3 h-3 text-blue-500" />
               The Operating System for Product Managers
             </span>
           </div>
 
           {/* Headline */}
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-center text-gray-900 leading-[1.1] mb-6 max-w-4xl mx-auto">
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-center text-white leading-[1.1] mb-6 max-w-4xl mx-auto">
             From idea to MVP in minutes, not months
           </h1>
 
           {/* Subtitle */}
-          <p className="text-lg md:text-xl text-gray-500 text-center max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-lg md:text-xl text-gray-400 text-center max-w-2xl mx-auto mb-10 leading-relaxed">
             Product OS eliminates the busywork of product management. AI agents
             handle discovery, strategy, and spec writing — so you can focus on
             decisions that move the needle.
@@ -673,14 +673,14 @@ export function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-16 md:mb-20">
             <Link
               to="/waitlist"
-              className="inline-flex items-center gap-2 rounded-full bg-gray-900 text-white px-7 py-3 text-sm font-medium hover:bg-gray-800 transition-colors shadow-lg shadow-gray-900/20"
+              className="inline-flex items-center gap-2 rounded-full bg-white text-gray-900 px-7 py-3 text-sm font-medium hover:bg-gray-200 transition-colors shadow-lg shadow-black/30"
             >
               Get Started Free
               <ArrowRight className="w-4 h-4" />
             </Link>
             <a
               href="#features"
-              className="inline-flex items-center gap-2 rounded-full border border-gray-300 text-gray-700 px-7 py-3 text-sm font-medium hover:bg-white hover:border-gray-400 transition-colors"
+              className="inline-flex items-center gap-2 rounded-full border border-gray-600 text-gray-300 px-7 py-3 text-sm font-medium hover:bg-white/10 hover:border-gray-500 transition-colors"
             >
               See how it works
             </a>
@@ -719,35 +719,35 @@ export function LandingPage() {
       <FinalCTA />
 
       {/* ─── Footer ─── */}
-      <footer className="bg-[#f9f8f6] py-8">
+      <footer className="bg-[#111111] py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="rounded-2xl bg-white border border-gray-200 shadow-sm px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-gray-900">
+          <div className="rounded-2xl bg-[#1a1a1a] border border-gray-800 shadow-sm px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-white">
               <Zap className="w-4 h-4" />
               <span className="text-sm font-semibold">Product OS</span>
             </div>
-            <div className="flex items-center gap-4 text-xs text-gray-400">
+            <div className="flex items-center gap-4 text-xs text-gray-500">
               <Link
                 to="/privacy"
-                className="hover:text-gray-600 transition-colors"
+                className="hover:text-gray-300 transition-colors"
               >
                 Privacy Policy
               </Link>
               <Link
                 to="/terms"
-                className="hover:text-gray-600 transition-colors"
+                className="hover:text-gray-300 transition-colors"
               >
                 Terms
               </Link>
               <Link
                 to="/imprint"
-                className="hover:text-gray-600 transition-colors"
+                className="hover:text-gray-300 transition-colors"
               >
                 Imprint
               </Link>
               <Link
                 to="/changelog"
-                className="hover:text-gray-600 transition-colors"
+                className="hover:text-gray-300 transition-colors"
               >
                 Changelog
               </Link>
@@ -764,7 +764,7 @@ export function LandingPage() {
 function SocialProofBar() {
   const fade = useFadeIn<HTMLDivElement>({ direction: "up" });
   return (
-    <section className="py-14 bg-white border-b border-gray-100">
+    <section className="py-14 bg-[#0a0a0a] border-b border-gray-800/50">
       <div ref={fade.ref} style={fade.style} className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
         <p className="text-xs font-medium uppercase tracking-widest text-gray-400 mb-8">
           Integrates with your favorite tools
@@ -775,8 +775,8 @@ function SocialProofBar() {
               key={name}
               className="flex items-center gap-2 opacity-50 hover:opacity-80 transition-opacity"
             >
-              <Icon className="w-5 h-5 text-gray-500" />
-              <span className="text-sm text-gray-500 font-medium">{name}</span>
+              <Icon className="w-5 h-5 text-gray-400" />
+              <span className="text-sm text-gray-400 font-medium">{name}</span>
             </div>
           ))}
         </div>
@@ -788,17 +788,17 @@ function SocialProofBar() {
 function BentoFeatures() {
   const headingFade = useFadeIn<HTMLDivElement>();
   return (
-    <section id="features" className="py-20 md:py-28 bg-[#f9f8f6]">
+    <section id="features" className="py-20 md:py-28 bg-[#111111]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Section header */}
         <div ref={headingFade.ref} style={headingFade.style} className="text-center mb-12">
           <span className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3 block">
             Features
           </span>
-          <h2 className="text-3xl md:text-4xl font-semibold text-gray-900 leading-tight mb-4">
+          <h2 className="text-3xl md:text-4xl font-semibold text-white leading-tight mb-4">
             Everything you need to ship, nothing you don't
           </h2>
-          <p className="text-gray-500 max-w-lg mx-auto">
+          <p className="text-gray-400 max-w-lg mx-auto">
             An AI-powered operating system that handles the busywork so you can focus on what matters.
           </p>
         </div>
@@ -806,16 +806,16 @@ function BentoFeatures() {
         {/* Row 1 — Two large cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
           <StaggerCard delay={0}>
-            <div className="rounded-2xl bg-[#f1ebe5] p-8 md:p-10 h-full flex flex-col">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="rounded-2xl bg-[#1a1a1a] p-8 md:p-10 h-full flex flex-col">
+              <h3 className="text-lg font-semibold text-white mb-4">
                 Your AI copilot for product work
               </h3>
               <div className="flex-1 flex items-center justify-center py-4">
                 <FlowMockup />
               </div>
               <div className="mt-4">
-                <p className="text-sm font-semibold text-gray-900 mb-1">Flow</p>
-                <p className="text-sm text-gray-500 leading-relaxed">
+                <p className="text-sm font-semibold text-white mb-1">Flow</p>
+                <p className="text-sm text-gray-400 leading-relaxed">
                   Chat with specialized agents that handle strategy, research, and writing — like having your best PM, strategist, and writer in one thread.
                 </p>
               </div>
@@ -823,16 +823,16 @@ function BentoFeatures() {
           </StaggerCard>
 
           <StaggerCard delay={100}>
-            <div className="rounded-2xl bg-[#f1ebe5] p-8 md:p-10 h-full flex flex-col">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="rounded-2xl bg-[#1a1a1a] p-8 md:p-10 h-full flex flex-col">
+              <h3 className="text-lg font-semibold text-white mb-4">
                 From napkin idea to validated spec
               </h3>
               <div className="flex-1 flex items-center justify-center py-4">
                 <ImagineMockup />
               </div>
               <div className="mt-4">
-                <p className="text-sm font-semibold text-gray-900 mb-1">Imagine</p>
-                <p className="text-sm text-gray-500 leading-relaxed">
+                <p className="text-sm font-semibold text-white mb-1">Imagine</p>
+                <p className="text-sm text-gray-400 leading-relaxed">
                   Paste a rough idea or customer feedback. AI agents run the full pipeline — discovery, strategy, spec — and produce something you can ship.
                 </p>
               </div>
@@ -843,42 +843,42 @@ function BentoFeatures() {
         {/* Row 2 — Three smaller icon cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <StaggerCard delay={200}>
-            <div className="rounded-2xl bg-[#f1ebe5] p-8 md:p-10 h-full">
-              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center mb-5">
-                <Compass className="w-5 h-5 text-gray-700" />
+            <div className="rounded-2xl bg-[#1a1a1a] p-8 md:p-10 h-full">
+              <div className="w-10 h-10 rounded-full bg-[#2a2a2a] flex items-center justify-center mb-5">
+                <Compass className="w-5 h-5 text-gray-300" />
               </div>
-              <h3 className="text-base font-semibold text-gray-900 mb-2">
+              <h3 className="text-base font-semibold text-white mb-2">
                 Know what to build next
               </h3>
-              <p className="text-sm text-gray-500 leading-relaxed">
+              <p className="text-sm text-gray-400 leading-relaxed">
                 Surface high-impact opportunities from customer signals. AI ranks by pain severity, frequency, and revenue potential.
               </p>
             </div>
           </StaggerCard>
 
           <StaggerCard delay={300}>
-            <div className="rounded-2xl bg-[#f1ebe5] p-8 md:p-10 h-full">
-              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center mb-5">
-                <Blocks className="w-5 h-5 text-gray-700" />
+            <div className="rounded-2xl bg-[#1a1a1a] p-8 md:p-10 h-full">
+              <div className="w-10 h-10 rounded-full bg-[#2a2a2a] flex items-center justify-center mb-5">
+                <Blocks className="w-5 h-5 text-gray-300" />
               </div>
-              <h3 className="text-base font-semibold text-gray-900 mb-2">
+              <h3 className="text-base font-semibold text-white mb-2">
                 Every tool a PM needs
               </h3>
-              <p className="text-sm text-gray-500 leading-relaxed">
+              <p className="text-sm text-gray-400 leading-relaxed">
                 Generate product tours, feedback forms, living docs, and roadmaps. Everything keeps your product moving, not just documented.
               </p>
             </div>
           </StaggerCard>
 
           <StaggerCard delay={400}>
-            <div className="rounded-2xl bg-[#f1ebe5] p-8 md:p-10 h-full">
-              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center mb-5">
-                <Zap className="w-5 h-5 text-gray-700" />
+            <div className="rounded-2xl bg-[#1a1a1a] p-8 md:p-10 h-full">
+              <div className="w-10 h-10 rounded-full bg-[#2a2a2a] flex items-center justify-center mb-5">
+                <Zap className="w-5 h-5 text-gray-300" />
               </div>
-              <h3 className="text-base font-semibold text-gray-900 mb-2">
+              <h3 className="text-base font-semibold text-white mb-2">
                 Seamless integrations
               </h3>
-              <p className="text-sm text-gray-500 leading-relaxed">
+              <p className="text-sm text-gray-400 leading-relaxed">
                 Connect Jira, Slack, Notion, Linear, and more. Import data, sync outputs, and keep everything in one place.
               </p>
             </div>
@@ -907,7 +907,7 @@ function FeatureSection({
   return (
     <section
       className={`py-20 md:py-28 ${
-        index % 2 === 0 ? "bg-white" : "bg-[#faf9f7]"
+        index % 2 === 0 ? "bg-[#0a0a0a]" : "bg-[#0f0f0f]"
       }`}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -923,10 +923,10 @@ function FeatureSection({
             >
               {feature.category}
             </span>
-            <h3 className="text-3xl md:text-4xl font-semibold text-gray-900 leading-tight mb-4">
+            <h3 className="text-3xl md:text-4xl font-semibold text-white leading-tight mb-4">
               {feature.title}
             </h3>
-            <p className="text-gray-500 leading-relaxed max-w-md mb-6">
+            <p className="text-gray-400 leading-relaxed max-w-md mb-6">
               {feature.description}
             </p>
             <a
@@ -940,7 +940,7 @@ function FeatureSection({
 
           {/* Preview side */}
           <div ref={previewFade.ref} style={previewFade.style} className="flex-1 flex justify-center">
-            <div className="rounded-2xl bg-[#f1ebe5] p-6 md:p-8">
+            <div className="rounded-2xl bg-[#1a1a1a] p-6 md:p-8">
               <Preview />
             </div>
           </div>
@@ -953,17 +953,17 @@ function FeatureSection({
 function HowItWorks() {
   const headingFade = useFadeIn<HTMLDivElement>();
   return (
-    <section id="how-it-works" className="py-20 md:py-28 bg-[#f9f8f6]">
+    <section id="how-it-works" className="py-20 md:py-28 bg-[#111111]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Header */}
         <div ref={headingFade.ref} style={headingFade.style} className="text-center mb-14">
           <span className="text-xs font-semibold uppercase tracking-widest text-blue-600 mb-3 block">
             How it works
           </span>
-          <h2 className="text-3xl md:text-4xl font-semibold text-gray-900 leading-tight mb-4">
+          <h2 className="text-3xl md:text-4xl font-semibold text-white leading-tight mb-4">
             Idea to MVP in three steps
           </h2>
-          <p className="text-gray-500 max-w-lg mx-auto">
+          <p className="text-gray-400 max-w-lg mx-auto">
             No templates, no busywork. Just results you can ship.
           </p>
         </div>
@@ -974,19 +974,19 @@ function HowItWorks() {
             const Icon = step.icon;
             return (
               <StaggerCard key={step.num} delay={i * 150}>
-                <div className="rounded-2xl border border-gray-200 bg-white p-6 md:p-8 hover:shadow-lg hover:shadow-gray-200/50 transition-shadow duration-300 h-full">
+                <div className="rounded-2xl border border-gray-800 bg-[#1a1a1a] p-6 md:p-8 hover:shadow-lg hover:shadow-black/30 transition-shadow duration-300 h-full">
                   <div className="flex items-center gap-3 mb-5">
-                    <span className="text-xs font-bold text-gray-300">
+                    <span className="text-xs font-bold text-gray-600">
                       {step.num}
                     </span>
-                    <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-                      <Icon className="w-5 h-5 text-gray-600" />
+                    <div className="w-10 h-10 rounded-xl bg-[#2a2a2a] flex items-center justify-center">
+                      <Icon className="w-5 h-5 text-gray-300" />
                     </div>
                   </div>
-                  <h3 className="text-base font-semibold text-gray-900 mb-2">
+                  <h3 className="text-base font-semibold text-white mb-2">
                     {step.title}
                   </h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">
+                  <p className="text-sm text-gray-400 leading-relaxed">
                     {step.description}
                   </p>
                 </div>
@@ -1002,21 +1002,21 @@ function HowItWorks() {
 function TestimonialSection() {
   const fade = useFadeIn<HTMLDivElement>({ direction: "scale" });
   return (
-    <section className="py-20 md:py-28 bg-white">
+    <section className="py-20 md:py-28 bg-[#0a0a0a]">
       <div
         ref={fade.ref}
         style={fade.style}
         className="max-w-4xl mx-auto px-4 sm:px-6 text-center"
       >
-        <blockquote className="text-2xl md:text-3xl lg:text-4xl text-gray-900 italic leading-snug mb-8">
+        <blockquote className="text-2xl md:text-3xl lg:text-4xl text-white italic leading-snug mb-8">
           "Product OS eliminated the busywork that used to eat our sprints. Now
           I focus on decisions that actually move the needle."
         </blockquote>
         <div className="flex items-center justify-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-violet-500" />
           <div className="text-left">
-            <p className="text-sm font-semibold text-gray-900">Sarah Chen</p>
-            <p className="text-xs text-gray-500">VP Product, TechCorp</p>
+            <p className="text-sm font-semibold text-white">Sarah Chen</p>
+            <p className="text-xs text-gray-400">VP Product, TechCorp</p>
           </div>
         </div>
       </div>
@@ -1027,7 +1027,7 @@ function TestimonialSection() {
 function IntegrationsSection() {
   const fade = useFadeIn<HTMLDivElement>();
   return (
-    <section id="integrations" className="py-20 md:py-28 bg-[#f9f8f6]">
+    <section id="integrations" className="py-20 md:py-28 bg-[#111111]">
       <div
         ref={fade.ref}
         style={fade.style}
@@ -1036,20 +1036,20 @@ function IntegrationsSection() {
         <span className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-3 block">
           Integrations
         </span>
-        <h2 className="text-3xl md:text-4xl font-semibold text-gray-900 leading-tight mb-4">
+        <h2 className="text-3xl md:text-4xl font-semibold text-white leading-tight mb-4">
           Works with your stack
         </h2>
-        <p className="text-gray-500 max-w-lg mx-auto mb-12">
+        <p className="text-gray-400 max-w-lg mx-auto mb-12">
           Connect the tools you already use. Import data, sync outputs, and keep
           everything in one place.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
           {INTEGRATIONS.map(({ name, icon: Icon }) => (
             <div key={name} className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 rounded-xl bg-white border border-gray-200 shadow-sm flex items-center justify-center">
-                <Icon className="w-5 h-5 text-gray-500" />
+              <div className="w-12 h-12 rounded-xl bg-[#1a1a1a] border border-gray-800 shadow-sm flex items-center justify-center">
+                <Icon className="w-5 h-5 text-gray-400" />
               </div>
-              <span className="text-xs text-gray-500">{name}</span>
+              <span className="text-xs text-gray-400">{name}</span>
             </div>
           ))}
         </div>

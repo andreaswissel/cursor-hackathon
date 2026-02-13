@@ -31,6 +31,13 @@ export function ChangelogPage() {
           <h3 className="text-lg font-medium mt-6 mb-3">Improvements</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
+              <strong>Landing Page &mdash; Dark Theme</strong> &mdash; Converted
+              the entire landing page from light/cream to a permanent dark theme
+              with dark gray backgrounds, white/light text, inverted navbar CTA,
+              and preserved accent colors. App mockups inside cards remain
+              light-themed.
+            </li>
+            <li>
               <strong>Landing Page &mdash; Bento Grid &amp; Copy Refresh</strong>{" "}
               &mdash; Added Dreelio-inspired bento feature grid with two large
               mockup cards and three icon cards in warm cream styling. Removed
