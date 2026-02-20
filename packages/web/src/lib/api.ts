@@ -1,4 +1,4 @@
-import type { SessionContext, Session, AgentType, DocumentationPiece, DocPieceStatus, SessionMode, DiscoveryDashboard, DiscoveryRun, ProjectWithSessions, UserPreferences, KnowledgeSource, KnowledgeFilter, KnowledgeVisibility, SessionKnowledgeOverride, FlowArtifact, RoadmapItem, RoadmapItemStatus, RoadmapItemPriority } from "@product-os/shared";
+import type { SessionContext, Session, AgentType, DocumentationPiece, DocPieceStatus, SessionMode, DiscoveryDashboard, DiscoveryRun, ProjectWithSessions, UserPreferences, KnowledgeSource, KnowledgeFilter, KnowledgeVisibility, SessionKnowledgeOverride, FlowArtifact, FlowArtifactType, RoadmapItem, RoadmapItemStatus, RoadmapItemPriority } from "@product-os/shared";
 
 // In production, use the full API URL; in dev, proxy through Vite
 const API_BASE = import.meta.env.VITE_API_URL ||
@@ -867,6 +867,30 @@ export async function getFlowArtifacts(sessionId: string): Promise<{ artifacts: 
 
   if (!res.ok) {
     throw new Error("Failed to get artifacts");
+  }
+
+  return res.json();
+}
+
+export async function createFlowArtifact(
+  sessionId: string,
+  data: {
+    type: FlowArtifactType;
+    title: string;
+    content: string;
+    metadata?: Record<string, unknown>;
+    status?: "generating" | "ready" | "error";
+  }
+): Promise<{ artifact: FlowArtifact }> {
+  const res = await fetch(`${API_BASE}/sessions/${sessionId}/artifacts`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to create artifact" }));
+    throw new Error(error.message || error.error || "Failed to create artifact");
   }
 
   return res.json();

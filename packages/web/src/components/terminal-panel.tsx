@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { isTauri } from "@/lib/platform";
+import { loadDesktopModule } from "@/lib/desktop-loader";
 import { Terminal as TerminalIcon, X, Minus, Maximize2 } from "lucide-react";
 
 interface TerminalPanelProps {
@@ -61,7 +62,7 @@ export function TerminalPanel({
 
     if (sessionIdRef.current && isTauri()) {
       try {
-        const { invoke } = await import("@tauri-apps/api/core");
+        const { invoke } = await loadDesktopModule<{ invoke: (command: string, payload?: Record<string, unknown>) => Promise<unknown> }>("@tauri-apps/api/core");
         await invoke("pty_kill", { sessionId: sessionIdRef.current });
       } catch {
         // ignore cleanup errors
@@ -89,16 +90,13 @@ export function TerminalPanel({
         { invoke },
         { listen },
       ] = await Promise.all([
-        import("@xterm/xterm"),
-        import("@xterm/addon-fit"),
-        import("@xterm/addon-web-links"),
-        import("@xterm/addon-canvas"),
-        import("@tauri-apps/api/core"),
-        import("@tauri-apps/api/event"),
+        loadDesktopModule<{ Terminal: any }>("@xterm/xterm"),
+        loadDesktopModule<{ FitAddon: any }>("@xterm/addon-fit"),
+        loadDesktopModule<{ WebLinksAddon: any }>("@xterm/addon-web-links"),
+        loadDesktopModule<{ CanvasAddon: any }>("@xterm/addon-canvas"),
+        loadDesktopModule<{ invoke: (command: string, payload?: Record<string, unknown>) => Promise<any> }>("@tauri-apps/api/core"),
+        loadDesktopModule<{ listen: (event: string, cb: (event: any) => void) => Promise<() => void> }>("@tauri-apps/api/event"),
       ]);
-
-      // Import CSS
-      await import("@xterm/xterm/css/xterm.css");
 
       if (cancelled) return;
 
@@ -147,9 +145,9 @@ export function TerminalPanel({
       });
 
       // Listen for PTY data
-      const unlistenData = await listen<{ session_id: string; data: string }>(
+      const unlistenData = await listen(
         "pty:data",
-        (event) => {
+        (event: { payload: { session_id: string; data: string } }) => {
           if (event.payload.session_id === sessionId && xtermRef.current) {
             xtermRef.current.write(event.payload.data);
           }
@@ -157,9 +155,9 @@ export function TerminalPanel({
       );
 
       // Listen for PTY exit
-      const unlistenExit = await listen<{ session_id: string }>(
+      const unlistenExit = await listen(
         "pty:exit",
-        (event) => {
+        (event: { payload: { session_id: string } }) => {
           if (event.payload.session_id === sessionId && xtermRef.current) {
             xtermRef.current.write(
               "\r\n\x1b[90m[Process exited]\x1b[0m\r\n"

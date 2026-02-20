@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { isTauri } from "@/lib/platform";
+import { loadDesktopModule } from "@/lib/desktop-loader";
 import { CursorHandoff } from "@/components/cursor-handoff";
 import { cn } from "@/lib/utils";
 import {
@@ -40,7 +41,7 @@ export function ClaudeCodeHandoff({
 
   const handlePickDirectory = async () => {
     try {
-      const { open } = await import("@tauri-apps/plugin-dialog");
+      const { open } = await loadDesktopModule<{ open: (options?: Record<string, unknown>) => Promise<string | null> }>("@tauri-apps/plugin-dialog");
       const selected = await open({ directory: true, multiple: false });
       if (selected) {
         setSelectedCwd(selected as string);

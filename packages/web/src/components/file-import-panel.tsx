@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { isTauri } from "@/lib/platform";
+import { loadDesktopModule } from "@/lib/desktop-loader";
 import { FileText, X, Plus } from "lucide-react";
 
 interface ImportedFile {
@@ -19,8 +20,8 @@ export function FileImportPanel({ onImport }: FileImportPanelProps) {
   const handlePickFiles = async () => {
     try {
       const [{ open }, { invoke }] = await Promise.all([
-        import("@tauri-apps/plugin-dialog"),
-        import("@tauri-apps/api/core"),
+        loadDesktopModule<{ open: (options?: Record<string, unknown>) => Promise<string | string[] | null> }>("@tauri-apps/plugin-dialog"),
+        loadDesktopModule<{ invoke: (command: string, payload?: Record<string, unknown>) => Promise<unknown> }>("@tauri-apps/api/core"),
       ]);
 
       const selected = await open({
@@ -38,9 +39,9 @@ export function FileImportPanel({ onImport }: FileImportPanelProps) {
       const paths = Array.isArray(selected) ? selected : [selected];
 
       for (const filePath of paths) {
-        const content: string = await invoke("fs_read_file", {
+        const content = await invoke("fs_read_file", {
           path: filePath,
-        });
+        }) as string;
         const filename = (filePath as string).split("/").pop() || "file";
 
         // Skip if already imported

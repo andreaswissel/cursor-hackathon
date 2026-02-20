@@ -34,10 +34,8 @@ import {
   updateSession,
 } from "@/lib/api";
 import type { ProjectWithSessions } from "@product-os/shared";
-import { CursorHandoff } from "@/components/cursor-handoff";
-import { ClaudeCodeHandoff } from "@/components/claude-code-handoff";
+import { CodingHandoff } from "@/components/coding-handoff";
 import { TerminalPanel } from "@/components/terminal-panel";
-import { isTauri } from "@/lib/platform";
 
 const AGENT_ORDER: AgentType[] = [
   "orchestrator",
@@ -551,7 +549,7 @@ export function SessionPage() {
                 />
               ) : hasOutputs ? (
                 <div className="space-y-8">
-                  {/* Hero: Cursor Handoff */}
+                  {/* Hero: Implementation Handoff */}
                   <div className="relative rounded-2xl border bg-gradient-to-br from-violet-500/10 via-background to-indigo-500/10 p-6 md:p-8">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-violet-500/20 to-transparent rounded-full blur-3xl pointer-events-none" />
                     <div className="relative">
@@ -559,16 +557,19 @@ export function SessionPage() {
                         <Sparkles className="w-5 h-5 text-violet-500" />
                         <span className="text-sm font-semibold text-violet-600">Ready to Build</span>
                       </div>
-                      {isTauri() ? (
-                        <ClaudeCodeHandoff
-                          spec={session.outputs.spec!}
-                          codingPrompt={session.outputs.codingPrompt}
-                          ideaTitle={session.idea}
-                          onTerminalOpen={handleTerminalOpen}
-                        />
-                      ) : (
-                        <CursorHandoff spec={session.outputs.spec!} codingPrompt={session.outputs.codingPrompt} ideaTitle={session.idea} />
-                      )}
+                      <CodingHandoff
+                        sourceSessionId={session.id}
+                        ideaTitle={session.idea}
+                        projectId={session.projectId}
+                        codingPrompt={session.outputs.codingPrompt}
+                        spec={session.outputs.spec}
+                        productUpdate={session.outputs.productUpdate}
+                        slidesUrl={session.outputs.slidesUrl}
+                        discoveryOutput={session.agents.discovery?.output}
+                        strategyOutput={session.agents.strategy?.output}
+                        gtmOutput={session.agents.gtm?.output}
+                        onTerminalOpen={handleTerminalOpen}
+                      />
                     </div>
                   </div>
 
