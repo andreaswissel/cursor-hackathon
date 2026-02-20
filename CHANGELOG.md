@@ -56,6 +56,8 @@ All notable changes to Product OS are documented here.
 
 - **Landing mock screenshots switched to dark mode** — Restyled Flow, Imagine, Discover, and Tools preview mockups with product-matched dark surfaces, borders, and contrast to remove bright white cards from the landing experience.
 
+- **Landing feature cards aligned to product theme** — Refined mock screenshot styling to better match in-app dark UI tokens, removed non-functional “Learn more” links from feature deep-dives, and standardized feature subtitle accent color to avoid rainbow category labels.
+
 ## [2026-02-13]
 
 ### Improvements

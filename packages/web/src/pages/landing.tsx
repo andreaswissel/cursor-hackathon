@@ -387,20 +387,20 @@ function AppScreenshotMockup() {
 
 function FlowMockup() {
   return (
-    <div className="rounded-xl bg-[#0f141d] border border-[#273244] p-5 pointer-events-none select-none w-full max-w-md shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
+    <div className="dark rounded-xl bg-card border border-border/80 p-5 pointer-events-none select-none w-full max-w-md shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
       {/* Assistant message */}
       <div className="flex gap-2.5 mb-3">
-        <div className="w-7 h-7 rounded-full bg-violet-500/15 border border-violet-400/30 flex items-center justify-center shrink-0 mt-0.5">
-          <Bot className="w-3.5 h-3.5 text-violet-300" />
+        <div className="w-7 h-7 rounded-full bg-violet-500/15 border border-violet-400/35 flex items-center justify-center shrink-0 mt-0.5">
+          <Bot className="w-3.5 h-3.5 text-violet-200" />
         </div>
-        <div className="rounded-lg bg-[#182233] border border-[#2c3a50] px-3.5 py-2.5 text-xs text-gray-200 leading-relaxed">
+        <div className="rounded-lg bg-secondary/70 border border-border/70 px-3.5 py-2.5 text-xs text-foreground/85 leading-relaxed">
           I've analyzed the competitive landscape. Here are 3 differentiation
           opportunities for your onboarding flow...
         </div>
       </div>
       {/* User message */}
       <div className="flex gap-2.5 mb-4 justify-end">
-        <div className="rounded-lg bg-[#1f2b3d] border border-[#344863] px-3.5 py-2.5 text-xs text-gray-100 leading-relaxed">
+        <div className="rounded-lg bg-foreground px-3.5 py-2.5 text-xs text-background leading-relaxed">
           Focus on opportunity #2. Draft a spec.
         </div>
       </div>
@@ -409,19 +409,19 @@ function FlowMockup() {
         {["@Strategy", "@Spec", "@GTM"].map((pill) => (
           <span
             key={pill}
-            className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-300 border border-violet-400/30"
+            className="text-[10px] px-2 py-0.5 rounded-full bg-secondary/60 text-muted-foreground border border-border/60"
           >
             {pill}
           </span>
         ))}
       </div>
       {/* Input bar */}
-      <div className="flex items-center gap-2 rounded-lg border border-[#2d3c52] bg-[#162030] px-3 py-2.5">
-        <Plus className="w-3.5 h-3.5 text-gray-500" />
-        <span className="text-xs text-gray-500 flex-1">
+      <div className="flex items-center gap-2 rounded-lg border border-border bg-secondary/50 px-3 py-2.5">
+        <Plus className="w-3.5 h-3.5 text-muted-foreground" />
+        <span className="text-xs text-muted-foreground flex-1">
           Orchestrate with @Discovery, @Strategy, @Spec...
         </span>
-        <Send className="w-3.5 h-3.5 text-gray-400" />
+        <Send className="w-3.5 h-3.5 text-muted-foreground" />
       </div>
     </div>
   );
@@ -429,10 +429,10 @@ function FlowMockup() {
 
 function ImagineMockup() {
   return (
-    <div className="rounded-xl bg-[#0f141d] border border-[#273244] p-5 pointer-events-none select-none w-full max-w-md shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
+    <div className="dark rounded-xl bg-card border border-border/80 p-5 pointer-events-none select-none w-full max-w-md shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
       {/* Textarea mockup */}
-      <div className="rounded-lg border border-[#2d3c52] bg-[#162030] px-3.5 py-3 mb-3">
-        <span className="text-xs text-gray-400">
+      <div className="rounded-lg border border-border bg-secondary/70 px-3.5 py-3 mb-3">
+        <span className="text-xs text-muted-foreground">
           A mobile app that helps dog owners find pet-friendly restaurants and
           cafes nearby...
         </span>
@@ -443,7 +443,7 @@ function ImagineMockup() {
         {["OKRs", "Customer Feedback", "Market Data"].map((pill) => (
           <span
             key={pill}
-            className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-400/35"
+            className="text-[10px] px-2 py-0.5 rounded-full bg-secondary/70 text-muted-foreground border border-border/70"
           >
             {pill}
           </span>
@@ -456,21 +456,21 @@ function ImagineMockup() {
             <span
               className={`text-[10px] px-2 py-0.5 rounded-full ${
                 i === 0
-                  ? "bg-amber-500/20 text-amber-300 border border-amber-400/35"
-                  : "bg-[#1b2636] text-gray-500 border border-[#2f3e53]"
+                  ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/35"
+                  : "bg-secondary/70 text-muted-foreground border border-border/70"
               }`}
             >
               {step}
             </span>
             {i < 3 && (
-              <ArrowRight className="w-2.5 h-2.5 text-gray-600" />
+              <ArrowRight className="w-2.5 h-2.5 text-muted-foreground" />
             )}
           </div>
         ))}
       </div>
       {/* Launch button */}
       <div className="flex justify-end">
-        <div className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500/15 border border-amber-400/35 px-3.5 py-2 text-xs text-amber-200 font-medium">
+        <div className="inline-flex items-center gap-1.5 rounded-lg bg-foreground px-3.5 py-2 text-xs text-background font-medium">
           Launch Agents
           <ArrowRight className="w-3 h-3" />
         </div>
@@ -481,36 +481,36 @@ function ImagineMockup() {
 
 function DiscoverMockup() {
   return (
-    <div className="rounded-xl bg-[#0f141d] border border-[#273244] p-5 pointer-events-none select-none w-full max-w-md shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
-      <div className="rounded-lg border border-[#2d3c52] bg-[#162030] p-3 mb-2.5">
+    <div className="dark rounded-xl bg-card border border-border/80 p-5 pointer-events-none select-none w-full max-w-md shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
+      <div className="rounded-lg border border-border bg-secondary/70 p-3 mb-2.5">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/35 text-emerald-300">
             #1
           </span>
-          <span className="text-xs text-gray-200 font-medium">
+          <span className="text-xs text-foreground font-medium">
             Mobile onboarding flow
           </span>
         </div>
         <div className="flex items-center gap-2">
           <BarChart3 className="w-3 h-3 text-emerald-300" />
-          <div className="flex-1 h-1.5 rounded-full bg-[#2b3950]">
+          <div className="flex-1 h-1.5 rounded-full bg-secondary">
             <div className="h-full w-[85%] rounded-full bg-emerald-400" />
           </div>
           <span className="text-[10px] text-emerald-300 font-medium">85%</span>
         </div>
       </div>
-      <div className="rounded-lg border border-[#2d3c52] bg-[#162030] p-3 mb-3">
+      <div className="rounded-lg border border-border bg-secondary/70 p-3 mb-3">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/35 text-emerald-300">
             #2
           </span>
-          <span className="text-xs text-gray-200 font-medium">
+          <span className="text-xs text-foreground font-medium">
             Slack integration sync
           </span>
         </div>
         <div className="flex items-center gap-2">
           <BarChart3 className="w-3 h-3 text-emerald-300" />
-          <div className="flex-1 h-1.5 rounded-full bg-[#2b3950]">
+          <div className="flex-1 h-1.5 rounded-full bg-secondary">
             <div className="h-full w-[72%] rounded-full bg-emerald-400" />
           </div>
           <span className="text-[10px] text-emerald-300 font-medium">72%</span>
@@ -534,7 +534,7 @@ function DiscoverMockup() {
 
 function ToolsMockup() {
   return (
-    <div className="rounded-xl bg-[#0f141d] border border-[#273244] p-5 pointer-events-none select-none w-full max-w-md shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
+    <div className="dark rounded-xl bg-card border border-border/80 p-5 pointer-events-none select-none w-full max-w-md shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
       <div className="grid grid-cols-2 gap-2.5">
         {[
           { icon: Route, label: "Guided Tours" },
@@ -544,12 +544,12 @@ function ToolsMockup() {
         ].map(({ icon: Icon, label }) => (
           <div
             key={label}
-            className="rounded-lg border border-[#2d3c52] bg-[#162030] p-3.5 flex flex-col items-center gap-2"
+            className="rounded-lg border border-border bg-secondary/70 p-3.5 flex flex-col items-center gap-2"
           >
-            <div className="w-9 h-9 rounded-lg bg-indigo-500/15 border border-indigo-400/30 flex items-center justify-center">
-              <Icon className="w-4.5 h-4.5 text-indigo-300" />
+            <div className="w-9 h-9 rounded-lg bg-secondary border border-border flex items-center justify-center">
+              <Icon className="w-4.5 h-4.5 text-muted-foreground" />
             </div>
-            <span className="text-[10px] text-gray-300 font-medium">
+            <span className="text-[10px] text-foreground/80 font-medium">
               {label}
             </span>
           </div>
@@ -572,7 +572,7 @@ const FEATURES = [
     icon: Workflow,
     preview: FlowMockup,
     gradient: "from-violet-50 to-purple-50",
-    accentColor: "text-violet-600",
+    accentColor: "text-sky-300",
   },
   {
     id: "discover",
@@ -584,7 +584,7 @@ const FEATURES = [
     icon: Compass,
     preview: DiscoverMockup,
     gradient: "from-emerald-50 to-teal-50",
-    accentColor: "text-emerald-600",
+    accentColor: "text-sky-300",
   },
   {
     id: "imagine",
@@ -596,7 +596,7 @@ const FEATURES = [
     icon: Lightbulb,
     preview: ImagineMockup,
     gradient: "from-amber-50 to-orange-50",
-    accentColor: "text-amber-600",
+    accentColor: "text-sky-300",
   },
   {
     id: "tools",
@@ -608,7 +608,7 @@ const FEATURES = [
     icon: Blocks,
     preview: ToolsMockup,
     gradient: "from-purple-50 to-pink-50",
-    accentColor: "text-purple-600",
+    accentColor: "text-sky-300",
   },
 ] as const;
 
@@ -1151,16 +1151,9 @@ function FeatureSection({
             <h3 className="text-3xl md:text-4xl font-semibold text-white leading-tight mb-4">
               {feature.title}
             </h3>
-            <p className="text-gray-400 leading-relaxed max-w-md mb-6">
+            <p className="text-gray-400 leading-relaxed max-w-md">
               {feature.description}
             </p>
-            <a
-              href="#"
-              className={`inline-flex items-center gap-1.5 text-sm font-medium ${feature.accentColor} hover:underline`}
-            >
-              Learn more
-              <ArrowRight className="w-3.5 h-3.5" />
-            </a>
           </div>
 
           {/* Preview side */}

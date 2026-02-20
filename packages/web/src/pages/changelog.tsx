@@ -233,6 +233,14 @@ export function ChangelogPage() {
               mockups with product-matched dark surfaces, borders, and contrast
               to remove bright white cards from the landing experience.
             </li>
+            <li>
+              <strong>Landing feature cards aligned to product theme</strong>{" "}
+              &mdash; Refined mock screenshot styling to better match in-app
+              dark UI tokens, removed non-functional
+              &quot;Learn more&quot; links from feature deep-dives, and
+              standardized feature subtitle accent color to avoid rainbow
+              category labels.
+            </li>
           </ul>
 
           {/* Feb 13 */}
