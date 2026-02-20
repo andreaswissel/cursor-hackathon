@@ -206,6 +206,13 @@ export function ChangelogPage() {
               section for Cursor, Codex, and Claude Code so users can discover
               prompt handoff paths separately from OAuth data integrations.
             </li>
+            <li>
+              <strong>Landing integrations strip expanded to AI/coding stack</strong>{" "}
+              &mdash; Updated landing-page integration surfaces to include
+              Anthropic, OpenAI, Cursor, Codex, and Claude Code alongside data
+              connectors so the public story matches actual handoff
+              capabilities.
+            </li>
           </ul>
 
           {/* Feb 13 */}

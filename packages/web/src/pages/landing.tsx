@@ -22,6 +22,10 @@ import {
   Folder,
   Hash,
   Wrench,
+  Sparkles,
+  ExternalLink,
+  Terminal,
+  Command,
 } from "lucide-react";
 import {
   JiraIcon,
@@ -635,7 +639,7 @@ const STEPS = [
 
 // ── Integration icons ───────────────────────────────────────────────────────
 
-const INTEGRATIONS = [
+const DATA_INTEGRATIONS = [
   { name: "Jira", icon: JiraIcon },
   { name: "Slack", icon: SlackIcon },
   { name: "Notion", icon: NotionIcon },
@@ -645,6 +649,16 @@ const INTEGRATIONS = [
   { name: "Linear", icon: LinearIcon },
   { name: "Airtable", icon: AirtableIcon },
 ];
+
+const AI_EXECUTION_INTEGRATIONS = [
+  { name: "Anthropic", icon: Bot },
+  { name: "OpenAI", icon: Sparkles },
+  { name: "Cursor", icon: ExternalLink },
+  { name: "Codex", icon: Terminal },
+  { name: "Claude Code", icon: Command },
+];
+
+const INTEGRATIONS = [...DATA_INTEGRATIONS, ...AI_EXECUTION_INTEGRATIONS];
 
 // ── Stagger card wrapper ────────────────────────────────────────────────────
 
@@ -1197,17 +1211,38 @@ function IntegrationsSection() {
         </h2>
         <p className="text-gray-400 max-w-lg mx-auto mb-12">
           You can use all demo modes right now. Join the waitlist to unlock
-          private integrations for Jira, Slack, Notion, Linear, and more.
+          private data integrations for Jira, Slack, Notion, Linear, and more.
+          Cursor, Codex, and Claude Code prompt handoff are available now.
         </p>
-        <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
-          {INTEGRATIONS.map(({ name, icon: Icon }) => (
-            <div key={name} className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 rounded-xl bg-[#1a1a1a] border border-gray-800 shadow-sm flex items-center justify-center">
-                <Icon className="w-5 h-5 text-gray-400" />
+        <div className="mb-8">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 mb-4">
+            Data Integrations
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
+            {DATA_INTEGRATIONS.map(({ name, icon: Icon }) => (
+              <div key={name} className="flex flex-col items-center gap-2">
+                <div className="w-12 h-12 rounded-xl bg-[#1a1a1a] border border-gray-800 shadow-sm flex items-center justify-center">
+                  <Icon className="w-5 h-5 text-gray-400" />
+                </div>
+                <span className="text-xs text-gray-400">{name}</span>
               </div>
-              <span className="text-xs text-gray-400">{name}</span>
-            </div>
-          ))}
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 mb-4">
+            AI & Coding Targets
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
+            {AI_EXECUTION_INTEGRATIONS.map(({ name, icon: Icon }) => (
+              <div key={name} className="flex flex-col items-center gap-2">
+                <div className="w-12 h-12 rounded-xl bg-[#1a1a1a] border border-gray-800 shadow-sm flex items-center justify-center">
+                  <Icon className="w-5 h-5 text-gray-400" />
+                </div>
+                <span className="text-xs text-gray-400">{name}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>

@@ -48,6 +48,8 @@ All notable changes to Product OS are documented here.
 
 - **Integrations page now includes coding execution targets** — Added a dedicated `Execution Targets` section for Cursor, Codex, and Claude Code so users can discover prompt handoff paths separately from OAuth data integrations.
 
+- **Landing integrations strip expanded to AI/coding stack** — Updated landing-page integration surfaces to include Anthropic, OpenAI, Cursor, Codex, and Claude Code alongside data connectors so the public story matches actual handoff capabilities.
+
 ## [2026-02-13]
 
 ### Improvements
