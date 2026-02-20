@@ -127,6 +127,28 @@ export function ChangelogPage() {
               discovery cluster fallback responses so dashboard insights are
               always produced by real model runs.
             </li>
+            <li>
+              <strong>Landing messaging refresh (Flow-first)</strong> &mdash;
+              Repositioned landing copy around an explicit agentic-product
+              workflow, clarified how Flow mode orchestrates{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @Discovery
+              </code>
+              ,{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @Strategy
+              </code>
+              ,{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @Spec
+              </code>
+              , and{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @GTM
+              </code>
+              , and aligned CTAs to demo access plus waitlist for full
+              integrations.
+            </li>
           </ul>
 
           {/* Feb 13 */}

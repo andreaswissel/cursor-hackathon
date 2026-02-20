@@ -225,7 +225,7 @@ function AppScreenshotMockup() {
               <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
                 <Plus className="w-3.5 h-3.5 text-gray-400" />
                 <span className="text-xs text-gray-400 flex-1">
-                  Message agents...
+                  Orchestrate with @Discovery, @Strategy, @Spec...
                 </span>
                 <Send className="w-3.5 h-3.5 text-gray-400" />
               </div>
@@ -272,7 +272,9 @@ function FlowMockup() {
       {/* Input bar */}
       <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
         <Plus className="w-3.5 h-3.5 text-gray-400" />
-        <span className="text-xs text-gray-400 flex-1">Message agents...</span>
+        <span className="text-xs text-gray-400 flex-1">
+          Orchestrate with @Discovery, @Strategy, @Spec...
+        </span>
         <Send className="w-3.5 h-3.5 text-gray-400" />
       </div>
     </div>
@@ -417,9 +419,9 @@ const FEATURES = [
   {
     id: "flow",
     category: "Conversational AI",
-    title: "Talk to your product, not about it",
+    title: "Flow mode: orchestrate product agents in one thread",
     description:
-      "Chat with specialized AI agents that handle strategy, research, and spec writing. They work together in real-time — like having your best PM, strategist, and writer in one thread.",
+      "Use @Discovery, @Strategy, @Spec, and @GTM in a single conversation. Instead of coordinating people across tools, you orchestrate agents inside one system.",
     accent: "violet",
     icon: Workflow,
     preview: FlowMockup,
@@ -469,23 +471,23 @@ const FEATURES = [
 const STEPS = [
   {
     num: "01",
-    title: "Drop in an idea, feedback, or signal",
+    title: "Give one input",
     description:
-      "Paste a rough idea, Slack thread, support ticket, or competitive intel. No templates, no setup — just start.",
+      "Start with an idea, customer feedback, support notes, or market signals. No rigid templates or setup.",
     icon: MessageCircle,
   },
   {
     num: "02",
-    title: "AI agents do the heavy lifting",
+    title: "Agents orchestrate the product workflow",
     description:
-      "Specialized agents run discovery, competitive analysis, strategy, and spec writing — all in parallel, in minutes.",
+      "Product OS runs discovery, strategy, specs, and execution planning in one coordinated pipeline.",
     icon: Search,
   },
   {
     num: "03",
-    title: "Ship a spec your team can actually use",
+    title: "Ship from one session",
     description:
-      "Get structured output ready for engineering, marketing, and sales. Iterate in chat or export — no busywork.",
+      "Get outputs your team can execute immediately. A week of coordination collapses into one working session.",
     icon: CheckCircle2,
   },
 ];
@@ -653,37 +655,43 @@ export function LandingPage() {
           <div className="flex justify-center mb-6">
             <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/10 border border-gray-700 text-xs font-medium text-gray-300 shadow-sm">
               <Zap className="w-3 h-3 text-blue-500" />
-              The Operating System for Product Managers
+              ProductOS — Built for Product, Loved by Development
             </span>
           </div>
 
           {/* Headline */}
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-center text-white leading-[1.1] mb-6 max-w-4xl mx-auto">
-            From idea to MVP in minutes, not months
+            Coding went agentic.
+            <br />
+            Product didn't, until now.
           </h1>
 
           {/* Subtitle */}
           <p className="text-lg md:text-xl text-gray-400 text-center max-w-2xl mx-auto mb-10 leading-relaxed">
-            Product OS eliminates the busywork of product management. AI agents
-            handle discovery, strategy, and spec writing — so you can focus on
-            decisions that move the needle.
+            AI transformed coding, but product work stayed manual: discovery
+            docs, strategy decks, ticket ping-pong, and endless alignment loops.
+            Product OS brings the agentic shift to product work itself.
+          </p>
+          <p className="text-base md:text-lg text-gray-500 text-center max-w-3xl mx-auto mb-10 leading-relaxed">
+            You give one input. Agents orchestrate discovery, strategy, specs,
+            and execution. If coding got 10x faster, product should too.
           </p>
 
           {/* CTA buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-16 md:mb-20">
             <Link
-              to="/waitlist"
+              to="/login"
               className="inline-flex items-center gap-2 rounded-full bg-white text-gray-900 px-7 py-3 text-sm font-medium hover:bg-gray-200 transition-colors shadow-lg shadow-black/30"
             >
-              Get Started Free
+              Try Demo Modes
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <a
-              href="#features"
+            <Link
+              to="/waitlist"
               className="inline-flex items-center gap-2 rounded-full border border-gray-600 text-gray-300 px-7 py-3 text-sm font-medium hover:bg-white/10 hover:border-gray-500 transition-colors"
             >
-              See how it works
-            </a>
+              Join Waitlist
+            </Link>
           </div>
 
           {/* App screenshot with parallax */}
@@ -767,7 +775,7 @@ function SocialProofBar() {
     <section className="py-14 bg-[#0a0a0a] border-b border-gray-800/50">
       <div ref={fade.ref} style={fade.style} className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
         <p className="text-xs font-medium uppercase tracking-widest text-gray-400 mb-8">
-          Integrates with your favorite tools
+          Built to integrate with your existing stack
         </p>
         <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
           {INTEGRATIONS.map(({ name, icon: Icon }) => (
@@ -796,10 +804,11 @@ function BentoFeatures() {
             Features
           </span>
           <h2 className="text-3xl md:text-4xl font-semibold text-white leading-tight mb-4">
-            Everything you need to ship, nothing you don't
+            Product work finally goes agentic
           </h2>
           <p className="text-gray-400 max-w-lg mx-auto">
-            An AI-powered operating system that handles the busywork so you can focus on what matters.
+            Flow mode coordinates specialist product agents in one system, so
+            you spend less time aligning and more time shipping.
           </p>
         </div>
 
@@ -808,7 +817,7 @@ function BentoFeatures() {
           <StaggerCard delay={0}>
             <div className="rounded-2xl bg-[#1a1a1a] p-8 md:p-10 h-full flex flex-col">
               <h3 className="text-lg font-semibold text-white mb-4">
-                Your AI copilot for product work
+                Flow mode is your agentic control plane
               </h3>
               <div className="flex-1 flex items-center justify-center py-4">
                 <FlowMockup />
@@ -816,7 +825,8 @@ function BentoFeatures() {
               <div className="mt-4">
                 <p className="text-sm font-semibold text-white mb-1">Flow</p>
                 <p className="text-sm text-gray-400 leading-relaxed">
-                  Chat with specialized agents that handle strategy, research, and writing — like having your best PM, strategist, and writer in one thread.
+                  Call specialist agents with @commands, keep context in one
+                  thread, and orchestrate product decisions end-to-end.
                 </p>
               </div>
             </div>
@@ -825,7 +835,7 @@ function BentoFeatures() {
           <StaggerCard delay={100}>
             <div className="rounded-2xl bg-[#1a1a1a] p-8 md:p-10 h-full flex flex-col">
               <h3 className="text-lg font-semibold text-white mb-4">
-                From napkin idea to validated spec
+                One prompt, full product package
               </h3>
               <div className="flex-1 flex items-center justify-center py-4">
                 <ImagineMockup />
@@ -833,7 +843,8 @@ function BentoFeatures() {
               <div className="mt-4">
                 <p className="text-sm font-semibold text-white mb-1">Imagine</p>
                 <p className="text-sm text-gray-400 leading-relaxed">
-                  Paste a rough idea or customer feedback. AI agents run the full pipeline — discovery, strategy, spec — and produce something you can ship.
+                  Start from rough context and get structured output for
+                  planning, building, and launch communication.
                 </p>
               </div>
             </div>
@@ -848,10 +859,11 @@ function BentoFeatures() {
                 <Compass className="w-5 h-5 text-gray-300" />
               </div>
               <h3 className="text-base font-semibold text-white mb-2">
-                Know what to build next
+                Prioritize what matters
               </h3>
               <p className="text-sm text-gray-400 leading-relaxed">
-                Surface high-impact opportunities from customer signals. AI ranks by pain severity, frequency, and revenue potential.
+                Rank opportunities by severity, frequency, and business impact
+                so roadmap calls are evidence-based.
               </p>
             </div>
           </StaggerCard>
@@ -862,10 +874,11 @@ function BentoFeatures() {
                 <Blocks className="w-5 h-5 text-gray-300" />
               </div>
               <h3 className="text-base font-semibold text-white mb-2">
-                Every tool a PM needs
+                Execution artifacts included
               </h3>
               <p className="text-sm text-gray-400 leading-relaxed">
-                Generate product tours, feedback forms, living docs, and roadmaps. Everything keeps your product moving, not just documented.
+                Generate docs, feedback forms, tours, and roadmaps from the
+                same working context.
               </p>
             </div>
           </StaggerCard>
@@ -876,10 +889,11 @@ function BentoFeatures() {
                 <Zap className="w-5 h-5 text-gray-300" />
               </div>
               <h3 className="text-base font-semibold text-white mb-2">
-                Seamless integrations
+                Integrations rolling out
               </h3>
               <p className="text-sm text-gray-400 leading-relaxed">
-                Connect Jira, Slack, Notion, Linear, and more. Import data, sync outputs, and keep everything in one place.
+                Demo modes are open now. Join the waitlist to unlock private
+                workspace integrations as rollout expands.
               </p>
             </div>
           </StaggerCard>
@@ -961,10 +975,11 @@ function HowItWorks() {
             How it works
           </span>
           <h2 className="text-3xl md:text-4xl font-semibold text-white leading-tight mb-4">
-            Idea to MVP in three steps
+            How Flow mode works
           </h2>
           <p className="text-gray-400 max-w-lg mx-auto">
-            No templates, no busywork. Just results you can ship.
+            Instead of coordinating people across tools, orchestrate agents
+            inside one system.
           </p>
         </div>
 
@@ -1037,11 +1052,11 @@ function IntegrationsSection() {
           Integrations
         </span>
         <h2 className="text-3xl md:text-4xl font-semibold text-white leading-tight mb-4">
-          Works with your stack
+          Integrations are in phased rollout
         </h2>
         <p className="text-gray-400 max-w-lg mx-auto mb-12">
-          Connect the tools you already use. Import data, sync outputs, and keep
-          everything in one place.
+          You can use all demo modes right now. Join the waitlist to unlock
+          private integrations for Jira, Slack, Notion, Linear, and more.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
           {INTEGRATIONS.map(({ name, icon: Icon }) => (
@@ -1070,21 +1085,29 @@ function FinalCTA() {
         className="max-w-6xl mx-auto px-4 sm:px-6 text-center"
       >
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight mb-4">
-          Stop managing busywork. Start shipping products.
+          A week of product coordination, collapsed into one session.
         </h2>
         <p className="text-gray-400 mb-8 max-w-lg mx-auto text-lg">
-          Join the beta and go from idea to MVP in minutes — so you can focus on
-          decisions that move the needle.
+          Coding went agentic. Product should too. Try Flow mode now, then join
+          the waitlist for full integration access.
         </p>
-        <Link
-          to="/waitlist"
-          className="inline-flex items-center gap-2 rounded-full bg-white text-gray-900 px-8 py-3.5 text-sm font-semibold hover:bg-gray-200 transition-colors shadow-lg shadow-black/30"
-        >
-          Join the Waitlist
-          <ArrowRight className="w-4 h-4" />
-        </Link>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-2 rounded-full bg-white text-gray-900 px-8 py-3.5 text-sm font-semibold hover:bg-gray-200 transition-colors shadow-lg shadow-black/30"
+          >
+            Open Demo
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+          <Link
+            to="/waitlist"
+            className="inline-flex items-center gap-2 rounded-full border border-gray-600 text-gray-300 px-8 py-3.5 text-sm font-semibold hover:bg-white/10 hover:border-gray-500 transition-colors"
+          >
+            Join Waitlist
+          </Link>
+        </div>
         <p className="text-xs text-gray-500 mt-4">
-          Free $25 credits during beta. No credit card required.
+          Demo modes are available now. Private integrations are waitlist-only.
         </p>
       </div>
     </section>

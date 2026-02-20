@@ -34,6 +34,8 @@ All notable changes to Product OS are documented here.
 
 - **Discovery realism** — Removed scripted discovery cluster fallback responses so dashboard insights are always produced by real model runs.
 
+- **Landing messaging refresh (Flow-first)** — Repositioned the landing page around an explicit “agentic product workflow” narrative, clarified what Flow mode does (`@Discovery`, `@Strategy`, `@Spec`, `@GTM` orchestration), and aligned CTAs to “Try demo modes” plus waitlist for full integration access.
+
 ## [2026-02-13]
 
 ### Improvements
