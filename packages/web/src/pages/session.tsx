@@ -25,7 +25,7 @@ import {
   Sparkles,
   Video,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   getAllProjects,
   getDocumentationPieces,
@@ -121,6 +121,7 @@ const AGENT_PROGRESS_INFO: Record<AgentType, { title: string; description: strin
 };
 
 type TabType = "agents" | "outputs";
+const RECONNECT_BANNER_DELAY_MS = 4000;
 
 export function SessionPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -135,6 +136,8 @@ export function SessionPage() {
   const [terminalVisible, setTerminalVisible] = useState(false);
   const [terminalCommand, setTerminalCommand] = useState<string | undefined>();
   const [terminalCwd, setTerminalCwd] = useState<string | undefined>();
+  const [showReconnectBanner, setShowReconnectBanner] = useState(false);
+  const reconnectBannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleTerminalOpen = useCallback((command: string, cwd?: string) => {
     setTerminalCommand(command);
@@ -164,6 +167,33 @@ export function SessionPage() {
 
   useEffect(() => {
     refreshProjects();
+  }, []);
+
+  useEffect(() => {
+    if (isReconnecting) {
+      if (!reconnectBannerTimerRef.current) {
+        reconnectBannerTimerRef.current = setTimeout(() => {
+          setShowReconnectBanner(true);
+          reconnectBannerTimerRef.current = null;
+        }, RECONNECT_BANNER_DELAY_MS);
+      }
+      return;
+    }
+
+    if (reconnectBannerTimerRef.current) {
+      clearTimeout(reconnectBannerTimerRef.current);
+      reconnectBannerTimerRef.current = null;
+    }
+    setShowReconnectBanner(false);
+  }, [isReconnecting]);
+
+  useEffect(() => {
+    return () => {
+      if (reconnectBannerTimerRef.current) {
+        clearTimeout(reconnectBannerTimerRef.current);
+        reconnectBannerTimerRef.current = null;
+      }
+    };
   }, []);
 
   // Load documentation pieces when in documentation mode
@@ -460,7 +490,7 @@ export function SessionPage() {
         </div>
 
         {/* Reconnecting banner — shown when we have data but lost connection */}
-        {isReconnecting && (
+        {showReconnectBanner && (
           <div className="mx-4 md:mx-6 mt-2 px-4 py-2.5 rounded-lg border border-amber-500/20 bg-amber-500/10 flex items-center gap-3">
             <Loader2 className="w-4 h-4 text-amber-500 animate-spin flex-shrink-0" />
             <div className="flex-1 min-w-0">
