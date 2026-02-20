@@ -38,6 +38,8 @@ All notable changes to Product OS are documented here.
 
 - **Landing Flow hero animation (product-matched UI)** — Replaced the static hero screenshot with an animated Flow-mode sequence using app-native dark tokens and chat/sidebar styling, so visitors can see orchestration progress and agent handoffs in action.
 
+- **Navbar text-wrap fix on landing hero** — Prevented pill navbar items from shrinking into multi-line labels by enforcing non-wrapping link text and updating center-link breakpoints for tighter desktop/tablet behavior.
+
 ## [2026-02-13]
 
 ### Improvements

@@ -683,20 +683,20 @@ export function LandingPage() {
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       {/* ─── Floating Pill Navbar ─── */}
       <nav
-        className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 px-2 py-1.5 rounded-full transition-all duration-500 ${
+        className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 flex max-w-[calc(100vw-2rem)] flex-nowrap items-center gap-1 px-2 py-1.5 rounded-full transition-all duration-500 ${
           scrolled
             ? "bg-[#0a0a0a]/90 backdrop-blur-xl shadow-lg shadow-black/20 border border-gray-800/60"
             : "bg-white/10 backdrop-blur-md border border-white/20"
         }`}
       >
-        <div className="flex items-center gap-2 px-3">
+        <div className="flex shrink-0 items-center gap-2 px-3">
           <Zap
             className={`w-4 h-4 transition-colors duration-500 ${
               scrolled ? "text-white" : "text-white"
             }`}
           />
           <span
-            className={`font-semibold text-sm tracking-tight transition-colors duration-500 ${
+            className={`whitespace-nowrap font-semibold text-sm tracking-tight transition-colors duration-500 ${
               scrolled ? "text-white" : "text-white"
             }`}
           >
@@ -705,7 +705,7 @@ export function LandingPage() {
         </div>
 
         {/* Center nav links — hidden on mobile */}
-        <div className="hidden md:flex items-center gap-1">
+        <div className="hidden lg:flex items-center gap-1">
           {[
             { label: "Features", href: "#features" },
             { label: "How it works", href: "#how-it-works" },
@@ -714,7 +714,7 @@ export function LandingPage() {
             <a
               key={label}
               href={href}
-              className={`px-3 py-1.5 rounded-full text-sm transition-colors duration-500 ${
+              className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full text-sm transition-colors duration-500 ${
                 scrolled
                   ? "text-gray-400 hover:text-white hover:bg-white/10"
                   : "text-white/70 hover:text-white hover:bg-white/10"
@@ -725,10 +725,10 @@ export function LandingPage() {
           ))}
         </div>
 
-        <div className="flex items-center gap-1.5 ml-1">
+        <div className="ml-1 flex shrink-0 items-center gap-1.5">
           <Link
             to="/login"
-            className={`px-3 py-1.5 rounded-full text-sm transition-colors duration-500 ${
+            className={`whitespace-nowrap px-3 py-1.5 rounded-full text-sm transition-colors duration-500 ${
               scrolled
                 ? "text-gray-400 hover:text-white"
                 : "text-white/70 hover:text-white"
@@ -738,7 +738,7 @@ export function LandingPage() {
           </Link>
           <Link
             to="/waitlist"
-            className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-500 ${
+            className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-500 ${
               scrolled
                 ? "bg-white text-gray-900 hover:bg-gray-200"
                 : "bg-white text-gray-900 hover:bg-white/90"

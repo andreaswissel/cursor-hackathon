@@ -156,6 +156,12 @@ export function ChangelogPage() {
               chat/sidebar styling, so visitors can see orchestration progress
               and agent handoffs in action.
             </li>
+            <li>
+              <strong>Navbar text-wrap fix on landing hero</strong> &mdash;
+              Prevented pill navbar items from shrinking into multi-line labels
+              by enforcing non-wrapping link text and updating center-link
+              breakpoints for tighter desktop/tablet behavior.
+            </li>
           </ul>
 
           {/* Feb 13 */}
