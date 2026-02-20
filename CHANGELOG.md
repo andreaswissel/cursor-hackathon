@@ -36,6 +36,8 @@ All notable changes to Product OS are documented here.
 
 - **Landing messaging refresh (Flow-first)** — Repositioned the landing page around an explicit “agentic product workflow” narrative, clarified what Flow mode does (`@Discovery`, `@Strategy`, `@Spec`, `@GTM` orchestration), and aligned CTAs to “Try demo modes” plus waitlist for full integration access.
 
+- **Landing Flow hero animation (product-matched UI)** — Replaced the static hero screenshot with an animated Flow-mode sequence using app-native dark tokens and chat/sidebar styling, so visitors can see orchestration progress and agent handoffs in action.
+
 ## [2026-02-13]
 
 ### Improvements

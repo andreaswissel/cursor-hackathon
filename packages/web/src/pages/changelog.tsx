@@ -149,6 +149,13 @@ export function ChangelogPage() {
               , and aligned CTAs to demo access plus waitlist for full
               integrations.
             </li>
+            <li>
+              <strong>Landing Flow hero animation (product-matched UI)</strong>{" "}
+              &mdash; Replaced the static hero screenshot with an animated
+              Flow-mode sequence using app-native dark tokens and real
+              chat/sidebar styling, so visitors can see orchestration progress
+              and agent handoffs in action.
+            </li>
           </ul>
 
           {/* Feb 13 */}

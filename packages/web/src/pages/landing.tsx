@@ -108,52 +108,120 @@ function useParallax(speed = 0.08) {
 
 // ── App screenshot mockup ───────────────────────────────────────────────────
 
+type FlowHeroStep = {
+  status: string;
+  assistant: string;
+  user: string;
+  activeAgents: string[];
+  progress: number;
+};
+
+const FLOW_HERO_STEPS: FlowHeroStep[] = [
+  {
+    status: "Discovery is clustering onboarding feedback...",
+    assistant:
+      "Discovery surfaced two high-impact drop-off points in activation. Want Strategy to rank the tradeoffs?",
+    user: "@Strategy prioritize by activation lift and engineering effort.",
+    activeAgents: ["@Discovery", "@Strategy"],
+    progress: 28,
+  },
+  {
+    status: "Strategy is scoring options against current OKRs...",
+    assistant:
+      "Strategy recommends Opportunity #2 first: fastest path to activation impact with manageable implementation risk.",
+    user: "@Spec draft the implementation plan with acceptance criteria.",
+    activeAgents: ["@Strategy", "@Spec"],
+    progress: 54,
+  },
+  {
+    status: "Spec is drafting implementation details and QA criteria...",
+    assistant:
+      "Spec drafted rollout phases, instrumentation events, and acceptance criteria. Should GTM prepare launch messaging?",
+    user: "@GTM prepare launch narrative and internal enablement notes.",
+    activeAgents: ["@Spec", "@GTM"],
+    progress: 78,
+  },
+  {
+    status: "Flow is packaging strategy + spec + GTM for execution...",
+    assistant:
+      "Flow packaged the plan into execution-ready artifacts. Engineering handoff, launch brief, and KPI tracker are ready.",
+    user: "Open the execution checklist and assign owners.",
+    activeAgents: ["@Discovery", "@Strategy", "@Spec", "@GTM"],
+    progress: 100,
+  },
+];
+
+const FLOW_HERO_NAV = [
+  { icon: Workflow, label: "Flow", active: true },
+  { icon: Lightbulb, label: "Imagine", active: false },
+  { icon: Compass, label: "Discover", active: false },
+  { icon: Wrench, label: "Tools", active: false },
+];
+
+const FLOW_HERO_PROJECTS = ["Onboarding Flow", "Mobile App v2", "Q2 Planning"];
+const FLOW_HERO_AGENTS = ["@Discovery", "@Strategy", "@Spec", "@GTM"];
+
 function AppScreenshotMockup() {
+  const [activeStep, setActiveStep] = useState(0);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % FLOW_HERO_STEPS.length);
+    }, 2600);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const step = FLOW_HERO_STEPS[activeStep] ?? FLOW_HERO_STEPS[0]!;
+
   return (
-    <div className="relative w-full max-w-4xl mx-auto">
+    <div className="dark relative w-full max-w-5xl mx-auto">
       {/* Gradient glow behind */}
-      <div className="absolute -inset-6 md:-inset-10 rounded-3xl bg-gradient-to-br from-blue-400/20 via-violet-400/20 to-amber-300/20 blur-2xl" />
+      <div className="absolute -inset-6 md:-inset-10 rounded-3xl bg-gradient-to-br from-blue-500/25 via-indigo-500/25 to-emerald-400/20 blur-3xl" />
 
       {/* Window chrome */}
-      <div className="relative rounded-2xl bg-white border border-gray-200 shadow-2xl overflow-hidden">
+      <div className="relative rounded-2xl bg-card border border-border/80 shadow-[0_40px_120px_rgba(0,0,0,0.55)] overflow-hidden">
         {/* Title bar */}
-        <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border-b border-gray-200">
+        <div className="flex items-center gap-2 px-4 py-3 bg-background/80 border-b border-border/80">
           <div className="flex gap-1.5">
             <div className="w-3 h-3 rounded-full bg-red-400" />
             <div className="w-3 h-3 rounded-full bg-amber-400" />
             <div className="w-3 h-3 rounded-full bg-green-400" />
           </div>
           <div className="flex-1 text-center">
-            <span className="text-xs text-gray-400 font-medium">
+            <span className="text-xs text-muted-foreground font-medium">
               Product OS
             </span>
+          </div>
+          <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-md border border-border/70 bg-secondary/50 text-[10px] text-muted-foreground">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Flow mode live
           </div>
         </div>
 
         {/* Content area */}
-        <div className="flex min-h-[280px] md:min-h-[380px]">
+        <div className="flex min-h-[320px] md:min-h-[420px] bg-background">
           {/* Sidebar — hidden on mobile */}
-          <div className="hidden md:flex flex-col w-56 bg-gray-900 text-white p-3 shrink-0">
+          <div className="hidden md:flex flex-col w-60 border-r border-border/80 bg-card p-3 shrink-0">
             {/* Logo */}
             <div className="flex items-center gap-2 px-2 py-1.5 mb-4">
-              <Zap className="w-4 h-4 text-white" />
-              <span className="text-sm font-semibold">Product OS</span>
+              <div className="w-6 h-6 rounded-md bg-foreground text-background flex items-center justify-center">
+                <Zap className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">
+                Product OS
+              </span>
             </div>
 
             {/* Nav items */}
             <div className="space-y-0.5 mb-4">
-              {[
-                { icon: Workflow, label: "Flow", active: true },
-                { icon: Lightbulb, label: "Imagine", active: false },
-                { icon: Compass, label: "Discover", active: false },
-                { icon: Wrench, label: "Tools", active: false },
-              ].map(({ icon: Icon, label, active }) => (
+              {FLOW_HERO_NAV.map(({ icon: Icon, label, active }) => (
                 <div
                   key={label}
-                  className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs ${
+                  className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
                     active
-                      ? "bg-white/10 text-white"
-                      : "text-gray-400 hover:text-gray-300"
+                      ? "bg-secondary text-foreground"
+                      : "text-muted-foreground"
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -163,71 +231,144 @@ function AppScreenshotMockup() {
             </div>
 
             {/* Project tree */}
-            <div className="text-[10px] text-gray-500 uppercase tracking-wider px-2.5 mb-2">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider px-2.5 mb-2">
               Projects
             </div>
-            {["Onboarding Flow", "Mobile App v2", "Q2 Planning"].map((p) => (
+            {FLOW_HERO_PROJECTS.map((p) => (
               <div
                 key={p}
-                className="flex items-center gap-2 px-2.5 py-1 text-xs text-gray-400"
+                className={`flex items-center gap-2 px-2.5 py-1.5 text-xs rounded-md ${
+                  p === "Onboarding Flow"
+                    ? "text-foreground bg-secondary/50"
+                    : "text-muted-foreground"
+                }`}
               >
-                <Folder className="w-3 h-3" />
+                <Folder className="w-3 h-3 opacity-80" />
                 {p}
               </div>
             ))}
           </div>
 
           {/* Main chat area */}
-          <div className="flex-1 flex flex-col bg-white">
+          <div className="flex-1 flex flex-col bg-background">
             {/* Chat header */}
-            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-100">
-              <Hash className="w-3.5 h-3.5 text-gray-400" />
-              <span className="text-sm font-medium text-gray-700">
-                Onboarding Flow
-              </span>
+            <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-border/80 bg-background/70">
+              <div className="flex items-center gap-2">
+                <Hash className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">
+                  Onboarding Flow
+                </span>
+              </div>
+              <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                <Route className="w-3 h-3" />
+                Agent orchestration
+              </div>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 px-4 py-3 space-y-3 overflow-hidden">
-              {/* Assistant message */}
-              <div className="flex gap-2.5">
-                <div className="w-6 h-6 rounded-full bg-violet-100 flex items-center justify-center shrink-0 mt-0.5">
-                  <Bot className="w-3 h-3 text-violet-600" />
+            <div className="flex-1 px-4 py-3 md:px-5 md:py-4 space-y-3 overflow-hidden">
+              <div
+                key={`status-${activeStep}`}
+                className="max-w-[84%] rounded-lg border border-border/60 bg-secondary/40 px-3 py-2"
+                style={{ animation: "scale-in 380ms cubic-bezier(0.16,1,0.3,1)" }}
+              >
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <MessageCircle className="w-3 h-3" />
+                  <span>{step.status}</span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"
+                      style={{ animationDelay: "120ms" }}
+                    />
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"
+                      style={{ animationDelay: "240ms" }}
+                    />
+                  </span>
                 </div>
-                <div className="rounded-xl bg-gray-50 border border-gray-100 px-3 py-2 text-xs text-gray-600 leading-relaxed max-w-xs">
-                  I've analyzed the competitive landscape. Here are 3
-                  differentiation opportunities for your onboarding flow...
+              </div>
+
+              {/* Assistant message */}
+              <div
+                key={`assistant-${activeStep}`}
+                className="flex gap-3 max-w-[86%]"
+                style={{ animation: "float-up 420ms cubic-bezier(0.16,1,0.3,1)" }}
+              >
+                <div className="w-7 h-7 rounded-lg bg-secondary border border-border/60 flex items-center justify-center shrink-0 mt-0.5">
+                  <Bot className="w-3.5 h-3.5 text-muted-foreground" />
+                </div>
+                <div className="rounded-xl bg-secondary border border-border/60 px-4 py-2.5 text-xs md:text-sm text-foreground leading-relaxed shadow-[0_1px_0_hsl(var(--foreground)/0.04)]">
+                  {step.assistant}
                 </div>
               </div>
 
               {/* User message */}
-              <div className="flex gap-2.5 justify-end">
-                <div className="rounded-xl bg-gray-900 px-3 py-2 text-xs text-white leading-relaxed max-w-xs">
-                  Focus on opportunity #2. Draft a spec.
+              <div
+                key={`user-${activeStep}`}
+                className="flex gap-3 max-w-[86%] ml-auto flex-row-reverse"
+                style={{ animation: "slide-in-right 420ms cubic-bezier(0.16,1,0.3,1)" }}
+              >
+                <div className="w-7 h-7 rounded-lg bg-card border border-border/70 flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-semibold text-foreground">
+                  AW
+                </div>
+                <div className="rounded-xl bg-card/80 text-foreground border border-border/70 px-4 py-2.5 text-xs md:text-sm leading-relaxed shadow-[0_1px_0_hsl(var(--foreground)/0.04)]">
+                  {step.user}
                 </div>
               </div>
 
               {/* Agent pills */}
-              <div className="flex gap-1.5">
-                {["@Strategy", "@Spec", "@GTM"].map((pill) => (
-                  <span
-                    key={pill}
-                    className="text-[10px] px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200"
-                  >
-                    {pill}
-                  </span>
-                ))}
+              <div className="flex flex-wrap gap-1.5 pl-10">
+                {FLOW_HERO_AGENTS.map((agent) => {
+                  const active = step.activeAgents.includes(agent);
+                  return (
+                    <span
+                      key={agent}
+                      className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
+                        active
+                          ? "bg-emerald-500/15 text-emerald-300 border-emerald-400/40"
+                          : "bg-secondary/60 text-muted-foreground border-border/60"
+                      }`}
+                    >
+                      {agent}
+                    </span>
+                  );
+                })}
+              </div>
+
+              <div className="pl-10 pr-3">
+                <div className="h-1.5 rounded-full bg-secondary border border-border/60 overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-400/90 transition-all duration-700"
+                    style={{ width: `${step.progress}%` }}
+                  />
+                </div>
+                <div className="mt-1 text-[10px] text-muted-foreground">
+                  Flow run progress: {step.progress}%
+                </div>
               </div>
             </div>
 
             {/* Input bar */}
-            <div className="px-4 pb-3">
-              <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
-                <Plus className="w-3.5 h-3.5 text-gray-400" />
-                <span className="text-xs text-gray-400 flex-1">
-                  Orchestrate with @Discovery, @Strategy, @Spec...
+            <div className="px-4 pb-3 md:px-5 md:pb-4">
+              <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary/50 px-3 py-2.5">
+                <button
+                  type="button"
+                  className="p-1.5 rounded-lg text-muted-foreground bg-secondary/70"
+                  aria-label="Open agent menu"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-xs text-muted-foreground flex-1 truncate">
+                  Orchestrate with @Discovery, @Strategy, @Spec, @GTM...
                 </span>
-                <Send className="w-3.5 h-3.5 text-gray-400" />
+                <button
+                  type="button"
+                  className="p-1.5 rounded-lg bg-foreground text-background"
+                  aria-label="Send message"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           </div>
