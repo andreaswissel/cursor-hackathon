@@ -116,7 +116,7 @@ export function FlowArtifactPanel({ artifacts, className }: FlowArtifactPanelPro
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto scrollbar-subtle p-4">
           {selectedArtifact.status === "generating" ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -145,7 +145,7 @@ export function FlowArtifactPanel({ artifacts, className }: FlowArtifactPanelPro
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto scrollbar-subtle">
         {artifacts.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full px-4 text-center">
             <div className="w-12 h-12 rounded-xl bg-secondary/50 flex items-center justify-center mb-3">
@@ -289,7 +289,7 @@ function ErrorArtifactView({ content }: { content: string }) {
             Error Payload
           </span>
         </div>
-        <pre className="text-xs font-mono text-foreground/90 p-3 overflow-x-auto bg-muted/25 whitespace-pre">
+        <pre className="text-xs font-mono text-foreground/90 p-3 overflow-x-auto scrollbar-subtle bg-muted/25 whitespace-pre">
           <code>{parsed.prettyPayload || content}</code>
         </pre>
       </section>
@@ -718,7 +718,7 @@ function asNumber(value: unknown): number | null {
 function DiffViewer({ content }: { content: string }) {
   const lines = content.split("\n");
   return (
-    <pre className="text-xs font-mono overflow-x-auto">
+    <pre className="text-xs font-mono overflow-x-auto scrollbar-subtle">
       {lines.map((line, i) => {
         let className = "block px-2 py-px whitespace-pre ";
         if (line.startsWith("+") && !line.startsWith("+++")) {

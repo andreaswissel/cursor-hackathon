@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { chatWithAgent, getChatHistory, cancelAgent } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/auth-context";
 import ReactMarkdown from "react-markdown";
 import { CollapsibleThinking } from "./collapsible-thinking";
 import { ContextMenuPopup, type ContextMenuItem } from "./context-menu-popup";
@@ -11,7 +12,6 @@ import {
   Plus,
   Code2,
   ShieldCheck,
-  User,
   Bot,
   GitBranch,
   Link,
@@ -68,7 +68,24 @@ function formatMessageTime(dateStr?: string): string | null {
   });
 }
 
+function getInitials(displayName?: string | null, email?: string | null): string {
+  const source = (displayName || email || "").trim();
+  if (!source) return "U";
+
+  const words = source
+    .replace(/@.*/, "")
+    .split(/[\s._-]+/)
+    .filter(Boolean);
+
+  if (words.length === 0) return "U";
+  const first = words[0] ?? "";
+  if (words.length === 1) return first.slice(0, 2).toUpperCase() || "U";
+  const second = words[1] ?? "";
+  return `${first[0] ?? ""}${second[0] ?? ""}`.toUpperCase() || "U";
+}
+
 export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, artifacts = [] }: FlowChatThreadProps) {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -89,6 +106,10 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
   const abortRef = useRef<(() => void) | null>(null);
   const streamingContentRef = useRef("");
   const thinkingRef = useRef<AgentThinking | null>(null);
+  const userInitials = useMemo(
+    () => getInitials(user?.displayName, user?.email),
+    [user?.displayName, user?.email]
+  );
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -510,7 +531,7 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
   return (
     <div className="flex flex-col h-full">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-4 space-y-4">
+      <div className="flex-1 overflow-y-auto scrollbar-subtle px-4 md:px-6 py-4 space-y-4">
         {messages.length === 0 && !isStreaming && (
           <div className="flex flex-col items-center justify-center h-full text-center">
             <div className="w-16 h-16 rounded-2xl bg-secondary/50 flex items-center justify-center mb-4">
@@ -558,24 +579,24 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
             >
               <div
                 className={cn(
-                  "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5",
+                  "w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 border",
                   msg.role === "user"
-                    ? "bg-foreground text-background"
-                    : "bg-secondary"
+                    ? "bg-card text-foreground border-border/70"
+                    : "bg-secondary border-border/60"
                 )}
               >
                 {msg.role === "user" ? (
-                  <User className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-semibold tracking-wide">{userInitials}</span>
                 ) : (
                   <Bot className="w-3.5 h-3.5 text-muted-foreground" />
                 )}
               </div>
               <div
                 className={cn(
-                  "rounded-xl px-4 py-2.5 text-sm",
+                  "rounded-xl px-4 py-2.5 text-sm border",
                   msg.role === "user"
-                    ? "bg-foreground text-background"
-                    : "bg-secondary"
+                    ? "bg-card/80 text-foreground border-border/70 shadow-[0_1px_0_hsl(var(--foreground)/0.04)]"
+                    : "bg-secondary border-border/60"
                 )}
               >
                 {msg.role === "assistant" ? (
@@ -603,10 +624,10 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
         {/* Streaming message */}
         {isStreaming && streamingContent && (
           <div className="flex gap-3 max-w-[85%] mr-auto">
-            <div className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0 mt-0.5">
+            <div className="w-7 h-7 rounded-lg bg-secondary border border-border/60 flex items-center justify-center flex-shrink-0 mt-0.5">
               <Bot className="w-3.5 h-3.5 text-muted-foreground" />
             </div>
-            <div className="rounded-xl px-4 py-2.5 text-sm bg-secondary">
+            <div className="rounded-xl px-4 py-2.5 text-sm bg-secondary border border-border/60">
               <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-headings:font-semibold prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-code:text-xs prose-code:bg-muted prose-code:text-foreground prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:rounded-lg prose-pre:p-3 [&_pre_code]:bg-transparent [&_pre_code]:p-0">
                 <ReactMarkdown>{stripArtifacts(streamingContent)}</ReactMarkdown>
               </div>
@@ -619,10 +640,10 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
 
         {isStreaming && !streamingContent && !thinkingRef.current && (
           <div className="flex gap-3 max-w-[85%] mr-auto">
-            <div className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0 mt-0.5">
+            <div className="w-7 h-7 rounded-lg bg-secondary border border-border/60 flex items-center justify-center flex-shrink-0 mt-0.5">
               <Bot className="w-3.5 h-3.5 text-muted-foreground" />
             </div>
-            <div className="rounded-xl px-4 py-2.5 text-sm bg-secondary">
+            <div className="rounded-xl px-4 py-2.5 text-sm bg-secondary border border-border/60">
               <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
             </div>
           </div>
@@ -715,7 +736,7 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
             </button>
 
             {showAgentMenu && (
-              <div className="absolute bottom-full left-0 mb-3 w-56 max-h-[70vh] overflow-y-auto rounded-xl border border-border bg-background shadow-xl py-1.5 z-[100]">
+              <div className="absolute bottom-full left-0 mb-3 w-56 max-h-[70vh] overflow-y-auto scrollbar-subtle rounded-xl border border-border bg-background shadow-xl py-1.5 z-[100]">
                 <div className="px-3 py-1.5 text-[10px] font-semibold uppercase text-muted-foreground tracking-wider">
                   Agents
                 </div>

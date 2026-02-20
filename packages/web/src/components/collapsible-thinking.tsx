@@ -115,7 +115,7 @@ export function CollapsibleThinking({
 
       {/* Collapsible body */}
       {isExpanded && (
-        <div className="border-t max-h-60 overflow-y-auto px-3 py-2 bg-muted/30">
+        <div className="border-t max-h-60 overflow-y-auto scrollbar-subtle px-3 py-2 bg-muted/30">
           <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap break-words">
             {logs.join("")}
           </pre>
