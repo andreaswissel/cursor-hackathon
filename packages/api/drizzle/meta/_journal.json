@@ -127,6 +127,13 @@
       "when": 1770854728401,
       "tag": "0017_magenta_gertrude_yorkes",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1771000000000,
+      "tag": "0018_public_demo_waitlist",
+      "breakpoints": true
     }
   ]
 }

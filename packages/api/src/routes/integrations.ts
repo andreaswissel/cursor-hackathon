@@ -1,16 +1,81 @@
 import { Router, Request, Response } from "express";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { db } from "../db";
-import { integrations, integrationData } from "../db/schema";
+import { integrations, integrationData, users } from "../db/schema";
 import { requireAuth } from "../middleware/auth";
 import { getAdapter, PROVIDER_INFO, type IntegrationProvider } from "../integrations";
 import { runDiscoveryAnalysis, isRunning as isDiscoveryRunning } from "../lib/discovery-analyzer";
+import {
+  buildIntegrationLockedError,
+  getEnabledIntegrationProvidersForUser,
+  getLaunchModeStateForUser,
+  isIntegrationProviderEnabledForUser,
+} from "../lib/launch-mode";
 
 const router = Router();
 
 // Frontend URL for redirects after OAuth
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const OAUTH_STATE_SECRET =
+  process.env.INTEGRATION_STATE_SECRET ||
+  process.env.JWT_SECRET ||
+  "dev-integration-state-secret-change-in-production";
+
+interface IntegrationOAuthState {
+  userId: string;
+  provider: IntegrationProvider;
+  timestamp: number;
+  codeVerifier?: string;
+}
+
+function signOAuthState(payload: string): string {
+  return createHmac("sha256", OAUTH_STATE_SECRET)
+    .update(payload)
+    .digest("base64url");
+}
+
+function encodeOAuthState(state: IntegrationOAuthState): string {
+  const payload = JSON.stringify(state);
+  const signature = signOAuthState(payload);
+  return Buffer.from(JSON.stringify({ payload, signature }), "utf8").toString(
+    "base64url"
+  );
+}
+
+function decodeOAuthState(rawState: string): IntegrationOAuthState {
+  const decoded = Buffer.from(rawState, "base64url").toString("utf8");
+  const wrapped = JSON.parse(decoded) as { payload?: string; signature?: string };
+
+  if (typeof wrapped.payload !== "string" || typeof wrapped.signature !== "string") {
+    throw new Error("Invalid OAuth state");
+  }
+
+  const expected = createHmac("sha256", OAUTH_STATE_SECRET)
+    .update(wrapped.payload)
+    .digest();
+  const actual = Buffer.from(wrapped.signature, "base64url");
+
+  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
+    throw new Error("Invalid OAuth state signature");
+  }
+
+  return JSON.parse(wrapped.payload) as IntegrationOAuthState;
+}
+
+function rejectIfIntegrationLocked(
+  req: Request,
+  res: Response,
+  provider: IntegrationProvider
+): boolean {
+  if (isIntegrationProviderEnabledForUser(provider, req.user)) {
+    return false;
+  }
+
+  res.status(403).json(buildIntegrationLockedError());
+  return true;
+}
 
 // OAuth callback handler - MUST be before requireAuth since it's a browser redirect
 router.get("/callback/:provider", async (req: Request, res: Response) => {
@@ -29,10 +94,38 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
 
   try {
     // Decode state
-    const stateData = JSON.parse(Buffer.from(state as string, "base64url").toString());
+    const stateData = decodeOAuthState(state as string);
     const { userId, codeVerifier } = stateData;
+    const integrationProvider = provider as IntegrationProvider;
 
-    const adapter = getAdapter(provider as IntegrationProvider);
+    // Re-check policy at callback time to prevent bypassing frontend-only controls.
+    const [oauthUser] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        isAdmin: users.isAdmin,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!oauthUser) {
+      res.redirect(`${FRONTEND_URL}/settings?error=user_not_found`);
+      return;
+    }
+
+    if (
+      !isIntegrationProviderEnabledForUser(integrationProvider, {
+        id: oauthUser.id,
+        email: oauthUser.email,
+        isAdmin: oauthUser.isAdmin === 1,
+      })
+    ) {
+      res.redirect(`${FRONTEND_URL}/settings?error=integrations_locked`);
+      return;
+    }
+
+    const adapter = getAdapter(integrationProvider);
 
     // Exchange code for tokens (pass codeVerifier for PKCE if present)
     const tokens = await adapter.exchangeCodeForTokens(code as string, codeVerifier);
@@ -46,7 +139,7 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
       .from(integrations)
       .where(and(
         eq(integrations.userId, userId),
-        eq(integrations.provider, provider)
+        eq(integrations.provider, integrationProvider)
       ));
 
     if (existing) {
@@ -67,7 +160,7 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
       await db.insert(integrations).values({
         id: uuid(),
         userId,
-        provider: provider as IntegrationProvider,
+        provider: integrationProvider,
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         tokenExpiresAt: tokens.expiresAt,
@@ -89,8 +182,10 @@ router.use(requireAuth);
 // List all integrations for user
 router.get("/", async (req: Request, res: Response) => {
   const userId = req.user!.id;
+  const enabledProviders = new Set(getEnabledIntegrationProvidersForUser(req.user));
+  const launchMode = getLaunchModeStateForUser(req.user);
 
-  const userIntegrations = await db
+  const rawIntegrations = await db
     .select({
       id: integrations.id,
       provider: integrations.provider,
@@ -101,6 +196,10 @@ router.get("/", async (req: Request, res: Response) => {
     })
     .from(integrations)
     .where(eq(integrations.userId, userId));
+
+  const userIntegrations = rawIntegrations.filter((integration) =>
+    enabledProviders.has(integration.provider as IntegrationProvider)
+  );
 
   // Add provider info and status
   const result = userIntegrations.map(integration => ({
@@ -115,11 +214,16 @@ router.get("/", async (req: Request, res: Response) => {
     .map(([provider, info]) => ({
       provider,
       ...info,
+      isEnabled: enabledProviders.has(provider as IntegrationProvider),
+      disabledReason: enabledProviders.has(provider as IntegrationProvider)
+        ? null
+        : launchMode.message,
     }));
 
   res.json({
     connected: result,
     available: availableProviders,
+    launchMode,
   });
 });
 
@@ -127,16 +231,21 @@ router.get("/", async (req: Request, res: Response) => {
 router.get("/connect/:provider", async (req: Request, res: Response) => {
   const { provider } = req.params;
   const userId = req.user!.id;
+  const integrationProvider = provider as IntegrationProvider;
 
   try {
-    const adapter = getAdapter(provider as IntegrationProvider);
+    if (rejectIfIntegrationLocked(req, res, integrationProvider)) {
+      return;
+    }
+
+    const adapter = getAdapter(integrationProvider);
 
     // Create state token with user ID
-    const state = Buffer.from(JSON.stringify({
+    const state = encodeOAuthState({
       userId,
-      provider,
+      provider: integrationProvider,
       timestamp: Date.now(),
-    })).toString("base64url");
+    });
 
     const authUrl = adapter.getAuthUrl(state);
     res.json({ authUrl });
@@ -189,6 +298,16 @@ router.get("/:integrationId/sources", async (req: Request, res: Response) => {
 
   if (!integration) {
     res.status(404).json({ error: "Integration not found" });
+    return;
+  }
+
+  if (
+    rejectIfIntegrationLocked(
+      req,
+      res,
+      integration.provider as IntegrationProvider
+    )
+  ) {
     return;
   }
 
@@ -255,6 +374,16 @@ router.put("/:integrationId/sources", async (req: Request, res: Response) => {
     return;
   }
 
+  if (
+    rejectIfIntegrationLocked(
+      req,
+      res,
+      integration.provider as IntegrationProvider
+    )
+  ) {
+    return;
+  }
+
   // Update metadata with selected sources
   const updatedMetadata = {
     ...(integration.metadata || {}),
@@ -288,6 +417,16 @@ router.post("/:integrationId/sync", async (req: Request, res: Response) => {
 
   if (!integration) {
     res.status(404).json({ error: "Integration not found" });
+    return;
+  }
+
+  if (
+    rejectIfIntegrationLocked(
+      req,
+      res,
+      integration.provider as IntegrationProvider
+    )
+  ) {
     return;
   }
 
@@ -379,6 +518,16 @@ router.get("/:integrationId/data", async (req: Request, res: Response) => {
     return;
   }
 
+  if (
+    rejectIfIntegrationLocked(
+      req,
+      res,
+      integration.provider as IntegrationProvider
+    )
+  ) {
+    return;
+  }
+
   const data = await db
     .select()
     .from(integrationData)
@@ -391,15 +540,26 @@ router.get("/:integrationId/data", async (req: Request, res: Response) => {
 router.get("/data/all", async (req: Request, res: Response) => {
   const userId = req.user!.id;
   const { dataType } = req.query;
+  const enabledProviders = getEnabledIntegrationProvidersForUser(req.user);
+
+  if (enabledProviders.length === 0) {
+    res.json({ data: [], liveDataEnabled: false, waitlistUrl: "/waitlist" });
+    return;
+  }
 
   // Get all user's integrations
   const userIntegrations = await db
     .select({ id: integrations.id, provider: integrations.provider })
     .from(integrations)
-    .where(eq(integrations.userId, userId));
+    .where(
+      and(
+        eq(integrations.userId, userId),
+        inArray(integrations.provider, enabledProviders)
+      )
+    );
 
   if (userIntegrations.length === 0) {
-    res.json({ data: [] });
+    res.json({ data: [], liveDataEnabled: true, waitlistUrl: "/waitlist" });
     return;
   }
 
@@ -435,7 +595,7 @@ router.get("/data/all", async (req: Request, res: Response) => {
     provider: integrationMap.get(d.integrationId),
   }));
 
-  res.json({ data: result });
+  res.json({ data: result, liveDataEnabled: true, waitlistUrl: "/waitlist" });
 });
 
 export default router;

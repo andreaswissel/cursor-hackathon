@@ -28,6 +28,18 @@ export function ChangelogPage() {
           {/* Feb 20 */}
           <h2 className="text-xl font-semibold mt-8 mb-4">2026-02-20</h2>
 
+          <h3 className="text-lg font-medium mt-6 mb-3">Features</h3>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Public demo launch mode</strong> &mdash; Added{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                PUBLIC_DEMO_MODE
+              </code>{" "}
+              controls that lock external integrations server-side for public
+              users while preserving internal/admin bypass access.
+            </li>
+          </ul>
+
           <h3 className="text-lg font-medium mt-6 mb-3">Fixes</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
@@ -75,6 +87,21 @@ export function ChangelogPage() {
               inline embedded look and preventing composer-line visual
               collisions.
             </li>
+            <li>
+              <strong>Integration data access lockdown in demo mode</strong>{" "}
+              &mdash; Discovery and knowledge resolution now ignore live
+              integration data for public-demo users when integrations are
+              disabled, preventing accidental leakage of synced external data.
+            </li>
+            <li>
+              <strong>Flow @Code preflight guidance</strong> &mdash;{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @Code
+              </code>{" "}
+              now prompts for missing repository/task details with concrete
+              examples instead of launching the coding sandbox on underspecified
+              commands.
+            </li>
           </ul>
 
           <h3 className="text-lg font-medium mt-6 mb-3">Improvements</h3>
@@ -89,6 +116,86 @@ export function ChangelogPage() {
               <strong>Dark scrollbar theming</strong> &mdash; Replaced
               bright/system-looking scrollbar rails with explicit app-matched
               dark track/thumb tokens for calmer, consistent contrast.
+            </li>
+            <li>
+              <strong>Waitlist signup minimization</strong> &mdash; Waitlist
+              now requires only email, with optional name and company fields for
+              lower-friction and reduced PII collection.
+            </li>
+            <li>
+              <strong>Discovery realism</strong> &mdash; Removed scripted
+              discovery cluster fallback responses so dashboard insights are
+              always produced by real model runs.
+            </li>
+            <li>
+              <strong>Landing messaging refresh (Flow-first)</strong> &mdash;
+              Repositioned landing copy around an explicit agentic-product
+              workflow, clarified how Flow mode orchestrates{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @Discovery
+              </code>
+              ,{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @Strategy
+              </code>
+              ,{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @Spec
+              </code>
+              , and{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @GTM
+              </code>
+              , and aligned CTAs to demo access plus waitlist for full
+              integrations.
+            </li>
+            <li>
+              <strong>Landing Flow hero animation (product-matched UI)</strong>{" "}
+              &mdash; Replaced the static hero screenshot with an animated
+              Flow-mode sequence using app-native dark tokens and real
+              chat/sidebar styling, so visitors can see orchestration progress
+              and agent handoffs in action.
+            </li>
+            <li>
+              <strong>Navbar text-wrap fix on landing hero</strong> &mdash;
+              Prevented pill navbar items from shrinking into multi-line labels
+              by enforcing non-wrapping link text and updating center-link
+              breakpoints for tighter desktop/tablet behavior.
+            </li>
+            <li>
+              <strong>Flow multi-agent triggers + alias support</strong>{" "}
+              &mdash; Flow now dispatches all mentioned agent commands in one
+              prompt (for example{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @Discover ... @Spec ...
+              </code>
+              ) and normalizes{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @Discover
+              </code>{" "}
+              to{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @Discovery
+              </code>{" "}
+              so both agents run as expected.
+            </li>
+            <li>
+              <strong>Flow repo-connect fast path for @Code</strong> &mdash;{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @Code connect &lt;repo-url&gt;
+              </code>{" "}
+              now connects the repository and returns immediately with readiness
+              guidance instead of launching a full inspection run.
+            </li>
+            <li>
+              <strong>Flow composer remains usable while agents run</strong>{" "}
+              &mdash; Sending agent commands no longer hard-disables the input
+              area, allowing additional agent triggers while long-running jobs
+              (like{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @Code
+              </code>
+              ) are in progress.
             </li>
           </ul>
 

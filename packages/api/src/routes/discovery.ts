@@ -1,10 +1,10 @@
 import { Router, Request, Response } from "express";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, inArray } from "drizzle-orm";
 import { db } from "../db";
 import { discoveryRuns, discoveryClusters, integrations } from "../db/schema";
 import { requireAuth } from "../middleware/auth";
 import { runDiscoveryAnalysis, isRunning } from "../lib/discovery-analyzer";
-import { MOCK_DISCOVERY_CLUSTERS } from "../lib/mock-discovery";
+import { getEnabledIntegrationProvidersForUser } from "../lib/launch-mode";
 
 const router = Router();
 
@@ -13,12 +13,20 @@ router.use(requireAuth);
 // GET /api/discovery — get latest completed run + ranked clusters
 router.get("/", async (req: Request, res: Response) => {
   const userId = req.user!.id;
+  const enabledProviders = getEnabledIntegrationProvidersForUser(req.user);
 
   // Check if user has any integrations (used for isDemoData flag)
-  const userIntegrations = await db
-    .select({ id: integrations.id })
-    .from(integrations)
-    .where(eq(integrations.userId, userId));
+  const userIntegrations = enabledProviders.length === 0
+    ? []
+    : await db
+      .select({ id: integrations.id })
+      .from(integrations)
+      .where(
+        and(
+          eq(integrations.userId, userId),
+          inArray(integrations.provider, enabledProviders)
+        )
+      );
   const hasIntegrations = userIntegrations.length > 0;
 
   // Find the latest completed run
@@ -29,17 +37,27 @@ router.get("/", async (req: Request, res: Response) => {
     .orderBy(desc(discoveryRuns.createdAt))
     .limit(1);
 
-  // If no run exists, return mock data
+  // If no run exists, return an empty state. Analysis results are generated
+  // on-demand via POST /run so outputs are always real model output.
   if (!latestRun || latestRun.status === "failed") {
-    if (!latestRun) {
-      res.json({
-        run: null,
-        clusters: MOCK_DISCOVERY_CLUSTERS,
-        isMockData: true,
-        isDemoData: false,
-      });
-      return;
-    }
+    res.json({
+      run: latestRun
+        ? {
+          id: latestRun.id,
+          userId: latestRun.userId,
+          status: latestRun.status,
+          signalCount: latestRun.signalCount,
+          clusterCount: latestRun.clusterCount,
+          error: latestRun.error,
+          createdAt: latestRun.createdAt.toISOString(),
+          completedAt: latestRun.completedAt?.toISOString() ?? null,
+        }
+        : null,
+      clusters: [],
+      isMockData: false,
+      isDemoData: !hasIntegrations,
+    });
+    return;
   }
 
   // Get clusters for the latest completed run
@@ -84,7 +102,7 @@ router.get("/", async (req: Request, res: Response) => {
     return;
   }
 
-  // Run exists but has no clusters (maybe 0 signals) — return mock
+  // Run exists but has no clusters (maybe 0 signals)
   if (latestRun.status === "completed" && latestRun.clusterCount === 0) {
     res.json({
       run: {
@@ -97,14 +115,14 @@ router.get("/", async (req: Request, res: Response) => {
         createdAt: latestRun.createdAt.toISOString(),
         completedAt: latestRun.completedAt?.toISOString() ?? null,
       },
-      clusters: MOCK_DISCOVERY_CLUSTERS,
-      isMockData: true,
-      isDemoData: false,
+      clusters: [],
+      isMockData: false,
+      isDemoData: !hasIntegrations,
     });
     return;
   }
 
-  // Run is pending/running — return run status + mock data for display
+  // Run is pending/running.
   res.json({
     run: {
       id: latestRun.id,
@@ -116,9 +134,9 @@ router.get("/", async (req: Request, res: Response) => {
       createdAt: latestRun.createdAt.toISOString(),
       completedAt: latestRun.completedAt?.toISOString() ?? null,
     },
-    clusters: MOCK_DISCOVERY_CLUSTERS,
-    isMockData: true,
-    isDemoData: false,
+    clusters: [],
+    isMockData: false,
+    isDemoData: !hasIntegrations,
   });
 });
 

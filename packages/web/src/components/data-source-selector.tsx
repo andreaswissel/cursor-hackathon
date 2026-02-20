@@ -97,6 +97,8 @@ type DataMode = "mock" | "knowledge" | "live";
 export function DataSourceSelector({ projectId, onContextChange, onUseProjectKnowledge }: DataSourceSelectorProps) {
   const [mode, setMode] = useState<DataMode>("mock");
   const [integrationData, setIntegrationData] = useState<IntegrationDataItem[]>([]);
+  const [liveDataEnabled, setLiveDataEnabled] = useState(true);
+  const [waitlistUrl, setWaitlistUrl] = useState("/waitlist");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -210,8 +212,10 @@ export function DataSourceSelector({ projectId, onContextChange, onUseProjectKno
     setIsLoading(true);
     setError(null);
     try {
-      const { data } = await getIntegrationData();
+      const { data, liveDataEnabled: enabled, waitlistUrl: nextWaitlistUrl } = await getIntegrationData();
       setIntegrationData(data);
+      setLiveDataEnabled(enabled ?? true);
+      setWaitlistUrl(nextWaitlistUrl || "/waitlist");
       // Auto-select all by default
       setSelectedIds(new Set(data.map((d) => d.id)));
     } catch (err) {
@@ -569,9 +573,19 @@ export function DataSourceSelector({ projectId, onContextChange, onUseProjectKno
               <p className="text-sm text-muted-foreground mb-2">
                 No integration data found
               </p>
-              <p className="text-xs text-muted-foreground/60">
-                Connect and sync integrations in Settings to use live data
-              </p>
+              {liveDataEnabled ? (
+                <p className="text-xs text-muted-foreground/60">
+                  Connect and sync integrations in Settings to use live data
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground/60">
+                  Integrations are currently waitlist-only in the public demo.{" "}
+                  <Link to={waitlistUrl} className="underline">
+                    Join waitlist
+                  </Link>
+                  .
+                </p>
+              )}
             </div>
           )}
 

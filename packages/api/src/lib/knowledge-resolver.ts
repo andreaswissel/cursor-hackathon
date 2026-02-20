@@ -1,7 +1,16 @@
 import { db } from "../db";
-import { knowledgeSources, sessionKnowledgeOverrides, integrationData, integrations, projects, teamMembers } from "../db/schema";
+import {
+  knowledgeSources,
+  sessionKnowledgeOverrides,
+  integrationData,
+  integrations,
+  projects,
+  teamMembers,
+  users,
+} from "../db/schema";
 import { eq, and, or, sql, inArray } from "drizzle-orm";
 import type { KnowledgeFilter, SessionContext } from "@product-os/shared";
+import { getEnabledIntegrationProvidersForUser } from "./launch-mode";
 
 export interface ResolvedIntegrationDataRow {
   id: string;
@@ -65,6 +74,30 @@ async function getProjectKnowledgeSources(projectId: string, userId: string) {
  * Get all integration_data rows for a user (via their integrations).
  */
 async function getUserIntegrationData(userId: string): Promise<ResolvedIntegrationDataRow[]> {
+  const [user] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      isAdmin: users.isAdmin,
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!user) {
+    return [];
+  }
+
+  const enabledProviders = getEnabledIntegrationProvidersForUser({
+    id: user.id,
+    email: user.email,
+    isAdmin: user.isAdmin === 1,
+  });
+
+  if (enabledProviders.length === 0) {
+    return [];
+  }
+
   const rows = await db
     .select({
       id: integrationData.id,
@@ -81,7 +114,12 @@ async function getUserIntegrationData(userId: string): Promise<ResolvedIntegrati
     })
     .from(integrationData)
     .innerJoin(integrations, eq(integrationData.integrationId, integrations.id))
-    .where(eq(integrations.userId, userId));
+    .where(
+      and(
+        eq(integrations.userId, userId),
+        inArray(integrations.provider, enabledProviders)
+      )
+    );
 
   return rows;
 }

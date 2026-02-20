@@ -277,11 +277,12 @@ export const roadmapItemSessions = pgTable("roadmap_item_sessions", {
 // Waitlist — beta signup queue
 export const waitlist = pgTable("waitlist", {
   id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
+  name: text("name"),
   email: text("email").notNull().unique(),
-  role: text("role").notNull(),
+  company: text("company"),
+  role: text("role"),
   roleOther: text("role_other"),
-  useCase: text("use_case").notNull(),
+  useCase: text("use_case"),
   useCaseOther: text("use_case_other"),
   status: text("status").$type<"pending" | "invited" | "rejected">().default("pending").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),

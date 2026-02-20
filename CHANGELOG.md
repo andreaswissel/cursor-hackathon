@@ -4,6 +4,10 @@ All notable changes to Product OS are documented here.
 
 ## [2026-02-20]
 
+### Features
+
+- **Public demo launch mode** — Added `PUBLIC_DEMO_MODE` controls that lock external integrations server-side for public users while preserving internal/admin bypass access.
+
 ### Fixes
 
 - **Drafts bootstrap for legacy users** — The projects API now always ensures each user has a personal `Drafts` project and backfills legacy sessions with `NULL project_id` so users no longer get stuck on a perpetual “Loading projects...” state.
@@ -16,11 +20,31 @@ All notable changes to Product OS are documented here.
 
 - **Flow inline `@/$/#` popup rendering** — Converted the context popup to a true floating overlay (`position: fixed`) with higher layering and refined popover styling, removing the “inline embedded” look and preventing composer-line visual collisions.
 
+- **Integration data access lockdown in demo mode** — Discovery and knowledge resolution now ignore live integration data for public-demo users when integrations are disabled, preventing accidental leakage of synced external data.
+
+- **Flow `@Code` preflight guidance** — `@Code` no longer launches a coding sandbox with an empty or underspecified command. It now returns a guided response that asks for missing repo/task details with concrete examples.
+
 ### Improvements
 
 - **Outputs handoff panel redesign** — Reworked the “Ready to Build” actions into a clearer two-path handoff (Flow vs coding agent), and toned down the visual treatment to fit dark mode.
 
 - **Dark scrollbar theming** — Replaced bright/system-looking scrollbar rails with explicit app-matched dark track/thumb tokens for a calmer, consistent UI.
+
+- **Waitlist signup minimization** — Waitlist now requires only email, with optional name and company fields for lower-friction and reduced PII collection.
+
+- **Discovery realism** — Removed scripted discovery cluster fallback responses so dashboard insights are always produced by real model runs.
+
+- **Landing messaging refresh (Flow-first)** — Repositioned the landing page around an explicit “agentic product workflow” narrative, clarified what Flow mode does (`@Discovery`, `@Strategy`, `@Spec`, `@GTM` orchestration), and aligned CTAs to “Try demo modes” plus waitlist for full integration access.
+
+- **Landing Flow hero animation (product-matched UI)** — Replaced the static hero screenshot with an animated Flow-mode sequence using app-native dark tokens and chat/sidebar styling, so visitors can see orchestration progress and agent handoffs in action.
+
+- **Navbar text-wrap fix on landing hero** — Prevented pill navbar items from shrinking into multi-line labels by enforcing non-wrapping link text and updating center-link breakpoints for tighter desktop/tablet behavior.
+
+- **Flow multi-agent triggers + alias support** — Flow now dispatches all mentioned agent commands in one prompt (for example `@Discover ... @Spec ...`) and normalizes `@Discover` to `@Discovery` so both agents run as expected.
+
+- **Flow repo-connect fast path for `@Code`** — `@Code connect <repo-url>` now connects the repository and returns immediately with readiness guidance instead of launching a full code-inspection run.
+
+- **Flow composer remains usable while agents run** — Sending agent commands no longer hard-disables the input area, allowing users to trigger additional agents while long-running jobs (like `@Code`) are in progress.
 
 ## [2026-02-13]
 

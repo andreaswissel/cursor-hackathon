@@ -42,8 +42,18 @@ const AGENT_PREFIX_MAP: Record<string, { agentType: AgentType; requiresRepo: boo
   "@Changelog": { agentType: "changelog-agent",    requiresRepo: false, label: "Changelog" },
 };
 
+const AGENT_PREFIX_ALIASES: Record<string, string> = {
+  "@Discover": "@Discovery",
+};
+
+const REPO_URL_PATTERN = /https?:\/\/(?:github\.com|gitlab\.com|bitbucket\.org)\/[^\s,)]+/i;
+const REPO_URL_PATTERN_GLOBAL = /https?:\/\/(?:github\.com|gitlab\.com|bitbucket\.org)\/[^\s,)]+/gi;
+
 const AGENT_HANDLE_SET = new Set(
-  Object.keys(AGENT_PREFIX_MAP).map((prefix) => prefix.replace("@", "").toLowerCase())
+  [
+    ...Object.keys(AGENT_PREFIX_MAP),
+    ...Object.keys(AGENT_PREFIX_ALIASES),
+  ].map((prefix) => prefix.replace("@", "").toLowerCase())
 );
 
 // Generate a short title from the user's first message using Haiku
@@ -714,147 +724,213 @@ router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (
       ? await resolveArtifactReferences(sessionId, message)
       : [];
 
-  // Detect @Agent mention anywhere in flow mode
+  // Detect and dispatch @Agent mentions in flow mode (supports multi-agent requests)
   if (session.mode === "flow") {
-    const matchedPrefix = Object.keys(AGENT_PREFIX_MAP).find((prefix) =>
-      new RegExp(`(^|\\s)${escapeRegExp(prefix)}(?![\\w-])`, "i").test(message)
-    );
+    const requestedPrefixes = extractRequestedAgentPrefixes(message);
 
-    if (matchedPrefix) {
-      const { agentType: targetAgentType, requiresRepo, label: agentLabel } = AGENT_PREFIX_MAP[matchedPrefix];
-      const prefixRegex = new RegExp(`(^|\\s)${escapeRegExp(matchedPrefix)}(?![\\w-])`, "i");
-      const strippedMessage = message
-        .replace(prefixRegex, " ")
-        .replace(/https?:\/\/(?:github\.com|gitlab\.com|bitbucket\.org)\/[^\s,)]+/gi, "")
-        .trim();
-      const messageWithArtifactContext = withReferencedArtifactContext(
-        strippedMessage,
-        referencedArtifacts
-      );
-
-      // Auto-extract repo URL from message if none connected yet
-      if (!session.repoUrl) {
-        const repoUrlMatch = message.match(/https?:\/\/(?:github\.com|gitlab\.com|bitbucket\.org)\/[^\s,)]+/i);
-        if (repoUrlMatch) {
-          const extractedUrl = repoUrlMatch[0].replace(/\.git$/, "");
-          await db
-            .update(sessionsTable)
-            .set({ repoUrl: extractedUrl, updatedAt: new Date() })
-            .where(eq(sessionsTable.id, sessionId));
-          session.repoUrl = extractedUrl;
-        }
+    if (requestedPrefixes.length > 0) {
+      const repoUrlMatch = message.match(REPO_URL_PATTERN);
+      if (!session.repoUrl && repoUrlMatch) {
+        const extractedUrl = repoUrlMatch[0].replace(/\.git$/, "");
+        await db
+          .update(sessionsTable)
+          .set({ repoUrl: extractedUrl, updatedAt: new Date() })
+          .where(eq(sessionsTable.id, sessionId));
+        session.repoUrl = extractedUrl;
       }
 
-      if (requiresRepo && !session.repoUrl) {
-        res.setHeader("Content-Type", "text/event-stream");
-        res.setHeader("Cache-Control", "no-cache");
-        res.setHeader("Connection", "keep-alive");
-        res.flushHeaders();
-
-        await sessionStore.addMessage(sessionId, agentType, "user", message);
-        const errorMsg = `Please connect a repository first before using ${matchedPrefix}. Use the repo connector above the input area to link a GitHub repository.`;
-        await sessionStore.addMessage(sessionId, agentType, "assistant", errorMsg);
-        res.write(`data: ${JSON.stringify({ type: "text", content: errorMsg })}\n\n`);
-        res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
-        res.end();
-        return;
-      }
-
-      // Save user message
       await sessionStore.addMessage(sessionId, agentType, "user", message);
 
-      // Set up SSE for streaming agent logs
       res.setHeader("Content-Type", "text/event-stream");
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
       res.flushHeaders();
 
-      // Send agent-thinking-start event
-      res.write(`data: ${JSON.stringify({ type: "agent-thinking-start", agentType: targetAgentType, agentLabel })}\n\n`);
+      let pendingAgentRuns = 0;
+      let streamClosed = false;
+      const unsubscribers: Array<() => void> = [];
+      let userApiKeyLoaded = false;
+      let userApiKey: string | undefined;
 
-      // Get user's API key for BYOK
-      const [userRow] = await db
-        .select({ anthropicApiKey: users.anthropicApiKey })
-        .from(users)
-        .where(eq(users.id, userId));
-      const userApiKey = userRow?.anthropicApiKey || undefined;
+      const getUserApiKey = async (): Promise<string | undefined> => {
+        if (userApiKeyLoaded) return userApiKey;
+        const [userRow] = await db
+          .select({ anthropicApiKey: users.anthropicApiKey })
+          .from(users)
+          .where(eq(users.id, userId));
+        userApiKey = userRow?.anthropicApiKey || undefined;
+        userApiKeyLoaded = true;
+        return userApiKey;
+      };
 
-      // Subscribe to agent log events and stream them as thinking events
-      const unsubLog = sessionStore.events.on("agent:log", (data) => {
-        if (data.sessionId === sessionId && data.agentType === targetAgentType) {
-          res.write(`data: ${JSON.stringify({ type: "thinking", content: data.log.content, agentType: targetAgentType })}\n\n`);
+      const cleanup = () => {
+        while (unsubscribers.length > 0) {
+          const unsub = unsubscribers.pop();
+          unsub?.();
         }
-      });
+      };
 
-      const unsubStatus = sessionStore.events.on("agent:status", (data) => {
-        if (data.sessionId === sessionId && data.agentType === targetAgentType) {
-          if (data.status === "completed" || data.status === "failed") {
-            // Send agent-thinking-end
-            res.write(`data: ${JSON.stringify({ type: "agent-thinking-end", agentType: targetAgentType, status: data.status })}\n\n`);
-            // Send summary message
-            const summaryText = data.status === "completed"
-              ? `${agentLabel} agent completed successfully.`
-              : `${agentLabel} agent failed.`;
-            // Persist summary as flow-orchestrator assistant message so it survives refresh
-            sessionStore.addMessage(sessionId, agentType, "assistant", summaryText)
-              .catch(err => console.error("Failed to persist agent summary:", err));
-            res.write(`data: ${JSON.stringify({ type: "text", content: summaryText })}\n\n`);
-            res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
-            res.end();
-            unsubLog();
-            unsubStatus();
-          }
-        }
-      });
+      const finalizeIfDone = () => {
+        if (streamClosed || pendingAgentRuns > 0) return;
+        streamClosed = true;
+        res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+        res.end();
+        cleanup();
+      };
 
       req.on("close", () => {
-        unsubLog();
-        unsubStatus();
+        streamClosed = true;
+        cleanup();
       });
 
-      // Run agent in background
-      if (targetAgentType === "code-agent") {
-        const codeAgent = new CodeAgent();
-        codeAgent.run({
-          sessionId,
-          userId,
-          message: messageWithArtifactContext || "Implement the requested changes",
-          repoUrl: session.repoUrl!,
-          apiKey: userApiKey,
-        }).catch((err) => console.error("CodeAgent error:", err));
-      } else if (targetAgentType === "review-agent") {
-        const reviewAgent = new ReviewAgent();
-        reviewAgent.run({
-          sessionId,
-          userId,
-          message: messageWithArtifactContext || "Review the codebase for issues",
-          repoUrl: session.repoUrl!,
-          apiKey: userApiKey,
-        }).catch((err) => console.error("ReviewAgent error:", err));
-      } else if (targetAgentType === "changelog-agent") {
-        // Parse $session-id references from message
-        const sessionIdRefs = [...strippedMessage.matchAll(/\$([0-9a-f-]{36})/gi)].map((m) => m[1]);
-        const changelogAgent = new ChangelogAgent();
-        changelogAgent.run({
-          sessionId,
-          userId,
-          message: messageWithArtifactContext || "Write a changelog based on recent work",
-          referencedSessionIds: sessionIdRefs.length > 0 ? sessionIdRefs : undefined,
-          apiKey: userApiKey,
-        }).catch((err) => console.error("ChangelogAgent error:", err));
-      } else {
-        // Pipeline agents (discovery, strategy, spec, gtm, product-marketing)
-        runPipelineAgentInFlowMode(
-          targetAgentType,
-          sessionId,
-          userId,
-          session,
+      const writeAssistantText = async (content: string) => {
+        await sessionStore.addMessage(sessionId, agentType, "assistant", content);
+        if (!streamClosed) {
+          res.write(`data: ${JSON.stringify({ type: "text", content })}\n\n`);
+        }
+      };
+
+      for (const prefix of requestedPrefixes) {
+        const agentConfig = AGENT_PREFIX_MAP[prefix];
+        if (!agentConfig) continue;
+
+        const { agentType: targetAgentType, requiresRepo, label: agentLabel } = agentConfig;
+        const strippedMessage = stripAgentCommandMessage(message, prefix);
+        const messageWithArtifactContext = withReferencedArtifactContext(
           strippedMessage,
-          agentLabel,
           referencedArtifacts
-        ).catch((err) => console.error(`${agentLabel} agent error:`, err));
+        );
+        const missingRepo = requiresRepo && !session.repoUrl;
+        const missingCodeTask = targetAgentType === "code-agent" && strippedMessage.length === 0;
+        const connectOnlyCodeCommand =
+          targetAgentType === "code-agent" &&
+          !!repoUrlMatch?.[0] &&
+          isRepoConnectOnlyMessage(strippedMessage);
+
+        if (connectOnlyCodeCommand) {
+          const connectedRepo = session.repoUrl || repoUrlMatch![0].replace(/\.git$/, "");
+          await writeAssistantText(
+            `Repository connected (${connectedRepo}). ${prefix} is ready. Tell me what to build.`
+          );
+          continue;
+        }
+
+        if (missingRepo || missingCodeTask) {
+          const connectedRepo = session.repoUrl || repoUrlMatch?.[0]?.replace(/\.git$/, "");
+          await writeAssistantText(
+            buildAgentGuidanceMessage(prefix, missingRepo, missingCodeTask, connectedRepo)
+          );
+          continue;
+        }
+
+        const existingAgentState = session.agents.get(targetAgentType);
+        if (existingAgentState?.status === "running") {
+          await writeAssistantText(`${agentLabel} agent is already running. I left it in progress.`);
+          continue;
+        }
+
+        pendingAgentRuns += 1;
+        if (!streamClosed) {
+          res.write(
+            `data: ${JSON.stringify({ type: "agent-thinking-start", agentType: targetAgentType, agentLabel })}\n\n`
+          );
+        }
+
+        const unsubLog = sessionStore.events.on("agent:log", (data) => {
+          if (streamClosed) return;
+          if (data.sessionId === sessionId && data.agentType === targetAgentType) {
+            res.write(
+              `data: ${JSON.stringify({ type: "thinking", content: data.log.content, agentType: targetAgentType })}\n\n`
+            );
+          }
+        });
+
+        const unsubStatus = sessionStore.events.on("agent:status", (data) => {
+          if (data.sessionId !== sessionId || data.agentType !== targetAgentType) return;
+          if (data.status !== "completed" && data.status !== "failed") return;
+
+          unsubLog();
+          unsubStatus();
+
+          if (!streamClosed) {
+            res.write(
+              `data: ${JSON.stringify({ type: "agent-thinking-end", agentType: targetAgentType, status: data.status })}\n\n`
+            );
+          }
+
+          const summaryText = data.status === "completed"
+            ? `${agentLabel} agent completed successfully.`
+            : `${agentLabel} agent failed.`;
+
+          sessionStore.addMessage(sessionId, agentType, "assistant", summaryText)
+            .catch((err) => console.error("Failed to persist agent summary:", err));
+          if (!streamClosed) {
+            res.write(`data: ${JSON.stringify({ type: "text", content: summaryText })}\n\n`);
+          }
+
+          pendingAgentRuns = Math.max(0, pendingAgentRuns - 1);
+          finalizeIfDone();
+        });
+
+        unsubscribers.push(unsubLog, unsubStatus);
+
+        if (targetAgentType === "code-agent") {
+          const codeAgent = new CodeAgent();
+          const apiKey = await getUserApiKey();
+          codeAgent.run({
+            sessionId,
+            userId,
+            message: messageWithArtifactContext || "Implement the requested changes",
+            repoUrl: session.repoUrl!,
+            apiKey,
+          }).catch(async (err) => {
+            console.error("CodeAgent error:", err);
+            await sessionStore.setAgentStatus(sessionId, targetAgentType, "failed");
+          });
+        } else if (targetAgentType === "review-agent") {
+          const reviewAgent = new ReviewAgent();
+          const apiKey = await getUserApiKey();
+          reviewAgent.run({
+            sessionId,
+            userId,
+            message: messageWithArtifactContext || "Review the codebase for issues",
+            repoUrl: session.repoUrl!,
+            apiKey,
+          }).catch(async (err) => {
+            console.error("ReviewAgent error:", err);
+            await sessionStore.setAgentStatus(sessionId, targetAgentType, "failed");
+          });
+        } else if (targetAgentType === "changelog-agent") {
+          const sessionIdRefs = [...strippedMessage.matchAll(/\$([0-9a-f-]{36})/gi)].map((m) => m[1]);
+          const changelogAgent = new ChangelogAgent();
+          const apiKey = await getUserApiKey();
+          changelogAgent.run({
+            sessionId,
+            userId,
+            message: messageWithArtifactContext || "Write a changelog based on recent work",
+            referencedSessionIds: sessionIdRefs.length > 0 ? sessionIdRefs : undefined,
+            apiKey,
+          }).catch(async (err) => {
+            console.error("ChangelogAgent error:", err);
+            await sessionStore.setAgentStatus(sessionId, targetAgentType, "failed");
+          });
+        } else {
+          runPipelineAgentInFlowMode(
+            targetAgentType,
+            sessionId,
+            userId,
+            session,
+            strippedMessage,
+            agentLabel,
+            referencedArtifacts
+          ).catch(async (err) => {
+            console.error(`${agentLabel} agent error:`, err);
+            await sessionStore.setAgentStatus(sessionId, targetAgentType, "failed");
+          });
+        }
       }
 
+      finalizeIfDone();
       return;
     }
   }
@@ -1239,6 +1315,83 @@ function parseArtifacts(text: string): Array<{ type: string; title: string; cont
     });
   }
   return artifacts;
+}
+
+function normalizeAgentPrefix(rawPrefix: string): string | null {
+  const normalized = rawPrefix.startsWith("@") ? rawPrefix : `@${rawPrefix}`;
+
+  for (const knownPrefix of Object.keys(AGENT_PREFIX_MAP)) {
+    if (knownPrefix.toLowerCase() === normalized.toLowerCase()) {
+      return knownPrefix;
+    }
+  }
+
+  for (const [alias, canonical] of Object.entries(AGENT_PREFIX_ALIASES)) {
+    if (alias.toLowerCase() === normalized.toLowerCase()) {
+      return canonical;
+    }
+  }
+
+  return null;
+}
+
+function extractRequestedAgentPrefixes(message: string): string[] {
+  const prefixes: string[] = [];
+  const seen = new Set<string>();
+
+  for (const match of message.matchAll(/(^|\s)@([a-zA-Z][a-zA-Z0-9-]*)/g)) {
+    const canonicalPrefix = normalizeAgentPrefix(`@${match[2]}`);
+    if (!canonicalPrefix || seen.has(canonicalPrefix)) continue;
+    seen.add(canonicalPrefix);
+    prefixes.push(canonicalPrefix);
+  }
+
+  return prefixes;
+}
+
+function stripAgentCommandMessage(message: string, prefix: string): string {
+  const prefixRegex = new RegExp(`(^|\\s)${escapeRegExp(prefix)}(?![\\w-])`, "gi");
+  return message
+    .replace(prefixRegex, " ")
+    .replace(REPO_URL_PATTERN_GLOBAL, "")
+    .trim();
+}
+
+function isRepoConnectOnlyMessage(strippedMessage: string): boolean {
+  const normalized = strippedMessage
+    .toLowerCase()
+    .replace(/[.,!?;:]+$/g, "")
+    .trim();
+  return /^(connect|connect repo|connect repository)$/.test(normalized);
+}
+
+function buildAgentGuidanceMessage(
+  prefix: string,
+  missingRepo: boolean,
+  missingCodeTask: boolean,
+  connectedRepo?: string
+): string {
+  if (missingRepo && missingCodeTask) {
+    return `Before I start ${prefix}, I need two things:
+
+1) A repository URL
+2) A concrete build request
+
+Example:
+${prefix} https://github.com/your-org/your-repo add a POST /api/waitlist endpoint, validate email, add tests, then run the test suite.`;
+  }
+
+  if (missingRepo) {
+    return `Please connect a repository before using ${prefix}, then include what you want built.
+
+Example:
+${prefix} https://github.com/your-org/your-repo implement OAuth callback retries and add tests.`;
+  }
+
+  return `Repository detected (${connectedRepo}). Now tell me exactly what to build.
+
+Example:
+${prefix} add launch-mode checks to /integrations routes, update tests, and run bun run build.`;
 }
 
 interface ReferencedArtifact {

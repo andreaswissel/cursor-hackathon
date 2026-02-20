@@ -56,6 +56,7 @@ const AGENT_COMMANDS = [
   { prefix: "@Marketing", label: "Marketing", description: "Write product update", icon: Newspaper, requiresRepo: false },
   { prefix: "@Changelog", label: "Changelog", description: "Write changelog entries", icon: ScrollText, requiresRepo: false },
 ];
+const AGENT_COMMAND_PREFIXES = [...AGENT_COMMANDS.map((cmd) => cmd.prefix), "@Discover"];
 
 function formatMessageTime(dateStr?: string): string | null {
   if (!dateStr) return null;
@@ -104,8 +105,6 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const agentMenuRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<(() => void) | null>(null);
-  const streamingContentRef = useRef("");
-  const thinkingRef = useRef<AgentThinking | null>(null);
   const userInitials = useMemo(
     () => getInitials(user?.displayName, user?.email),
     [user?.displayName, user?.email]
@@ -177,10 +176,6 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
           status: agent.status === "running" ? "running" : agent.status === "completed" ? "completed" : "failed",
         };
 
-        if (agent.status === "running") {
-          thinkingRef.current = thinking;
-        }
-
         const thinkingMsg: ChatMessage = {
           role: "assistant",
           content: "",
@@ -245,10 +240,17 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
     }
   }, [showAgentMenu]);
 
+  const isAgentCommandMessage = useCallback((text: string): boolean => {
+    return AGENT_COMMAND_PREFIXES.some((prefix) =>
+      new RegExp(`(^|\\s)${prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w-])`, "i").test(text)
+    );
+  }, []);
+
   const handleSend = useCallback(
     (messageText?: string) => {
       const text = (messageText ?? input).trim();
-      if (!text || isStreaming) return;
+      if (!text) return;
+      const isAgentCommand = isAgentCommandMessage(text);
 
       // Dismiss context menu
       setContextMenu(null);
@@ -261,30 +263,38 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
 
       setMessages((prev) => [...prev, userMessage]);
       setInput("");
-      setIsStreaming(true);
-      setStreamingContent("");
-      streamingContentRef.current = "";
-      thinkingRef.current = null;
+      if (!isAgentCommand) {
+        setIsStreaming(true);
+        setStreamingContent("");
+      }
+
+      let bufferedContent = "";
 
       abortRef.current = chatWithAgent(
         sessionId,
         "flow-orchestrator",
         text,
         (chunk) => {
-          streamingContentRef.current += chunk;
-          setStreamingContent(streamingContentRef.current);
+          if (isAgentCommand && bufferedContent.length > 0) {
+            bufferedContent += "\n\n";
+          }
+          bufferedContent += chunk;
+          if (!isAgentCommand) {
+            setStreamingContent(bufferedContent);
+          }
         },
         () => {
-          const finalContent = streamingContentRef.current;
+          const finalContent = bufferedContent.trim();
           if (finalContent) {
             setMessages((prev) => [
               ...prev,
               { role: "assistant", content: finalContent, createdAt: new Date().toISOString() },
             ]);
           }
-          setStreamingContent("");
-          streamingContentRef.current = "";
-          setIsStreaming(false);
+          if (!isAgentCommand) {
+            setStreamingContent("");
+            setIsStreaming(false);
+          }
         },
         (error) => {
           console.error("Chat error:", error);
@@ -296,76 +306,62 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
               createdAt: new Date().toISOString(),
             },
           ]);
-          setStreamingContent("");
-          streamingContentRef.current = "";
-          setIsStreaming(false);
+          if (!isAgentCommand) {
+            setStreamingContent("");
+            setIsStreaming(false);
+          }
         },
         {
           onAgentThinkingStart: (agentType, agentLabel) => {
-            const thinking: AgentThinking = {
-              agentType,
-              agentLabel,
-              logs: [],
-              status: "running",
-            };
-            thinkingRef.current = thinking;
             setMessages((prev) => [
               ...prev,
               {
                 role: "assistant",
                 content: "",
                 createdAt: new Date().toISOString(),
-                agentThinking: { ...thinking },
+                agentThinking: {
+                  agentType,
+                  agentLabel,
+                  logs: [],
+                  status: "running",
+                },
               },
             ]);
           },
           onThinking: (content, agentType) => {
-            if (thinkingRef.current) {
-              if (thinkingRef.current.agentType === agentType) {
-                thinkingRef.current.logs.push(content);
-              }
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.agentThinking?.agentType === agentType
-                    ? {
-                        ...m,
-                        agentThinking: {
-                          ...m.agentThinking,
-                          logs:
-                            thinkingRef.current?.agentType === agentType
-                              ? [...thinkingRef.current.logs]
-                              : [...m.agentThinking.logs, content],
-                        },
-                      }
-                    : m
-                )
-              );
-            }
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.agentThinking?.agentType === agentType
+                  ? {
+                      ...m,
+                      agentThinking: {
+                        ...m.agentThinking,
+                        logs: [...m.agentThinking.logs, content],
+                      },
+                    }
+                  : m
+              )
+            );
           },
           onAgentThinkingEnd: (agentType, status) => {
-            if (thinkingRef.current) {
-              if (thinkingRef.current.agentType === agentType) {
-                thinkingRef.current.status = status as "completed" | "failed";
-              }
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.agentThinking?.agentType === agentType
-                    ? {
-                        ...m,
-                        agentThinking: {
-                          ...m.agentThinking,
-                          status: status as "completed" | "failed",
-                        },
-                      }
-                    : m
-                )
-              );
-            }
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.agentThinking?.agentType === agentType
+                  ? {
+                      ...m,
+                      agentThinking: {
+                        ...m.agentThinking,
+                        status: status as "completed" | "failed",
+                      },
+                    }
+                  : m
+              )
+            );
           },
         }
       );
     },
-    [input, isStreaming, sessionId]
+    [input, isAgentCommandMessage, sessionId]
   );
 
   const stopAgent = useCallback((agentType: string) => {
@@ -374,8 +370,6 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
     abortRef.current = null;
     setIsStreaming(false);
     setStreamingContent("");
-    streamingContentRef.current = "";
-    thinkingRef.current = null;
     setMessages((prev) =>
       prev.map((m) =>
         m.agentThinking?.agentType === agentType && m.agentThinking.status === "running"
@@ -638,7 +632,7 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
           </div>
         )}
 
-        {isStreaming && !streamingContent && !thinkingRef.current && (
+        {isStreaming && !streamingContent && (
           <div className="flex gap-3 max-w-[85%] mr-auto">
             <div className="w-7 h-7 rounded-lg bg-secondary border border-border/60 flex items-center justify-center flex-shrink-0 mt-0.5">
               <Bot className="w-3.5 h-3.5 text-muted-foreground" />
@@ -724,9 +718,8 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
           <div className="relative flex-shrink-0" ref={agentMenuRef}>
             <button
               onClick={() => setShowAgentMenu(!showAgentMenu)}
-              disabled={isStreaming}
               className={cn(
-                "p-1.5 rounded-lg transition-colors disabled:opacity-50",
+                "p-1.5 rounded-lg transition-colors",
                 showAgentMenu
                   ? "bg-secondary text-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
@@ -746,8 +739,7 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
                     <button
                       key={cmd.prefix}
                       onClick={() => handleAgentTrigger(cmd.prefix, cmd.requiresRepo)}
-                      disabled={isStreaming}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-secondary transition-colors disabled:opacity-50"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-secondary transition-colors"
                     >
                       <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                       <div className="flex-1 min-w-0">
@@ -776,25 +768,20 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
               target.style.height = "auto";
               target.style.height = Math.min(target.scrollHeight, 160) + "px";
             }}
-            disabled={isStreaming}
           />
 
           {/* Send button */}
           <button
             onClick={() => handleSend()}
-            disabled={!input.trim() || isStreaming}
+            disabled={!input.trim()}
             className={cn(
               "p-1.5 rounded-lg transition-colors flex-shrink-0",
-              input.trim() && !isStreaming
+              input.trim()
                 ? "bg-foreground text-background hover:bg-foreground/90"
                 : "text-muted-foreground"
             )}
           >
-            {isStreaming ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
+            <Send className="w-4 h-4" />
           </button>
         </div>
       </div>

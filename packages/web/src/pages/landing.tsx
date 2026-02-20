@@ -108,52 +108,120 @@ function useParallax(speed = 0.08) {
 
 // ── App screenshot mockup ───────────────────────────────────────────────────
 
+type FlowHeroStep = {
+  status: string;
+  assistant: string;
+  user: string;
+  activeAgents: string[];
+  progress: number;
+};
+
+const FLOW_HERO_STEPS: FlowHeroStep[] = [
+  {
+    status: "Discovery is clustering onboarding feedback...",
+    assistant:
+      "Discovery surfaced two high-impact drop-off points in activation. Want Strategy to rank the tradeoffs?",
+    user: "@Strategy prioritize by activation lift and engineering effort.",
+    activeAgents: ["@Discovery", "@Strategy"],
+    progress: 28,
+  },
+  {
+    status: "Strategy is scoring options against current OKRs...",
+    assistant:
+      "Strategy recommends Opportunity #2 first: fastest path to activation impact with manageable implementation risk.",
+    user: "@Spec draft the implementation plan with acceptance criteria.",
+    activeAgents: ["@Strategy", "@Spec"],
+    progress: 54,
+  },
+  {
+    status: "Spec is drafting implementation details and QA criteria...",
+    assistant:
+      "Spec drafted rollout phases, instrumentation events, and acceptance criteria. Should GTM prepare launch messaging?",
+    user: "@GTM prepare launch narrative and internal enablement notes.",
+    activeAgents: ["@Spec", "@GTM"],
+    progress: 78,
+  },
+  {
+    status: "Flow is packaging strategy + spec + GTM for execution...",
+    assistant:
+      "Flow packaged the plan into execution-ready artifacts. Engineering handoff, launch brief, and KPI tracker are ready.",
+    user: "Open the execution checklist and assign owners.",
+    activeAgents: ["@Discovery", "@Strategy", "@Spec", "@GTM"],
+    progress: 100,
+  },
+];
+
+const FLOW_HERO_NAV = [
+  { icon: Workflow, label: "Flow", active: true },
+  { icon: Lightbulb, label: "Imagine", active: false },
+  { icon: Compass, label: "Discover", active: false },
+  { icon: Wrench, label: "Tools", active: false },
+];
+
+const FLOW_HERO_PROJECTS = ["Onboarding Flow", "Mobile App v2", "Q2 Planning"];
+const FLOW_HERO_AGENTS = ["@Discovery", "@Strategy", "@Spec", "@GTM"];
+
 function AppScreenshotMockup() {
+  const [activeStep, setActiveStep] = useState(0);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % FLOW_HERO_STEPS.length);
+    }, 2600);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const step = FLOW_HERO_STEPS[activeStep] ?? FLOW_HERO_STEPS[0]!;
+
   return (
-    <div className="relative w-full max-w-4xl mx-auto">
+    <div className="dark relative w-full max-w-5xl mx-auto">
       {/* Gradient glow behind */}
-      <div className="absolute -inset-6 md:-inset-10 rounded-3xl bg-gradient-to-br from-blue-400/20 via-violet-400/20 to-amber-300/20 blur-2xl" />
+      <div className="absolute -inset-6 md:-inset-10 rounded-3xl bg-gradient-to-br from-blue-500/25 via-indigo-500/25 to-emerald-400/20 blur-3xl" />
 
       {/* Window chrome */}
-      <div className="relative rounded-2xl bg-white border border-gray-200 shadow-2xl overflow-hidden">
+      <div className="relative rounded-2xl bg-card border border-border/80 shadow-[0_40px_120px_rgba(0,0,0,0.55)] overflow-hidden">
         {/* Title bar */}
-        <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border-b border-gray-200">
+        <div className="flex items-center gap-2 px-4 py-3 bg-background/80 border-b border-border/80">
           <div className="flex gap-1.5">
             <div className="w-3 h-3 rounded-full bg-red-400" />
             <div className="w-3 h-3 rounded-full bg-amber-400" />
             <div className="w-3 h-3 rounded-full bg-green-400" />
           </div>
           <div className="flex-1 text-center">
-            <span className="text-xs text-gray-400 font-medium">
+            <span className="text-xs text-muted-foreground font-medium">
               Product OS
             </span>
+          </div>
+          <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-md border border-border/70 bg-secondary/50 text-[10px] text-muted-foreground">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Flow mode live
           </div>
         </div>
 
         {/* Content area */}
-        <div className="flex min-h-[280px] md:min-h-[380px]">
+        <div className="flex min-h-[320px] md:min-h-[420px] bg-background">
           {/* Sidebar — hidden on mobile */}
-          <div className="hidden md:flex flex-col w-56 bg-gray-900 text-white p-3 shrink-0">
+          <div className="hidden md:flex flex-col w-60 border-r border-border/80 bg-card p-3 shrink-0">
             {/* Logo */}
             <div className="flex items-center gap-2 px-2 py-1.5 mb-4">
-              <Zap className="w-4 h-4 text-white" />
-              <span className="text-sm font-semibold">Product OS</span>
+              <div className="w-6 h-6 rounded-md bg-foreground text-background flex items-center justify-center">
+                <Zap className="w-3.5 h-3.5" />
+              </div>
+              <span className="text-sm font-semibold text-foreground">
+                Product OS
+              </span>
             </div>
 
             {/* Nav items */}
             <div className="space-y-0.5 mb-4">
-              {[
-                { icon: Workflow, label: "Flow", active: true },
-                { icon: Lightbulb, label: "Imagine", active: false },
-                { icon: Compass, label: "Discover", active: false },
-                { icon: Wrench, label: "Tools", active: false },
-              ].map(({ icon: Icon, label, active }) => (
+              {FLOW_HERO_NAV.map(({ icon: Icon, label, active }) => (
                 <div
                   key={label}
-                  className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs ${
+                  className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
                     active
-                      ? "bg-white/10 text-white"
-                      : "text-gray-400 hover:text-gray-300"
+                      ? "bg-secondary text-foreground"
+                      : "text-muted-foreground"
                   }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
@@ -163,71 +231,144 @@ function AppScreenshotMockup() {
             </div>
 
             {/* Project tree */}
-            <div className="text-[10px] text-gray-500 uppercase tracking-wider px-2.5 mb-2">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider px-2.5 mb-2">
               Projects
             </div>
-            {["Onboarding Flow", "Mobile App v2", "Q2 Planning"].map((p) => (
+            {FLOW_HERO_PROJECTS.map((p) => (
               <div
                 key={p}
-                className="flex items-center gap-2 px-2.5 py-1 text-xs text-gray-400"
+                className={`flex items-center gap-2 px-2.5 py-1.5 text-xs rounded-md ${
+                  p === "Onboarding Flow"
+                    ? "text-foreground bg-secondary/50"
+                    : "text-muted-foreground"
+                }`}
               >
-                <Folder className="w-3 h-3" />
+                <Folder className="w-3 h-3 opacity-80" />
                 {p}
               </div>
             ))}
           </div>
 
           {/* Main chat area */}
-          <div className="flex-1 flex flex-col bg-white">
+          <div className="flex-1 flex flex-col bg-background">
             {/* Chat header */}
-            <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-100">
-              <Hash className="w-3.5 h-3.5 text-gray-400" />
-              <span className="text-sm font-medium text-gray-700">
-                Onboarding Flow
-              </span>
+            <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-border/80 bg-background/70">
+              <div className="flex items-center gap-2">
+                <Hash className="w-3.5 h-3.5 text-muted-foreground" />
+                <span className="text-sm font-medium text-foreground">
+                  Onboarding Flow
+                </span>
+              </div>
+              <div className="hidden sm:flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                <Route className="w-3 h-3" />
+                Agent orchestration
+              </div>
             </div>
 
             {/* Messages */}
-            <div className="flex-1 px-4 py-3 space-y-3 overflow-hidden">
-              {/* Assistant message */}
-              <div className="flex gap-2.5">
-                <div className="w-6 h-6 rounded-full bg-violet-100 flex items-center justify-center shrink-0 mt-0.5">
-                  <Bot className="w-3 h-3 text-violet-600" />
+            <div className="flex-1 px-4 py-3 md:px-5 md:py-4 space-y-3 overflow-hidden">
+              <div
+                key={`status-${activeStep}`}
+                className="max-w-[84%] rounded-lg border border-border/60 bg-secondary/40 px-3 py-2"
+                style={{ animation: "scale-in 380ms cubic-bezier(0.16,1,0.3,1)" }}
+              >
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <MessageCircle className="w-3 h-3" />
+                  <span>{step.status}</span>
+                  <span className="flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"
+                      style={{ animationDelay: "120ms" }}
+                    />
+                    <span
+                      className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"
+                      style={{ animationDelay: "240ms" }}
+                    />
+                  </span>
                 </div>
-                <div className="rounded-xl bg-gray-50 border border-gray-100 px-3 py-2 text-xs text-gray-600 leading-relaxed max-w-xs">
-                  I've analyzed the competitive landscape. Here are 3
-                  differentiation opportunities for your onboarding flow...
+              </div>
+
+              {/* Assistant message */}
+              <div
+                key={`assistant-${activeStep}`}
+                className="flex gap-3 max-w-[86%]"
+                style={{ animation: "float-up 420ms cubic-bezier(0.16,1,0.3,1)" }}
+              >
+                <div className="w-7 h-7 rounded-lg bg-secondary border border-border/60 flex items-center justify-center shrink-0 mt-0.5">
+                  <Bot className="w-3.5 h-3.5 text-muted-foreground" />
+                </div>
+                <div className="rounded-xl bg-secondary border border-border/60 px-4 py-2.5 text-xs md:text-sm text-foreground leading-relaxed shadow-[0_1px_0_hsl(var(--foreground)/0.04)]">
+                  {step.assistant}
                 </div>
               </div>
 
               {/* User message */}
-              <div className="flex gap-2.5 justify-end">
-                <div className="rounded-xl bg-gray-900 px-3 py-2 text-xs text-white leading-relaxed max-w-xs">
-                  Focus on opportunity #2. Draft a spec.
+              <div
+                key={`user-${activeStep}`}
+                className="flex gap-3 max-w-[86%] ml-auto flex-row-reverse"
+                style={{ animation: "slide-in-right 420ms cubic-bezier(0.16,1,0.3,1)" }}
+              >
+                <div className="w-7 h-7 rounded-lg bg-card border border-border/70 flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-semibold text-foreground">
+                  AW
+                </div>
+                <div className="rounded-xl bg-card/80 text-foreground border border-border/70 px-4 py-2.5 text-xs md:text-sm leading-relaxed shadow-[0_1px_0_hsl(var(--foreground)/0.04)]">
+                  {step.user}
                 </div>
               </div>
 
               {/* Agent pills */}
-              <div className="flex gap-1.5">
-                {["@Strategy", "@Spec", "@GTM"].map((pill) => (
-                  <span
-                    key={pill}
-                    className="text-[10px] px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200"
-                  >
-                    {pill}
-                  </span>
-                ))}
+              <div className="flex flex-wrap gap-1.5 pl-10">
+                {FLOW_HERO_AGENTS.map((agent) => {
+                  const active = step.activeAgents.includes(agent);
+                  return (
+                    <span
+                      key={agent}
+                      className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
+                        active
+                          ? "bg-emerald-500/15 text-emerald-300 border-emerald-400/40"
+                          : "bg-secondary/60 text-muted-foreground border-border/60"
+                      }`}
+                    >
+                      {agent}
+                    </span>
+                  );
+                })}
+              </div>
+
+              <div className="pl-10 pr-3">
+                <div className="h-1.5 rounded-full bg-secondary border border-border/60 overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-400/90 transition-all duration-700"
+                    style={{ width: `${step.progress}%` }}
+                  />
+                </div>
+                <div className="mt-1 text-[10px] text-muted-foreground">
+                  Flow run progress: {step.progress}%
+                </div>
               </div>
             </div>
 
             {/* Input bar */}
-            <div className="px-4 pb-3">
-              <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
-                <Plus className="w-3.5 h-3.5 text-gray-400" />
-                <span className="text-xs text-gray-400 flex-1">
-                  Message agents...
+            <div className="px-4 pb-3 md:px-5 md:pb-4">
+              <div className="flex items-center gap-2 rounded-xl border border-border bg-secondary/50 px-3 py-2.5">
+                <button
+                  type="button"
+                  className="p-1.5 rounded-lg text-muted-foreground bg-secondary/70"
+                  aria-label="Open agent menu"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-xs text-muted-foreground flex-1 truncate">
+                  Orchestrate with @Discovery, @Strategy, @Spec, @GTM...
                 </span>
-                <Send className="w-3.5 h-3.5 text-gray-400" />
+                <button
+                  type="button"
+                  className="p-1.5 rounded-lg bg-foreground text-background"
+                  aria-label="Send message"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           </div>
@@ -272,7 +413,9 @@ function FlowMockup() {
       {/* Input bar */}
       <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5">
         <Plus className="w-3.5 h-3.5 text-gray-400" />
-        <span className="text-xs text-gray-400 flex-1">Message agents...</span>
+        <span className="text-xs text-gray-400 flex-1">
+          Orchestrate with @Discovery, @Strategy, @Spec...
+        </span>
         <Send className="w-3.5 h-3.5 text-gray-400" />
       </div>
     </div>
@@ -417,9 +560,9 @@ const FEATURES = [
   {
     id: "flow",
     category: "Conversational AI",
-    title: "Talk to your product, not about it",
+    title: "Flow mode: orchestrate product agents in one thread",
     description:
-      "Chat with specialized AI agents that handle strategy, research, and spec writing. They work together in real-time — like having your best PM, strategist, and writer in one thread.",
+      "Use @Discovery, @Strategy, @Spec, and @GTM in a single conversation. Instead of coordinating people across tools, you orchestrate agents inside one system.",
     accent: "violet",
     icon: Workflow,
     preview: FlowMockup,
@@ -469,23 +612,23 @@ const FEATURES = [
 const STEPS = [
   {
     num: "01",
-    title: "Drop in an idea, feedback, or signal",
+    title: "Give one input",
     description:
-      "Paste a rough idea, Slack thread, support ticket, or competitive intel. No templates, no setup — just start.",
+      "Start with an idea, customer feedback, support notes, or market signals. No rigid templates or setup.",
     icon: MessageCircle,
   },
   {
     num: "02",
-    title: "AI agents do the heavy lifting",
+    title: "Agents orchestrate the product workflow",
     description:
-      "Specialized agents run discovery, competitive analysis, strategy, and spec writing — all in parallel, in minutes.",
+      "Product OS runs discovery, strategy, specs, and execution planning in one coordinated pipeline.",
     icon: Search,
   },
   {
     num: "03",
-    title: "Ship a spec your team can actually use",
+    title: "Ship from one session",
     description:
-      "Get structured output ready for engineering, marketing, and sales. Iterate in chat or export — no busywork.",
+      "Get outputs your team can execute immediately. A week of coordination collapses into one working session.",
     icon: CheckCircle2,
   },
 ];
@@ -540,20 +683,20 @@ export function LandingPage() {
     <div className="min-h-screen bg-[#0a0a0a] text-white">
       {/* ─── Floating Pill Navbar ─── */}
       <nav
-        className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1 px-2 py-1.5 rounded-full transition-all duration-500 ${
+        className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 flex max-w-[calc(100vw-2rem)] flex-nowrap items-center gap-1 px-2 py-1.5 rounded-full transition-all duration-500 ${
           scrolled
             ? "bg-[#0a0a0a]/90 backdrop-blur-xl shadow-lg shadow-black/20 border border-gray-800/60"
             : "bg-white/10 backdrop-blur-md border border-white/20"
         }`}
       >
-        <div className="flex items-center gap-2 px-3">
+        <div className="flex shrink-0 items-center gap-2 px-3">
           <Zap
             className={`w-4 h-4 transition-colors duration-500 ${
               scrolled ? "text-white" : "text-white"
             }`}
           />
           <span
-            className={`font-semibold text-sm tracking-tight transition-colors duration-500 ${
+            className={`whitespace-nowrap font-semibold text-sm tracking-tight transition-colors duration-500 ${
               scrolled ? "text-white" : "text-white"
             }`}
           >
@@ -562,7 +705,7 @@ export function LandingPage() {
         </div>
 
         {/* Center nav links — hidden on mobile */}
-        <div className="hidden md:flex items-center gap-1">
+        <div className="hidden lg:flex items-center gap-1">
           {[
             { label: "Features", href: "#features" },
             { label: "How it works", href: "#how-it-works" },
@@ -571,7 +714,7 @@ export function LandingPage() {
             <a
               key={label}
               href={href}
-              className={`px-3 py-1.5 rounded-full text-sm transition-colors duration-500 ${
+              className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full text-sm transition-colors duration-500 ${
                 scrolled
                   ? "text-gray-400 hover:text-white hover:bg-white/10"
                   : "text-white/70 hover:text-white hover:bg-white/10"
@@ -582,10 +725,10 @@ export function LandingPage() {
           ))}
         </div>
 
-        <div className="flex items-center gap-1.5 ml-1">
+        <div className="ml-1 flex shrink-0 items-center gap-1.5">
           <Link
             to="/login"
-            className={`px-3 py-1.5 rounded-full text-sm transition-colors duration-500 ${
+            className={`whitespace-nowrap px-3 py-1.5 rounded-full text-sm transition-colors duration-500 ${
               scrolled
                 ? "text-gray-400 hover:text-white"
                 : "text-white/70 hover:text-white"
@@ -595,7 +738,7 @@ export function LandingPage() {
           </Link>
           <Link
             to="/waitlist"
-            className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-500 ${
+            className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-500 ${
               scrolled
                 ? "bg-white text-gray-900 hover:bg-gray-200"
                 : "bg-white text-gray-900 hover:bg-white/90"
@@ -653,37 +796,43 @@ export function LandingPage() {
           <div className="flex justify-center mb-6">
             <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/10 border border-gray-700 text-xs font-medium text-gray-300 shadow-sm">
               <Zap className="w-3 h-3 text-blue-500" />
-              The Operating System for Product Managers
+              ProductOS — Built for Product, Loved by Development
             </span>
           </div>
 
           {/* Headline */}
           <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-center text-white leading-[1.1] mb-6 max-w-4xl mx-auto">
-            From idea to MVP in minutes, not months
+            Coding went agentic.
+            <br />
+            Product didn't, until now.
           </h1>
 
           {/* Subtitle */}
           <p className="text-lg md:text-xl text-gray-400 text-center max-w-2xl mx-auto mb-10 leading-relaxed">
-            Product OS eliminates the busywork of product management. AI agents
-            handle discovery, strategy, and spec writing — so you can focus on
-            decisions that move the needle.
+            AI transformed coding, but product work stayed manual: discovery
+            docs, strategy decks, ticket ping-pong, and endless alignment loops.
+            Product OS brings the agentic shift to product work itself.
+          </p>
+          <p className="text-base md:text-lg text-gray-500 text-center max-w-3xl mx-auto mb-10 leading-relaxed">
+            You give one input. Agents orchestrate discovery, strategy, specs,
+            and execution. If coding got 10x faster, product should too.
           </p>
 
           {/* CTA buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-16 md:mb-20">
             <Link
-              to="/waitlist"
+              to="/login"
               className="inline-flex items-center gap-2 rounded-full bg-white text-gray-900 px-7 py-3 text-sm font-medium hover:bg-gray-200 transition-colors shadow-lg shadow-black/30"
             >
-              Get Started Free
+              Try Demo Modes
               <ArrowRight className="w-4 h-4" />
             </Link>
-            <a
-              href="#features"
+            <Link
+              to="/waitlist"
               className="inline-flex items-center gap-2 rounded-full border border-gray-600 text-gray-300 px-7 py-3 text-sm font-medium hover:bg-white/10 hover:border-gray-500 transition-colors"
             >
-              See how it works
-            </a>
+              Join Waitlist
+            </Link>
           </div>
 
           {/* App screenshot with parallax */}
@@ -767,7 +916,7 @@ function SocialProofBar() {
     <section className="py-14 bg-[#0a0a0a] border-b border-gray-800/50">
       <div ref={fade.ref} style={fade.style} className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
         <p className="text-xs font-medium uppercase tracking-widest text-gray-400 mb-8">
-          Integrates with your favorite tools
+          Built to integrate with your existing stack
         </p>
         <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
           {INTEGRATIONS.map(({ name, icon: Icon }) => (
@@ -796,10 +945,11 @@ function BentoFeatures() {
             Features
           </span>
           <h2 className="text-3xl md:text-4xl font-semibold text-white leading-tight mb-4">
-            Everything you need to ship, nothing you don't
+            Product work finally goes agentic
           </h2>
           <p className="text-gray-400 max-w-lg mx-auto">
-            An AI-powered operating system that handles the busywork so you can focus on what matters.
+            Flow mode coordinates specialist product agents in one system, so
+            you spend less time aligning and more time shipping.
           </p>
         </div>
 
@@ -808,7 +958,7 @@ function BentoFeatures() {
           <StaggerCard delay={0}>
             <div className="rounded-2xl bg-[#1a1a1a] p-8 md:p-10 h-full flex flex-col">
               <h3 className="text-lg font-semibold text-white mb-4">
-                Your AI copilot for product work
+                Flow mode is your agentic control plane
               </h3>
               <div className="flex-1 flex items-center justify-center py-4">
                 <FlowMockup />
@@ -816,7 +966,8 @@ function BentoFeatures() {
               <div className="mt-4">
                 <p className="text-sm font-semibold text-white mb-1">Flow</p>
                 <p className="text-sm text-gray-400 leading-relaxed">
-                  Chat with specialized agents that handle strategy, research, and writing — like having your best PM, strategist, and writer in one thread.
+                  Call specialist agents with @commands, keep context in one
+                  thread, and orchestrate product decisions end-to-end.
                 </p>
               </div>
             </div>
@@ -825,7 +976,7 @@ function BentoFeatures() {
           <StaggerCard delay={100}>
             <div className="rounded-2xl bg-[#1a1a1a] p-8 md:p-10 h-full flex flex-col">
               <h3 className="text-lg font-semibold text-white mb-4">
-                From napkin idea to validated spec
+                One prompt, full product package
               </h3>
               <div className="flex-1 flex items-center justify-center py-4">
                 <ImagineMockup />
@@ -833,7 +984,8 @@ function BentoFeatures() {
               <div className="mt-4">
                 <p className="text-sm font-semibold text-white mb-1">Imagine</p>
                 <p className="text-sm text-gray-400 leading-relaxed">
-                  Paste a rough idea or customer feedback. AI agents run the full pipeline — discovery, strategy, spec — and produce something you can ship.
+                  Start from rough context and get structured output for
+                  planning, building, and launch communication.
                 </p>
               </div>
             </div>
@@ -848,10 +1000,11 @@ function BentoFeatures() {
                 <Compass className="w-5 h-5 text-gray-300" />
               </div>
               <h3 className="text-base font-semibold text-white mb-2">
-                Know what to build next
+                Prioritize what matters
               </h3>
               <p className="text-sm text-gray-400 leading-relaxed">
-                Surface high-impact opportunities from customer signals. AI ranks by pain severity, frequency, and revenue potential.
+                Rank opportunities by severity, frequency, and business impact
+                so roadmap calls are evidence-based.
               </p>
             </div>
           </StaggerCard>
@@ -862,10 +1015,11 @@ function BentoFeatures() {
                 <Blocks className="w-5 h-5 text-gray-300" />
               </div>
               <h3 className="text-base font-semibold text-white mb-2">
-                Every tool a PM needs
+                Execution artifacts included
               </h3>
               <p className="text-sm text-gray-400 leading-relaxed">
-                Generate product tours, feedback forms, living docs, and roadmaps. Everything keeps your product moving, not just documented.
+                Generate docs, feedback forms, tours, and roadmaps from the
+                same working context.
               </p>
             </div>
           </StaggerCard>
@@ -876,10 +1030,11 @@ function BentoFeatures() {
                 <Zap className="w-5 h-5 text-gray-300" />
               </div>
               <h3 className="text-base font-semibold text-white mb-2">
-                Seamless integrations
+                Integrations rolling out
               </h3>
               <p className="text-sm text-gray-400 leading-relaxed">
-                Connect Jira, Slack, Notion, Linear, and more. Import data, sync outputs, and keep everything in one place.
+                Demo modes are open now. Join the waitlist to unlock private
+                workspace integrations as rollout expands.
               </p>
             </div>
           </StaggerCard>
@@ -961,10 +1116,11 @@ function HowItWorks() {
             How it works
           </span>
           <h2 className="text-3xl md:text-4xl font-semibold text-white leading-tight mb-4">
-            Idea to MVP in three steps
+            How Flow mode works
           </h2>
           <p className="text-gray-400 max-w-lg mx-auto">
-            No templates, no busywork. Just results you can ship.
+            Instead of coordinating people across tools, orchestrate agents
+            inside one system.
           </p>
         </div>
 
@@ -1037,11 +1193,11 @@ function IntegrationsSection() {
           Integrations
         </span>
         <h2 className="text-3xl md:text-4xl font-semibold text-white leading-tight mb-4">
-          Works with your stack
+          Integrations are in phased rollout
         </h2>
         <p className="text-gray-400 max-w-lg mx-auto mb-12">
-          Connect the tools you already use. Import data, sync outputs, and keep
-          everything in one place.
+          You can use all demo modes right now. Join the waitlist to unlock
+          private integrations for Jira, Slack, Notion, Linear, and more.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
           {INTEGRATIONS.map(({ name, icon: Icon }) => (
@@ -1070,21 +1226,29 @@ function FinalCTA() {
         className="max-w-6xl mx-auto px-4 sm:px-6 text-center"
       >
         <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white leading-tight mb-4">
-          Stop managing busywork. Start shipping products.
+          A week of product coordination, collapsed into one session.
         </h2>
         <p className="text-gray-400 mb-8 max-w-lg mx-auto text-lg">
-          Join the beta and go from idea to MVP in minutes — so you can focus on
-          decisions that move the needle.
+          Coding went agentic. Product should too. Try Flow mode now, then join
+          the waitlist for full integration access.
         </p>
-        <Link
-          to="/waitlist"
-          className="inline-flex items-center gap-2 rounded-full bg-white text-gray-900 px-8 py-3.5 text-sm font-semibold hover:bg-gray-200 transition-colors shadow-lg shadow-black/30"
-        >
-          Join the Waitlist
-          <ArrowRight className="w-4 h-4" />
-        </Link>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-2 rounded-full bg-white text-gray-900 px-8 py-3.5 text-sm font-semibold hover:bg-gray-200 transition-colors shadow-lg shadow-black/30"
+          >
+            Open Demo
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+          <Link
+            to="/waitlist"
+            className="inline-flex items-center gap-2 rounded-full border border-gray-600 text-gray-300 px-8 py-3.5 text-sm font-semibold hover:bg-white/10 hover:border-gray-500 transition-colors"
+          >
+            Join Waitlist
+          </Link>
+        </div>
         <p className="text-xs text-gray-500 mt-4">
-          Free $25 credits during beta. No credit card required.
+          Demo modes are available now. Private integrations are waitlist-only.
         </p>
       </div>
     </section>

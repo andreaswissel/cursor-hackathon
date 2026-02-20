@@ -3,6 +3,7 @@ import { v4 as uuid } from "uuid";
 import { db } from "../db";
 import { users, integrations, integrationData, discoveryRuns, discoveryClusters } from "../db/schema";
 import { completion, getUserLLMConfig } from "./llm";
+import { getEnabledIntegrationProvidersForUser } from "./launch-mode";
 // Guard against concurrent runs per user
 const runningUsers = new Set<string>();
 
@@ -177,6 +178,11 @@ export async function runDiscoveryAnalysis(userId: string, context?: DiscoveryCo
     // Get user for LLM config
     const [user] = await db.select().from(users).where(eq(users.id, userId));
     if (!user) throw new Error("User not found");
+    const enabledProviders = getEnabledIntegrationProvidersForUser({
+      id: user.id,
+      email: user.email,
+      isAdmin: user.isAdmin === 1,
+    });
 
     let signals: string[];
 
@@ -186,10 +192,17 @@ export async function runDiscoveryAnalysis(userId: string, context?: DiscoveryCo
     } else {
       // No context (backward compat, e.g. auto-triggered after integration sync)
       // Try to read from integrationData DB table
-      const userIntegrations = await db
-        .select({ id: integrations.id })
-        .from(integrations)
-        .where(eq(integrations.userId, userId));
+      const userIntegrations = enabledProviders.length === 0
+        ? []
+        : await db
+          .select({ id: integrations.id })
+          .from(integrations)
+          .where(
+            and(
+              eq(integrations.userId, userId),
+              inArray(integrations.provider, enabledProviders)
+            )
+          );
 
       let dbSignals: string[] = [];
       if (userIntegrations.length > 0) {
