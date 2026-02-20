@@ -25,6 +25,56 @@ export function ChangelogPage() {
             All notable changes to Product OS are documented here.
           </p>
 
+          {/* Feb 20 */}
+          <h2 className="text-xl font-semibold mt-8 mb-4">2026-02-20</h2>
+
+          <h3 className="text-lg font-medium mt-6 mb-3">Fixes</h3>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Drafts bootstrap for legacy users</strong> &mdash; The
+              projects API now always ensures each user has a personal{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                Drafts
+              </code>{" "}
+              project and backfills legacy sessions with missing project
+              assignments, so users no longer get stuck on perpetual
+              &quot;Loading projects...&quot; states.
+            </li>
+            <li>
+              <strong>OAuth redirect mismatch resilience (Google + Notion)</strong>{" "}
+              &mdash; Added normalized{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                API_BASE_URL
+              </code>{" "}
+              fallback redirect URIs for integration callbacks to prevent{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                redirect_uri_mismatch
+              </code>{" "}
+              errors when provider-specific env vars are missing.
+            </li>
+            <li>
+              <strong>Reconnect warning noise reduction</strong> &mdash; Session
+              reconnect banner now appears only after a sustained disconnect
+              (4 seconds), eliminating sub-second flicker notifications during
+              transient SSE hiccups.
+            </li>
+          </ul>
+
+          <h3 className="text-lg font-medium mt-6 mb-3">Improvements</h3>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Outputs handoff panel redesign</strong> &mdash; Reworked
+              the &quot;Ready to Build&quot; section into a clearer two-path
+              handoff (Flow mode vs coding agent) and toned down the visual
+              treatment for dark mode.
+            </li>
+            <li>
+              <strong>Dark scrollbar theming</strong> &mdash; Replaced
+              bright/system-looking scrollbar rails with explicit app-matched
+              dark track/thumb tokens for calmer, consistent contrast.
+            </li>
+          </ul>
+
           {/* Feb 13 */}
           <h2 className="text-xl font-semibold mt-8 mb-4">2026-02-13</h2>
 

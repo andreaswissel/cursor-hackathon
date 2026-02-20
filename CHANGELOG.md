@@ -2,6 +2,22 @@
 
 All notable changes to Product OS are documented here.
 
+## [2026-02-20]
+
+### Fixes
+
+- **Drafts bootstrap for legacy users** — The projects API now always ensures each user has a personal `Drafts` project and backfills legacy sessions with `NULL project_id` so users no longer get stuck on a perpetual “Loading projects...” state.
+
+- **OAuth redirect mismatch resilience (Google + Notion)** — Added normalized `API_BASE_URL` fallback redirect URIs for integration OAuth callbacks to prevent `redirect_uri_mismatch` when provider-specific env vars are missing.
+
+- **Reconnect warning noise reduction** — Session reconnect banner now appears only after a sustained disconnect (4 seconds), eliminating sub-second flicker notifications during transient SSE hiccups.
+
+### Improvements
+
+- **Outputs handoff panel redesign** — Reworked the “Ready to Build” actions into a clearer two-path handoff (Flow vs coding agent), and toned down the visual treatment to fit dark mode.
+
+- **Dark scrollbar theming** — Replaced bright/system-looking scrollbar rails with explicit app-matched dark track/thumb tokens for a calmer, consistent UI.
+
 ## [2026-02-13]
 
 ### Improvements

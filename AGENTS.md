@@ -8,9 +8,9 @@ Product OS is an **agent-native product management workbench**. It is the single
 
 A **Project** groups related sessions (idea-to-spec chats, documentation, discovery research) into a cohesive body of work. Projects are the primary navigation and grouping layer in the sidebar.
 
-- Every user gets an automatic "Untitled Project" for ungrouped work
+- Every user gets an automatic "Drafts" project for ungrouped work
 - Sessions are always nested under a project
-- Projects can be renamed, deleted (sessions reassign to Untitled), and created freely
+- Projects can be renamed, deleted (sessions reassign to Drafts), and created freely
 
 ## Multi-Agent Pipeline
 
@@ -47,3 +47,6 @@ The goal: **never leave Product OS** for product scoping work. All context flows
 ## Workflow Rules
 
 - **Commit & push on completion**: When a feature is fully implemented and verified, commit and push **all** related changes (not just files from the current task). Check `git status` to ensure nothing is left unstaged. The app deploys from `main` via Railway — unpushed changes mean production stays stale.
+- **Always update changelog**: For shipped work, add entries to both `CHANGELOG.md` and `packages/web/src/pages/changelog.tsx`, grouped under the current date and categorized as Features, Improvements, or Fixes.
+- **UI work must use frontend-design skill**: For any frontend UI/styling/layout work, apply the `frontend-design` skill before implementation.
+- **Validate user-facing changes in browser**: After frontend/user-facing changes, validate behavior end-to-end with the `agent-browser` skill before considering the task done.
