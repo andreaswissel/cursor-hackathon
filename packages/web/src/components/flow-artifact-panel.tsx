@@ -218,6 +218,10 @@ function ArtifactContent({ artifact }: { artifact: FlowArtifact }) {
     return <DiffViewer content={artifact.content} />;
   }
 
+  if (artifact.status === "error") {
+    return <ErrorArtifactView content={artifact.content} />;
+  }
+
   if (artifact.type === "discovery" && structuredContent) {
     return <DiscoveryArtifactView data={structuredContent} />;
   }
@@ -249,6 +253,46 @@ function MarkdownContent({ content }: { content: string }) {
   return (
     <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-headings:font-semibold prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground prose-code:text-xs prose-code:bg-muted prose-code:text-foreground prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:rounded-lg prose-pre:p-3 [&_pre_code]:bg-transparent [&_pre_code]:p-0">
       <ReactMarkdown>{content}</ReactMarkdown>
+    </div>
+  );
+}
+
+function ErrorArtifactView({ content }: { content: string }) {
+  const parsed = useMemo(() => parseErrorArtifactContent(content), [content]);
+
+  return (
+    <div className="space-y-3">
+      <section className="rounded-xl border border-red-500/30 bg-red-500/5 p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <X className="w-4 h-4 text-red-500" />
+          <h3 className="text-sm font-semibold text-red-500">Agent Failed</h3>
+        </div>
+        {parsed.summary && (
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{parsed.summary}</p>
+        )}
+        {parsed.helpUrl && (
+          <a
+            href={parsed.helpUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 mt-2 text-xs text-blue-500 hover:text-blue-400"
+          >
+            Open related docs
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
+      </section>
+
+      <section className="rounded-xl border bg-card overflow-hidden">
+        <div className="px-3 py-2 border-b bg-secondary/40">
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Error Payload
+          </span>
+        </div>
+        <pre className="text-xs font-mono text-foreground/90 p-3 overflow-x-auto bg-muted/25 whitespace-pre">
+          <code>{parsed.prettyPayload || content}</code>
+        </pre>
+      </section>
     </div>
   );
 }
@@ -595,6 +639,45 @@ function parseStructuredContent(content: string): unknown | null {
   }
 
   return null;
+}
+
+function parseErrorArtifactContent(content: string): {
+  summary: string;
+  prettyPayload: string | null;
+  helpUrl: string | null;
+} {
+  const trimmed = content.trim();
+  const helpUrlMatch = trimmed.match(/https?:\/\/[^\s)]+/i);
+  const helpUrl = helpUrlMatch?.[0] ?? null;
+
+  const firstBrace = trimmed.indexOf("{");
+  const lastBrace = trimmed.lastIndexOf("}");
+
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    const maybeJson = trimmed.slice(firstBrace, lastBrace + 1);
+    try {
+      const parsed = JSON.parse(maybeJson) as unknown;
+      const parsedObj = asRecord(parsed);
+      const apiMessage = asString(asRecord(parsedObj?.error)?.message);
+      const prefix = trimmed
+        .slice(0, firstBrace)
+        .trim()
+        .replace(/[:\-]\s*$/, "");
+      return {
+        summary: prefix || apiMessage || "The agent returned an error response.",
+        prettyPayload: JSON.stringify(parsed, null, 2),
+        helpUrl,
+      };
+    } catch {
+      // Not valid JSON; fall through to raw view.
+    }
+  }
+
+  return {
+    summary: trimmed,
+    prettyPayload: null,
+    helpUrl,
+  };
 }
 
 function looksLikeMarkdown(value: string): boolean {
