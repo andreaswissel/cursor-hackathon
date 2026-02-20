@@ -12,6 +12,8 @@ All notable changes to Product OS are documented here.
 
 - **Reconnect warning noise reduction** — Session reconnect banner now appears only after a sustained disconnect (4 seconds), eliminating sub-second flicker notifications during transient SSE hiccups.
 
+- **Dropdown layering and clipping** — Fixed custom dropdown menus being cut off or rendered behind nearby cards by removing clipping overflow from the outputs handoff wrapper and standardizing higher z-index layers for custom dropdown anchors/menus.
+
 ### Improvements
 
 - **Outputs handoff panel redesign** — Reworked the “Ready to Build” actions into a clearer two-path handoff (Flow vs coding agent), and toned down the visual treatment to fit dark mode.

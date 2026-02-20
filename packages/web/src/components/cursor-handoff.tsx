@@ -69,7 +69,7 @@ EOF
       </div>
 
       {/* Main action button */}
-      <div className="relative">
+      <div className={cn("relative", isOpen && "z-[120]")}>
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="w-full flex items-center justify-between gap-2 rounded-lg border bg-card px-4 py-3 text-sm font-medium hover:bg-secondary transition-colors"
@@ -88,7 +88,7 @@ EOF
 
         {/* Dropdown options */}
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-2 z-20 rounded-lg border bg-card shadow-lg overflow-hidden">
+          <div className="absolute top-full left-0 right-0 mt-2 z-[130] rounded-lg border bg-card shadow-lg overflow-hidden">
             {/* Option 1: Open in Cursor App with prompt copied */}
             <button
               onClick={handleOpenInCursor}

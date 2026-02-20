@@ -58,6 +58,13 @@ export function ChangelogPage() {
               (4 seconds), eliminating sub-second flicker notifications during
               transient SSE hiccups.
             </li>
+            <li>
+              <strong>Dropdown layering and clipping</strong> &mdash; Fixed
+              custom dropdown menus being cut off or rendered behind nearby
+              cards by removing clipping overflow from the outputs handoff
+              wrapper and standardizing higher z-index layers for custom
+              dropdown anchors/menus.
+            </li>
           </ul>
 
           <h3 className="text-lg font-medium mt-6 mb-3">Improvements</h3>

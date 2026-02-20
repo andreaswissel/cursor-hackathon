@@ -302,7 +302,7 @@ Use the attached artifacts as source of truth. Start with a short implementation
           </div>
         </button>
 
-        <div className="relative">
+        <div className={cn("relative", isOpen && "z-[120]")}>
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="group w-full h-full rounded-xl border bg-card px-4 py-4 text-left transition-all hover:border-violet-500/30 hover:bg-secondary/40"
@@ -327,7 +327,7 @@ Use the attached artifacts as source of truth. Start with a short implementation
           </button>
 
           {isOpen && (
-            <div className="absolute top-full left-0 right-0 mt-2 z-20 rounded-xl border bg-card shadow-lg overflow-hidden">
+            <div className="absolute top-full left-0 right-0 mt-2 z-[130] rounded-xl border bg-card shadow-lg overflow-hidden">
               <button
                 onClick={handleOpenCursor}
                 className="w-full flex items-start gap-3 px-4 py-3 hover:bg-secondary transition-colors text-left"

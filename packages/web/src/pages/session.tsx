@@ -580,8 +580,8 @@ export function SessionPage() {
               ) : hasOutputs ? (
                 <div className="space-y-8">
                   {/* Hero: Implementation Handoff */}
-                  <div className="relative overflow-hidden rounded-2xl border bg-card/85">
-                    <div className="absolute inset-0 bg-[radial-gradient(110%_90%_at_100%_0%,rgba(124,58,237,0.14),transparent_55%)] pointer-events-none" />
+                  <div className="relative rounded-2xl border bg-card/85">
+                    <div className="absolute inset-0 rounded-2xl bg-[radial-gradient(110%_90%_at_100%_0%,rgba(124,58,237,0.14),transparent_55%)] pointer-events-none" />
                     <div className="relative border-b px-5 py-4 md:px-6 md:py-5">
                       <div className="flex flex-wrap items-center gap-3">
                         <div className="w-9 h-9 rounded-lg bg-violet-500/12 border border-violet-500/25 flex items-center justify-center">

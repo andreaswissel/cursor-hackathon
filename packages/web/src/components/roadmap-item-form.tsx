@@ -306,7 +306,7 @@ export function RoadmapItemForm({ item, isOpen, onClose, onSave, onDelete }: Roa
           {/* Linked Sessions */}
           <div>
             <label className="block text-sm font-medium mb-1.5">Linked Sessions</label>
-            <div className="relative" ref={dropdownRef}>
+            <div className={cn("relative", showSessionDropdown && "z-[120]")} ref={dropdownRef}>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                 <input
@@ -323,7 +323,7 @@ export function RoadmapItemForm({ item, isOpen, onClose, onSave, onDelete }: Roa
 
               {/* Search results dropdown */}
               {showSessionDropdown && sessionResults.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-card border rounded-lg shadow-lg max-h-48 overflow-y-auto z-10">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-card border rounded-lg shadow-lg max-h-48 overflow-y-auto z-[130]">
                   {sessionResults.map((s) => (
                     <button
                       key={s.id}
