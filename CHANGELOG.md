@@ -54,6 +54,8 @@ All notable changes to Product OS are documented here.
 
 - **Discovery mode promoted on landing** — Added a dedicated Discovery spotlight section, elevated Discovery to a top-tier feature card, and reordered deep-dive feature sequencing so signal intelligence is positioned as a core product strength.
 
+- **Landing mock screenshots switched to dark mode** — Restyled Flow, Imagine, Discover, and Tools preview mockups with product-matched dark surfaces, borders, and contrast to remove bright white cards from the landing experience.
+
 ## [2026-02-13]
 
 ### Improvements

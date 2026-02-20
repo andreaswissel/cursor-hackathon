@@ -227,6 +227,12 @@ export function ChangelogPage() {
               top-tier feature card, and reordered deep-dive feature sequencing
               so signal intelligence is positioned as a core product strength.
             </li>
+            <li>
+              <strong>Landing mock screenshots switched to dark mode</strong>{" "}
+              &mdash; Restyled Flow, Imagine, Discover, and Tools preview
+              mockups with product-matched dark surfaces, borders, and contrast
+              to remove bright white cards from the landing experience.
+            </li>
           </ul>
 
           {/* Feb 13 */}
