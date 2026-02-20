@@ -8,6 +8,7 @@ import {
   Loader2,
   Sparkles,
   ChevronDown,
+  ArrowRight,
   ExternalLink,
   Terminal,
   Check,
@@ -271,128 +272,134 @@ Use the attached artifacts as source of truth. Start with a short implementation
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
-          <Sparkles className="w-4 h-4 text-violet-500" />
-        </div>
-        <div>
-          <p className="text-sm font-medium">Ready for implementation</p>
-          <p className="text-xs text-muted-foreground">
-            Open in Flow Mode or hand off to a coding agent
-          </p>
-        </div>
-      </div>
-
-      <button
-        onClick={handleOpenInFlowMode}
-        disabled={isOpeningFlow}
-        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-foreground px-4 py-3 text-sm font-medium text-background hover:bg-foreground/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-      >
-        {isOpeningFlow ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Opening Flow Mode...
-          </>
-        ) : (
-          <>
-            <Sparkles className="w-4 h-4" />
-            Open in Flow Mode
-          </>
-        )}
-      </button>
-
-      <div className="relative">
+    <div className="space-y-4">
+      <div className="grid gap-3 md:grid-cols-2">
         <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between gap-2 rounded-lg border bg-card px-4 py-3 text-sm font-medium hover:bg-secondary transition-colors"
+          onClick={handleOpenInFlowMode}
+          disabled={isOpeningFlow}
+          className="group relative overflow-hidden rounded-xl border border-violet-500/25 bg-card px-4 py-4 text-left transition-all hover:bg-violet-500/[0.08] hover:border-violet-400/40 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <div className="flex items-center gap-2">
-            <Terminal className="w-4 h-4 text-violet-500" />
-            Open in coding agent
+          <div className="relative flex items-start gap-3">
+            <div className="mt-0.5 h-9 w-9 rounded-lg bg-violet-500/15 flex items-center justify-center flex-shrink-0">
+              {isOpeningFlow ? (
+                <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
+              ) : (
+                <Sparkles className="w-4 h-4 text-violet-400" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="inline-flex items-center rounded-full border border-violet-500/25 bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-300">
+                Recommended
+              </p>
+              <p className="mt-1 text-sm font-semibold">
+                {isOpeningFlow ? "Opening Flow Mode..." : "Open in Flow Mode"}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Seed artifacts automatically, then execute with a plan-first build flow.
+              </p>
+            </div>
+            <ArrowRight className="w-4 h-4 text-violet-300/80 flex-shrink-0 mt-1 transition-transform group-hover:translate-x-0.5" />
           </div>
-          <ChevronDown
-            className={cn(
-              "w-4 h-4 text-muted-foreground transition-transform",
-              isOpen && "rotate-180"
-            )}
-          />
         </button>
 
-        {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-2 z-20 rounded-lg border bg-card shadow-lg overflow-hidden">
-            <button
-              onClick={handleOpenCursor}
-              className="w-full flex items-start gap-3 px-4 py-3 hover:bg-secondary transition-colors text-left"
-            >
-              <ExternalLink className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium">Cursor</p>
-                <p className="text-xs text-muted-foreground">
-                  Open Cursor with the concise build prompt
+        <div className="relative">
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="group w-full h-full rounded-xl border bg-card px-4 py-4 text-left transition-all hover:border-violet-500/30 hover:bg-secondary/40"
+          >
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 h-9 w-9 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+                <Terminal className="w-4 h-4 text-violet-500" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">Open in coding agent</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Cursor, Codex, or Cloud Code with the concise build brief.
                 </p>
               </div>
-            </button>
+              <ChevronDown
+                className={cn(
+                  "w-4 h-4 text-muted-foreground transition-transform mt-1",
+                  isOpen && "rotate-180"
+                )}
+              />
+            </div>
+          </button>
 
-            <div className="border-t" />
+          {isOpen && (
+            <div className="absolute top-full left-0 right-0 mt-2 z-20 rounded-xl border bg-card shadow-lg overflow-hidden">
+              <button
+                onClick={handleOpenCursor}
+                className="w-full flex items-start gap-3 px-4 py-3 hover:bg-secondary transition-colors text-left"
+              >
+                <ExternalLink className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">Cursor</p>
+                  <p className="text-xs text-muted-foreground">
+                    Open Cursor with the concise build prompt
+                  </p>
+                </div>
+              </button>
 
-            <button
-              onClick={handleCodex}
-              className="w-full flex items-start gap-3 px-4 py-3 hover:bg-secondary transition-colors text-left"
-            >
-              <Terminal className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium">{copiedState === "codex" ? "Codex command copied" : "Codex"}</p>
-                <p className="text-xs text-muted-foreground">
-                  {desktop ? "Run codex with the concise build prompt" : "Copy codex command"}
-                </p>
-              </div>
-            </button>
+              <div className="border-t" />
 
-            <div className="border-t" />
+              <button
+                onClick={handleCodex}
+                className="w-full flex items-start gap-3 px-4 py-3 hover:bg-secondary transition-colors text-left"
+              >
+                <Terminal className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">{copiedState === "codex" ? "Codex command copied" : "Codex"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {desktop ? "Run codex with the concise build prompt" : "Copy codex command"}
+                  </p>
+                </div>
+              </button>
 
-            <button
-              onClick={handleCloudCode}
-              className="w-full flex items-start gap-3 px-4 py-3 hover:bg-secondary transition-colors text-left"
-            >
-              <Terminal className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium">{copiedState === "cloud" ? "Cloud Code command copied" : "Cloud Code"}</p>
-                <p className="text-xs text-muted-foreground">
-                  {desktop ? "Run cloud code with the concise build prompt" : "Copy cloud code command"}
-                </p>
-              </div>
-            </button>
+              <div className="border-t" />
 
-            <div className="border-t" />
-
-            <button
-              onClick={handleCopyPrompt}
-              className="w-full flex items-start gap-3 px-4 py-3 hover:bg-secondary transition-colors text-left"
-            >
-              {copiedState === "prompt" ? (
-                <Check className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-              ) : (
-                <Copy className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-              )}
-              <div>
-                <p className="text-sm font-medium">{copiedState === "prompt" ? "Copied!" : "Copy concise prompt"}</p>
-                <p className="text-xs text-muted-foreground">
-                  Share the short implementation brief directly
-                </p>
-              </div>
-            </button>
-          </div>
-        )}
+              <button
+                onClick={handleCloudCode}
+                className="w-full flex items-start gap-3 px-4 py-3 hover:bg-secondary transition-colors text-left"
+              >
+                <Terminal className="w-4 h-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">{copiedState === "cloud" ? "Cloud Code command copied" : "Cloud Code"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {desktop ? "Run cloud code with the concise build prompt" : "Copy cloud code command"}
+                  </p>
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {error && (
         <p className="text-xs text-red-500">{error}</p>
       )}
 
-      <p className="text-xs text-muted-foreground">
-        Handoffs use a concise build prompt. Full docs are attached as Flow artifacts.
-      </p>
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed bg-muted/30 px-3 py-2">
+        <button
+          onClick={handleCopyPrompt}
+          className="inline-flex items-center gap-1.5 text-xs font-medium text-foreground hover:text-violet-600 transition-colors"
+        >
+          {copiedState === "prompt" ? (
+            <>
+              <Check className="w-3.5 h-3.5 text-emerald-500" />
+              Copied concise prompt
+            </>
+          ) : (
+            <>
+              <Copy className="w-3.5 h-3.5" />
+              Copy concise prompt
+            </>
+          )}
+        </button>
+        <p className="text-xs text-muted-foreground">
+          Full docs are attached as Flow artifacts.
+        </p>
+      </div>
     </div>
   );
 }

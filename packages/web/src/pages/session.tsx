@@ -550,13 +550,25 @@ export function SessionPage() {
               ) : hasOutputs ? (
                 <div className="space-y-8">
                   {/* Hero: Implementation Handoff */}
-                  <div className="relative rounded-2xl border bg-gradient-to-br from-violet-500/10 via-background to-indigo-500/10 p-6 md:p-8">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-violet-500/20 to-transparent rounded-full blur-3xl pointer-events-none" />
-                    <div className="relative">
-                      <div className="flex items-center gap-2 mb-4">
-                        <Sparkles className="w-5 h-5 text-violet-500" />
-                        <span className="text-sm font-semibold text-violet-600">Ready to Build</span>
+                  <div className="relative overflow-hidden rounded-2xl border bg-card/85">
+                    <div className="absolute inset-0 bg-[radial-gradient(110%_90%_at_100%_0%,rgba(124,58,237,0.14),transparent_55%)] pointer-events-none" />
+                    <div className="relative border-b px-5 py-4 md:px-6 md:py-5">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-violet-500/12 border border-violet-500/25 flex items-center justify-center">
+                          <Sparkles className="w-4 h-4 text-violet-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold tracking-tight">Ready to Build</p>
+                          <p className="text-xs text-muted-foreground">
+                            Move from strategy and spec to execution.
+                          </p>
+                        </div>
+                        <span className="ml-auto inline-flex items-center rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-emerald-400">
+                          Output complete
+                        </span>
                       </div>
+                    </div>
+                    <div className="relative p-5 md:p-6">
                       <CodingHandoff
                         sourceSessionId={session.id}
                         ideaTitle={session.idea}
