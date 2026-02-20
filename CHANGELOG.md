@@ -46,6 +46,8 @@ All notable changes to Product OS are documented here.
 
 - **Flow composer remains usable while agents run** — Sending agent commands no longer hard-disables the input area, allowing users to trigger additional agents while long-running jobs (like `@Code`) are in progress.
 
+- **Integrations page now includes coding execution targets** — Added a dedicated `Execution Targets` section for Cursor, Codex, and Claude Code so users can discover prompt handoff paths separately from OAuth data integrations.
+
 ## [2026-02-13]
 
 ### Improvements

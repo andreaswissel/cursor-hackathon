@@ -11,6 +11,9 @@ import {
   Trash2,
   Plus,
   Settings2,
+  Terminal,
+  ExternalLink,
+  ArrowUpRight,
 } from "lucide-react";
 import { PROVIDER_ICONS } from "./provider-icons";
 
@@ -60,6 +63,39 @@ interface Source {
   type: string;
 }
 
+type ExecutionTarget = {
+  id: "cursor" | "codex" | "claude-code";
+  name: string;
+  description: string;
+  detail: string;
+  commandTemplate?: string;
+  deeplink?: string;
+};
+
+const EXECUTION_TARGETS: ExecutionTarget[] = [
+  {
+    id: "cursor",
+    name: "Cursor",
+    description: "Open prompt handoff via deep link",
+    detail: "Use Ready to Build -> Open in coding agent -> Cursor",
+    deeplink: "cursor://anysphere.cursor-deeplink/prompt?text=Paste%20Product%20OS%20concise%20prompt%20here",
+  },
+  {
+    id: "codex",
+    name: "Codex",
+    description: "Run from terminal with prompt handoff",
+    detail: "Use Ready to Build -> Open in coding agent -> Codex",
+    commandTemplate: 'codex "<paste concise prompt from Product OS>"',
+  },
+  {
+    id: "claude-code",
+    name: "Claude Code",
+    description: "Run from terminal with prompt handoff",
+    detail: "Use Ready to Build -> Open in coding agent -> Cloud Code",
+    commandTemplate: 'claude "<paste concise prompt from Product OS>"',
+  },
+];
+
 export function IntegrationsPanel() {
   const { token } = useAuth();
   const [connected, setConnected] = useState<Integration[]>([]);
@@ -77,6 +113,7 @@ export function IntegrationsPanel() {
   const [loadingSources, setLoadingSources] = useState(false);
   const [savingSources, setSavingSources] = useState(false);
   const [launchMode, setLaunchMode] = useState<LaunchModeState | null>(null);
+  const [copiedExecutionId, setCopiedExecutionId] = useState<string | null>(null);
 
   // Disconnect confirmation state
   const [disconnectConfirm, setDisconnectConfirm] = useState<Integration | null>(null);
@@ -254,6 +291,28 @@ export function IntegrationsPanel() {
       }
       return next;
     });
+  };
+
+  const handleCopyExecutionCommand = async (target: ExecutionTarget) => {
+    if (!target.commandTemplate) return;
+    try {
+      await navigator.clipboard.writeText(target.commandTemplate);
+      setCopiedExecutionId(target.id);
+      setTimeout(() => setCopiedExecutionId(null), 2000);
+    } catch {
+      setError("Failed to copy command template");
+    }
+  };
+
+  const handleOpenExecutionTarget = (target: ExecutionTarget) => {
+    if (target.deeplink) {
+      window.location.href = target.deeplink;
+      return;
+    }
+
+    if (target.commandTemplate) {
+      void handleCopyExecutionCommand(target);
+    }
   };
 
   if (isLoading) {
@@ -492,6 +551,64 @@ export function IntegrationsPanel() {
           })}
         </div>
       )}
+
+      {/* Execution Targets */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium text-muted-foreground">Execution Targets</h3>
+        {EXECUTION_TARGETS.map((target) => {
+          const isCopied = copiedExecutionId === target.id;
+          return (
+            <div
+              key={target.id}
+              className="rounded-xl border bg-card p-4"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                    {target.id === "cursor" ? (
+                      <ExternalLink className="w-5 h-5 text-blue-500" />
+                    ) : (
+                      <Terminal className="w-5 h-5 text-violet-500" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm flex items-center gap-2">
+                      {target.name}
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600">
+                        <Check className="w-3 h-3" />
+                        Enabled
+                      </span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">{target.description}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">{target.detail}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleOpenExecutionTarget(target)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-secondary transition-colors"
+                >
+                  {target.id === "cursor" ? (
+                    <>
+                      Open
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </>
+                  ) : isCopied ? (
+                    <>
+                      Copied
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                    </>
+                  ) : (
+                    <>
+                      Copy Command
+                      <Terminal className="w-3.5 h-3.5" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       {/* Status messages */}
       {error && (

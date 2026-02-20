@@ -197,6 +197,15 @@ export function ChangelogPage() {
               </code>
               ) are in progress.
             </li>
+            <li>
+              <strong>Integrations page now includes coding execution targets</strong>{" "}
+              &mdash; Added a dedicated{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                Execution Targets
+              </code>{" "}
+              section for Cursor, Codex, and Claude Code so users can discover
+              prompt handoff paths separately from OAuth data integrations.
+            </li>
           </ul>
 
           {/* Feb 13 */}
