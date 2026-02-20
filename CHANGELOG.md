@@ -60,6 +60,8 @@ All notable changes to Product OS are documented here.
 
 - **Landing screen frame spacing tightened** — Reduced preview screen shell/wrapper padding to `p-2` across feature surfaces for a tighter, more product-accurate frame treatment.
 
+- **Landing preview border layering simplified** — Removed extra outer preview wrappers so each feature screen uses a single frame instead of stacked borders.
+
 ## [2026-02-13]
 
 ### Improvements

@@ -994,7 +994,7 @@ function DiscoverySpotlight() {
           </div>
 
           <div ref={previewFade.ref} style={previewFade.style} className="flex justify-center lg:justify-end">
-            <div className="rounded-2xl border border-gray-800 bg-[#1a1a1a] p-2 shadow-[0_25px_80px_rgba(0,0,0,0.45)]">
+            <div className="rounded-2xl p-0 shadow-none">
               <DiscoverMockup />
             </div>
           </div>
@@ -1158,7 +1158,7 @@ function FeatureSection({
 
           {/* Preview side */}
           <div ref={previewFade.ref} style={previewFade.style} className="flex-1 flex justify-center">
-            <div className="rounded-2xl bg-[#1a1a1a] p-2">
+            <div className="rounded-2xl p-0">
               <Preview />
             </div>
           </div>

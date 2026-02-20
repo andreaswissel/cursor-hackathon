@@ -250,6 +250,11 @@ export function ChangelogPage() {
               across feature surfaces for a tighter, more product-accurate
               frame treatment.
             </li>
+            <li>
+              <strong>Landing preview border layering simplified</strong>{" "}
+              &mdash; Removed extra outer preview wrappers so each feature
+              screen uses a single frame instead of stacked borders.
+            </li>
           </ul>
 
           {/* Feb 13 */}
