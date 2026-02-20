@@ -733,8 +733,8 @@ router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (
       );
 
       // Auto-extract repo URL from message if none connected yet
+      const repoUrlMatch = message.match(/https?:\/\/(?:github\.com|gitlab\.com|bitbucket\.org)\/[^\s,)]+/i);
       if (!session.repoUrl) {
-        const repoUrlMatch = message.match(/https?:\/\/(?:github\.com|gitlab\.com|bitbucket\.org)\/[^\s,)]+/i);
         if (repoUrlMatch) {
           const extractedUrl = repoUrlMatch[0].replace(/\.git$/, "");
           await db
@@ -745,16 +745,41 @@ router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (
         }
       }
 
-      if (requiresRepo && !session.repoUrl) {
+      const missingRepo = requiresRepo && !session.repoUrl;
+      const missingCodeTask = targetAgentType === "code-agent" && strippedMessage.length === 0;
+
+      if (missingRepo || missingCodeTask) {
         res.setHeader("Content-Type", "text/event-stream");
         res.setHeader("Cache-Control", "no-cache");
         res.setHeader("Connection", "keep-alive");
         res.flushHeaders();
 
         await sessionStore.addMessage(sessionId, agentType, "user", message);
-        const errorMsg = `Please connect a repository first before using ${matchedPrefix}. Use the repo connector above the input area to link a GitHub repository.`;
-        await sessionStore.addMessage(sessionId, agentType, "assistant", errorMsg);
-        res.write(`data: ${JSON.stringify({ type: "text", content: errorMsg })}\n\n`);
+        const connectedRepo = session.repoUrl || repoUrlMatch?.[0]?.replace(/\.git$/, "");
+        let guidanceMsg = "";
+
+        if (missingRepo && missingCodeTask) {
+          guidanceMsg = `Before I start ${matchedPrefix}, I need two things:
+
+1) A repository URL
+2) A concrete build request
+
+Example:
+${matchedPrefix} https://github.com/your-org/your-repo add a POST /api/waitlist endpoint, validate email, add tests, then run the test suite.`;
+        } else if (missingRepo) {
+          guidanceMsg = `Please connect a repository before using ${matchedPrefix}, then include what you want built.
+
+Example:
+${matchedPrefix} https://github.com/your-org/your-repo implement OAuth callback retries and add tests.`;
+        } else {
+          guidanceMsg = `Repository detected (${connectedRepo}). Now tell me exactly what to build.
+
+Example:
+${matchedPrefix} add launch-mode checks to /integrations routes, update tests, and run bun run build.`;
+        }
+
+        await sessionStore.addMessage(sessionId, agentType, "assistant", guidanceMsg);
+        res.write(`data: ${JSON.stringify({ type: "text", content: guidanceMsg })}\n\n`);
         res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
         res.end();
         return;

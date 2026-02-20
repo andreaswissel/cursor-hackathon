@@ -22,6 +22,8 @@ All notable changes to Product OS are documented here.
 
 - **Integration data access lockdown in demo mode** — Discovery and knowledge resolution now ignore live integration data for public-demo users when integrations are disabled, preventing accidental leakage of synced external data.
 
+- **Flow `@Code` preflight guidance** — `@Code` no longer launches a coding sandbox with an empty or underspecified command. It now returns a guided response that asks for missing repo/task details with concrete examples.
+
 ### Improvements
 
 - **Outputs handoff panel redesign** — Reworked the “Ready to Build” actions into a clearer two-path handoff (Flow vs coding agent), and toned down the visual treatment to fit dark mode.

@@ -93,6 +93,15 @@ export function ChangelogPage() {
               integration data for public-demo users when integrations are
               disabled, preventing accidental leakage of synced external data.
             </li>
+            <li>
+              <strong>Flow @Code preflight guidance</strong> &mdash;{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @Code
+              </code>{" "}
+              now prompts for missing repository/task details with concrete
+              examples instead of launching the coding sandbox on underspecified
+              commands.
+            </li>
           </ul>
 
           <h3 className="text-lg font-medium mt-6 mb-3">Improvements</h3>
