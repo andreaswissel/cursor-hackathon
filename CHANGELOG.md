@@ -40,6 +40,12 @@ All notable changes to Product OS are documented here.
 
 - **Navbar text-wrap fix on landing hero** — Prevented pill navbar items from shrinking into multi-line labels by enforcing non-wrapping link text and updating center-link breakpoints for tighter desktop/tablet behavior.
 
+- **Flow multi-agent triggers + alias support** — Flow now dispatches all mentioned agent commands in one prompt (for example `@Discover ... @Spec ...`) and normalizes `@Discover` to `@Discovery` so both agents run as expected.
+
+- **Flow repo-connect fast path for `@Code`** — `@Code connect <repo-url>` now connects the repository and returns immediately with readiness guidance instead of launching a full code-inspection run.
+
+- **Flow composer remains usable while agents run** — Sending agent commands no longer hard-disables the input area, allowing users to trigger additional agents while long-running jobs (like `@Code`) are in progress.
+
 ## [2026-02-13]
 
 ### Improvements

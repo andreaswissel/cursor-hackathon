@@ -162,6 +162,41 @@ export function ChangelogPage() {
               by enforcing non-wrapping link text and updating center-link
               breakpoints for tighter desktop/tablet behavior.
             </li>
+            <li>
+              <strong>Flow multi-agent triggers + alias support</strong>{" "}
+              &mdash; Flow now dispatches all mentioned agent commands in one
+              prompt (for example{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @Discover ... @Spec ...
+              </code>
+              ) and normalizes{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @Discover
+              </code>{" "}
+              to{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @Discovery
+              </code>{" "}
+              so both agents run as expected.
+            </li>
+            <li>
+              <strong>Flow repo-connect fast path for @Code</strong> &mdash;{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @Code connect &lt;repo-url&gt;
+              </code>{" "}
+              now connects the repository and returns immediately with readiness
+              guidance instead of launching a full inspection run.
+            </li>
+            <li>
+              <strong>Flow composer remains usable while agents run</strong>{" "}
+              &mdash; Sending agent commands no longer hard-disables the input
+              area, allowing additional agent triggers while long-running jobs
+              (like{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @Code
+              </code>
+              ) are in progress.
+            </li>
           </ul>
 
           {/* Feb 13 */}
