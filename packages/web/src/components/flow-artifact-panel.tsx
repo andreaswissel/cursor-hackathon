@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { FlowArtifact } from "@product-os/shared";
 import ReactMarkdown from "react-markdown";
+import { buildArtifactHandleMap } from "@/lib/flow-artifact-utils";
 import {
   ClipboardList,
   GitBranch,
@@ -20,6 +21,9 @@ import {
   Target,
   Megaphone,
   Newspaper,
+  CircleDot,
+  Sparkles,
+  BadgeCheck,
 } from "lucide-react";
 
 const DEFAULT_TYPE_CONFIG = { icon: FileText, color: "text-muted-foreground", label: "Artifact" };
@@ -36,6 +40,8 @@ const TYPE_CONFIG: Record<string, { icon: typeof FileText; color: string; label:
   strategy: { icon: Target, color: "text-teal-500", label: "Strategy" },
   gtm: { icon: Megaphone, color: "text-yellow-500", label: "GTM" },
   "product-marketing": { icon: Newspaper, color: "text-pink-500", label: "Marketing" },
+  "guided-tour": { icon: ScrollText, color: "text-cyan-500", label: "Tour" },
+  "feedback-form": { icon: ClipboardList, color: "text-violet-500", label: "Feedback Form" },
 };
 
 function getTypeConfig(type: string) {
@@ -50,6 +56,7 @@ interface FlowArtifactPanelProps {
 export function FlowArtifactPanel({ artifacts, className }: FlowArtifactPanelProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const artifactHandles = useMemo(() => buildArtifactHandleMap(artifacts), [artifacts]);
 
   const selectedArtifact = artifacts.find((a) => a.id === selectedId);
 
@@ -68,6 +75,7 @@ export function FlowArtifactPanel({ artifacts, className }: FlowArtifactPanelPro
   if (selectedArtifact) {
     const config = getTypeConfig(selectedArtifact.type);
     const Icon = config.icon;
+    const handle = artifactHandles[selectedArtifact.id] ?? `artifact-${selectedArtifact.id.slice(0, 8)}`;
 
     return (
       <div className={cn("flex flex-col h-full border-l bg-card", className)}>
@@ -81,7 +89,10 @@ export function FlowArtifactPanel({ artifacts, className }: FlowArtifactPanelPro
               <ChevronRight className="w-4 h-4 rotate-180" />
             </button>
             <Icon className={cn("w-4 h-4 flex-shrink-0", config.color)} />
-            <span className="text-sm font-medium truncate">{selectedArtifact.title}</span>
+            <div className="min-w-0">
+              <span className="text-sm font-medium truncate block">{selectedArtifact.title}</span>
+              <span className="text-[11px] text-muted-foreground font-mono">@{handle}</span>
+            </div>
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -111,12 +122,8 @@ export function FlowArtifactPanel({ artifacts, className }: FlowArtifactPanelPro
               <Loader2 className="w-4 h-4 animate-spin" />
               Generating...
             </div>
-          ) : selectedArtifact.type === "code-diff" ? (
-            <DiffViewer content={selectedArtifact.content} />
           ) : (
-            <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-headings:font-semibold prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground prose-code:text-xs prose-code:bg-muted prose-code:text-foreground prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:rounded-lg prose-pre:p-3 [&_pre_code]:bg-transparent [&_pre_code]:p-0">
-              <ReactMarkdown>{selectedArtifact.content}</ReactMarkdown>
-            </div>
+            <ArtifactContent artifact={selectedArtifact} />
           )}
         </div>
       </div>
@@ -153,6 +160,7 @@ export function FlowArtifactPanel({ artifacts, className }: FlowArtifactPanelPro
             {artifacts.map((artifact) => {
               const config = getTypeConfig(artifact.type);
               const Icon = config.icon;
+              const handle = artifactHandles[artifact.id] ?? `artifact-${artifact.id.slice(0, 8)}`;
 
               return (
                 <button
@@ -174,6 +182,9 @@ export function FlowArtifactPanel({ artifacts, className }: FlowArtifactPanelPro
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{artifact.title}</p>
+                    <p className="text-[11px] font-mono text-muted-foreground truncate mt-0.5">
+                      @{handle}
+                    </p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-xs text-muted-foreground">{config.label}</span>
                       {artifact.status === "generating" && (
@@ -198,6 +209,427 @@ export function FlowArtifactPanel({ artifacts, className }: FlowArtifactPanelPro
       </div>
     </div>
   );
+}
+
+function ArtifactContent({ artifact }: { artifact: FlowArtifact }) {
+  const structuredContent = useMemo(() => parseStructuredContent(artifact.content), [artifact.content]);
+
+  if (artifact.type === "code-diff") {
+    return <DiffViewer content={artifact.content} />;
+  }
+
+  if (artifact.type === "discovery" && structuredContent) {
+    return <DiscoveryArtifactView data={structuredContent} />;
+  }
+
+  if (artifact.type === "strategy" && structuredContent) {
+    return <StrategyArtifactView data={structuredContent} />;
+  }
+
+  if (artifact.type === "spec" && structuredContent) {
+    return <SpecArtifactView data={structuredContent} rawContent={artifact.content} />;
+  }
+
+  if (artifact.type === "gtm" && structuredContent) {
+    return <GTMArtifactView data={structuredContent} />;
+  }
+
+  if (artifact.type === "product-marketing" && structuredContent) {
+    return <ProductMarketingArtifactView data={structuredContent} />;
+  }
+
+  if (structuredContent) {
+    return <StructuredDataView data={structuredContent} />;
+  }
+
+  return <MarkdownContent content={artifact.content} />;
+}
+
+function MarkdownContent({ content }: { content: string }) {
+  return (
+    <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-headings:font-semibold prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground prose-code:text-xs prose-code:bg-muted prose-code:text-foreground prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:rounded-lg prose-pre:p-3 [&_pre_code]:bg-transparent [&_pre_code]:p-0">
+      <ReactMarkdown>{content}</ReactMarkdown>
+    </div>
+  );
+}
+
+function DiscoveryArtifactView({ data }: { data: unknown }) {
+  const obj = asRecord(data);
+  if (!obj) return <StructuredDataView data={data} />;
+
+  const problemValidation = asRecord(obj.problemValidation);
+  const customerInsights = asRecord(obj.customerInsights);
+  const marketSignals = asRecord(obj.marketSignals);
+
+  return (
+    <div className="space-y-4">
+      <section className="rounded-xl border bg-gradient-to-br from-indigo-500/10 via-card to-card p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <BadgeCheck className="w-4 h-4 text-indigo-500" />
+          <h3 className="text-sm font-semibold">Problem Validation</h3>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <StatusPill
+            label={String(problemValidation?.isValid ? "Valid" : "Not Valid")}
+            tone={problemValidation?.isValid ? "green" : "amber"}
+          />
+          <StatusPill
+            label={`Confidence: ${String(problemValidation?.confidence ?? "unknown")}`}
+            tone="blue"
+          />
+        </div>
+        <MarkdownContent content={asString(problemValidation?.reasoning) ?? ""} />
+      </section>
+
+      <section className="rounded-xl border bg-card p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-emerald-500" />
+          <h3 className="text-sm font-semibold">Customer Insights</h3>
+        </div>
+        <KeyValueList title="Pain Points" items={asStringArray(customerInsights?.painPoints)} />
+        <KeyValueList title="Desired Outcomes" items={asStringArray(customerInsights?.desiredOutcomes)} />
+        <QuoteList title="Quotes" items={asStringArray(customerInsights?.quotes)} />
+      </section>
+
+      <section className="rounded-xl border bg-card p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <CircleDot className="w-4 h-4 text-teal-500" />
+          <h3 className="text-sm font-semibold">Market Signals</h3>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusPill label={`Demand: ${String(marketSignals?.demand ?? "unknown")}`} tone="teal" />
+          <StatusPill label={`Urgency: ${String(marketSignals?.urgency ?? "unknown")}`} tone="amber" />
+        </div>
+        <KeyValueList title="Evidence" items={asStringArray(marketSignals?.evidence)} />
+      </section>
+
+      <section className="rounded-xl border bg-card p-4 space-y-3">
+        <h3 className="text-sm font-semibold">Recommendations</h3>
+        <KeyValueList items={asStringArray(obj.recommendations)} />
+      </section>
+
+      <section className="rounded-xl border bg-card p-4 space-y-3">
+        <h3 className="text-sm font-semibold">Risks</h3>
+        <KeyValueList items={asStringArray(obj.risks)} />
+      </section>
+    </div>
+  );
+}
+
+function StrategyArtifactView({ data }: { data: unknown }) {
+  const obj = asRecord(data);
+  if (!obj) return <StructuredDataView data={data} />;
+
+  const okrAlignment = asRecord(obj.okrAlignment);
+  const priorityScore = asRecord(obj.priorityScore);
+  const strategicFit = asRecord(obj.strategicFit);
+
+  return (
+    <div className="space-y-4">
+      <section className="rounded-xl border bg-gradient-to-br from-teal-500/10 via-card to-card p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <Target className="w-4 h-4 text-teal-500" />
+          <h3 className="text-sm font-semibold">Strategy Summary</h3>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <StatusPill label={`OKR Alignment: ${asNumber(okrAlignment?.score) ?? "n/a"}/100`} tone="teal" />
+          <StatusPill label={`Priority: ${asNumber(priorityScore?.overall) ?? "n/a"}/100`} tone="blue" />
+          <StatusPill label={`Decision: ${String(obj.recommendation ?? "unknown")}`} tone="amber" />
+        </div>
+      </section>
+
+      <section className="rounded-xl border bg-card p-4 space-y-2">
+        <h3 className="text-sm font-semibold">Priority Breakdown</h3>
+        <MetricRow label="Impact" value={asNumber(priorityScore?.impact)} />
+        <MetricRow label="Effort" value={asNumber(priorityScore?.effort)} />
+        <MetricRow label="Confidence" value={asNumber(priorityScore?.confidence)} />
+      </section>
+
+      <section className="rounded-xl border bg-card p-4 space-y-2">
+        <h3 className="text-sm font-semibold">Strategic Fit</h3>
+        <StatusPill label={String(strategicFit?.assessment ?? "unknown")} tone="green" />
+        <MarkdownContent content={asString(strategicFit?.reasoning) ?? asString(obj.reasoning) ?? ""} />
+      </section>
+
+      <section className="rounded-xl border bg-card p-4 space-y-2">
+        <h3 className="text-sm font-semibold">Tradeoffs</h3>
+        <KeyValueList items={asStringArray(obj.tradeoffs)} />
+      </section>
+    </div>
+  );
+}
+
+function SpecArtifactView({ data, rawContent }: { data: unknown; rawContent: string }) {
+  const obj = asRecord(data);
+  const markdown = asString(obj?.markdown);
+  if (markdown) return <MarkdownContent content={markdown} />;
+  return <MarkdownContent content={rawContent} />;
+}
+
+function GTMArtifactView({ data }: { data: unknown }) {
+  const obj = asRecord(data);
+  if (!obj) return <StructuredDataView data={data} />;
+
+  const slides = asArray(obj.slides);
+  return (
+    <div className="space-y-4">
+      <section className="rounded-xl border bg-gradient-to-br from-yellow-500/10 via-card to-card p-4">
+        <div className="flex items-center gap-2">
+          <Megaphone className="w-4 h-4 text-yellow-500" />
+          <h3 className="text-sm font-semibold">{asString(obj.title) || "Go-To-Market Plan"}</h3>
+        </div>
+      </section>
+
+      {slides.length === 0 ? (
+        <StructuredDataView data={data} />
+      ) : (
+        slides.map((slide, index) => {
+          const slideObj = asRecord(slide);
+          const bullets = asStringArray(slideObj?.bullets);
+          return (
+            <section key={index} className="rounded-xl border bg-card p-4 space-y-2">
+              <h4 className="text-sm font-semibold">
+                {index + 1}. {asString(slideObj?.title) || "Untitled Slide"}
+              </h4>
+              <KeyValueList items={bullets} />
+              {asString(slideObj?.speakerNotes) && (
+                <div className="rounded-lg bg-secondary/50 border border-border/60 p-3">
+                  <p className="text-xs font-semibold text-muted-foreground mb-1">Speaker Notes</p>
+                  <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+                    {asString(slideObj?.speakerNotes)}
+                  </p>
+                </div>
+              )}
+            </section>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
+function ProductMarketingArtifactView({ data }: { data: unknown }) {
+  const obj = asRecord(data);
+  if (!obj) return <StructuredDataView data={data} />;
+
+  return (
+    <div className="space-y-4">
+      <section className="rounded-xl border bg-gradient-to-br from-pink-500/10 via-card to-card p-4 space-y-2">
+        <div className="flex items-center gap-2">
+          <Newspaper className="w-4 h-4 text-pink-500" />
+          <h3 className="text-sm font-semibold">{asString(obj.title) || "Product Update"}</h3>
+        </div>
+        <p className="text-sm text-muted-foreground whitespace-pre-wrap">{asString(obj.summary)}</p>
+      </section>
+
+      <SectionBlock title="Problem Statement" content={asString(obj.problemStatement)} />
+      <SectionBlock title="Solution" content={asString(obj.solution)} />
+      <section className="rounded-xl border bg-card p-4 space-y-2">
+        <h4 className="text-sm font-semibold">Key Benefits</h4>
+        <KeyValueList items={asStringArray(obj.keyBenefits)} />
+      </section>
+      <SectionBlock title="OKR Alignment" content={asString(obj.okrAlignment)} />
+      <section className="rounded-xl border bg-card p-4 space-y-2">
+        <h4 className="text-sm font-semibold">Success Metrics</h4>
+        <KeyValueList items={asStringArray(obj.successMetrics)} />
+      </section>
+      <SectionBlock title="Timeline" content={asString(obj.timeline)} />
+      <SectionBlock title="Call To Action" content={asString(obj.callToAction)} />
+    </div>
+  );
+}
+
+function StructuredDataView({ data }: { data: unknown }) {
+  const obj = asRecord(data);
+  if (!obj) {
+    return (
+      <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap break-words rounded-xl border bg-muted/30 p-3">
+        {typeof data === "string" ? data : JSON.stringify(data, null, 2)}
+      </pre>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {Object.entries(obj).map(([key, value]) => (
+        <section key={key} className="rounded-xl border bg-card p-4 space-y-2">
+          <h4 className="text-sm font-semibold">{formatKey(key)}</h4>
+          <StructuredValue value={value} />
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function StructuredValue({ value }: { value: unknown }) {
+  if (typeof value === "string") {
+    if (looksLikeMarkdown(value)) {
+      return <MarkdownContent content={value} />;
+    }
+    return <p className="text-sm text-muted-foreground whitespace-pre-wrap">{value}</p>;
+  }
+
+  if (typeof value === "number" || typeof value === "boolean") {
+    return <p className="text-sm text-muted-foreground">{String(value)}</p>;
+  }
+
+  if (Array.isArray(value)) {
+    const primitiveValues = value.filter((item) => ["string", "number", "boolean"].includes(typeof item));
+    if (primitiveValues.length === value.length) {
+      return <KeyValueList items={primitiveValues.map((item) => String(item))} />;
+    }
+    return (
+      <div className="space-y-2">
+        {value.map((item, index) => (
+          <div key={index} className="rounded-lg border bg-secondary/30 p-3">
+            <StructuredValue value={item} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (asRecord(value)) {
+    return <StructuredDataView data={value} />;
+  }
+
+  return (
+    <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap break-words">
+      {JSON.stringify(value, null, 2)}
+    </pre>
+  );
+}
+
+function SectionBlock({ title, content }: { title: string; content?: string }) {
+  if (!content) return null;
+  return (
+    <section className="rounded-xl border bg-card p-4 space-y-2">
+      <h4 className="text-sm font-semibold">{title}</h4>
+      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{content}</p>
+    </section>
+  );
+}
+
+function KeyValueList({ title, items = [] }: { title?: string; items?: string[] }) {
+  return (
+    <div className="space-y-2">
+      {title && <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>}
+      {items.length === 0 ? (
+        <p className="text-xs text-muted-foreground">No data</p>
+      ) : (
+        <ul className="space-y-1.5">
+          {items.map((item, index) => (
+            <li key={index} className="text-sm text-muted-foreground flex gap-2">
+              <span className="text-foreground/60 mt-[3px]">•</span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function QuoteList({ title, items = [] }: { title?: string; items?: string[] }) {
+  if (items.length === 0) return <KeyValueList title={title} items={items} />;
+  return (
+    <div className="space-y-2">
+      {title && <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</p>}
+      <div className="space-y-2">
+        {items.map((item, index) => (
+          <blockquote key={index} className="border-l-2 border-border pl-3 text-sm text-muted-foreground">
+            {item}
+          </blockquote>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StatusPill({ label, tone }: { label: string; tone: "green" | "amber" | "blue" | "teal" }) {
+  const toneClass =
+    tone === "green"
+      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+      : tone === "amber"
+      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+      : tone === "teal"
+      ? "bg-teal-500/10 text-teal-600 dark:text-teal-400"
+      : "bg-blue-500/10 text-blue-600 dark:text-blue-400";
+
+  return <span className={cn("text-xs px-2 py-1 rounded-full", toneClass)}>{label}</span>;
+}
+
+function MetricRow({ label, value }: { label: string; value: number | null }) {
+  if (value === null) return null;
+  const clamped = Math.max(0, Math.min(100, value));
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-medium">{clamped}/100</span>
+      </div>
+      <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+        <div className="h-full bg-foreground/70 rounded-full" style={{ width: `${clamped}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function parseStructuredContent(content: string): unknown | null {
+  const trimmed = content.trim();
+  if (!trimmed) return null;
+
+  try {
+    return JSON.parse(trimmed) as unknown;
+  } catch {
+    // Continue with fenced JSON parsing
+  }
+
+  const fencedMatch = trimmed.match(/```json\s*([\s\S]*?)\s*```/i);
+  if (fencedMatch?.[1]) {
+    try {
+      return JSON.parse(fencedMatch[1]) as unknown;
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+function looksLikeMarkdown(value: string): boolean {
+  return /(^#|\n#|\n- |\n\* |\*\*|`{3}|^\d+\. )/m.test(value);
+}
+
+function formatKey(key: string): string {
+  return key
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
+function asArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function asString(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.map((item) => String(item)) : [];
+}
+
+function asNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  return null;
 }
 
 function DiffViewer({ content }: { content: string }) {

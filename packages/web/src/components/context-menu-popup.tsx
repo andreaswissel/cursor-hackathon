@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { getAllSessions, searchSessionsForLinking, getTeam, getIntegrationData } from "@/lib/api";
+import { getAllSessions, searchSessionsForLinking } from "@/lib/api";
+import { buildArtifactHandleMap } from "@/lib/flow-artifact-utils";
+import type { FlowArtifact } from "@product-os/shared";
 import {
   Code2,
   ShieldCheck,
@@ -11,9 +13,6 @@ import {
   Newspaper,
   ScrollText,
   MessageSquare,
-  Users,
-  Database,
-  Hash,
 } from "lucide-react";
 
 export interface ContextMenuItem {
@@ -22,6 +21,7 @@ export interface ContextMenuItem {
   description?: string;
   icon?: React.ComponentType<{ className?: string }>;
   category?: string;
+  insertText?: string;
 }
 
 interface ContextMenuPopupProps {
@@ -29,6 +29,7 @@ interface ContextMenuPopupProps {
   query: string;
   position: { bottom: number; left: number };
   sessionId: string;
+  artifacts?: FlowArtifact[];
   onSelect: (item: ContextMenuItem) => void;
   onDismiss: () => void;
 }
@@ -57,10 +58,22 @@ const SKILL_ITEMS: ContextMenuItem[] = [
   { id: "@Code", label: "Implement Code", description: "Trigger Code agent", icon: Code2, category: "Skills" },
 ];
 
+function getArtifactIcon(type: string): ContextMenuItem["icon"] {
+  if (type === "discovery") return Search;
+  if (type === "strategy") return Target;
+  if (type === "spec") return FileText;
+  if (type === "gtm") return Megaphone;
+  if (type === "product-marketing") return Newspaper;
+  if (type === "changelog") return ScrollText;
+  if (type === "review") return ShieldCheck;
+  return FileText;
+}
+
 export function ContextMenuPopup({
   trigger,
   query,
   position,
+  artifacts = [],
   onSelect,
   onDismiss,
 }: ContextMenuPopupProps) {
@@ -69,6 +82,23 @@ export function ContextMenuPopup({
   const [loading, setLoading] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const artifactHandles = useMemo(() => buildArtifactHandleMap(artifacts), [artifacts]);
+
+  const artifactItems = useMemo<ContextMenuItem[]>(() => {
+    return [...artifacts]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .map((artifact) => {
+        const handle = artifactHandles[artifact.id] ?? `artifact-${artifact.id.slice(0, 8)}`;
+        return {
+          id: artifact.id,
+          label: handle,
+          description: `${artifact.title} · ${artifact.type}`,
+          icon: getArtifactIcon(artifact.type),
+          category: "Artifacts",
+          insertText: `@${handle}`,
+        };
+      });
+  }, [artifacts, artifactHandles]);
 
   // Load items based on trigger
   const loadItems = useCallback(async () => {
@@ -83,40 +113,20 @@ export function ContextMenuPopup({
     }
 
     if (trigger === "@") {
-      // Start with agents
+      const normalized = query.toLowerCase();
       const filteredAgents = query
         ? AGENT_ITEMS.filter((a) => a.label.toLowerCase().includes(query.toLowerCase()))
         : AGENT_ITEMS;
+      const filteredArtifacts = query
+        ? artifactItems.filter(
+            (item) =>
+              item.label.toLowerCase().includes(normalized) ||
+              item.description?.toLowerCase().includes(normalized)
+          )
+        : artifactItems.slice(0, 8);
 
-      // For short/no query, just show agents
-      if (!query || query.length < 2) {
-        setItems(filteredAgents);
-        setSelectedIndex(0);
-        return;
-      }
-
-      // For longer queries, also search sessions and team/data
-      setLoading(true);
-      try {
-        const [sessionResult] = await Promise.all([
-          searchSessionsForLinking(query),
-        ]);
-
-        const sessionItems: ContextMenuItem[] = sessionResult.sessions.slice(0, 5).map((s) => ({
-          id: s.id,
-          label: s.idea.slice(0, 50),
-          description: `${s.mode || "session"} - ${s.status}`,
-          icon: MessageSquare,
-          category: "Sessions",
-        }));
-
-        setItems([...filteredAgents, ...sessionItems]);
-      } catch {
-        setItems(filteredAgents);
-      } finally {
-        setLoading(false);
-        setSelectedIndex(0);
-      }
+      setItems([...filteredAgents, ...filteredArtifacts]);
+      setSelectedIndex(0);
       return;
     }
 
@@ -152,11 +162,11 @@ export function ContextMenuPopup({
         setSelectedIndex(0);
       }
     }
-  }, [trigger, query]);
+  }, [trigger, query, artifactItems]);
 
   // Debounce API calls
   useEffect(() => {
-    if (trigger === "#" || (trigger === "@" && (!query || query.length < 2))) {
+    if (trigger === "#" || trigger === "@") {
       // No debounce needed for static items
       loadItems();
       return;
@@ -212,7 +222,10 @@ export function ContextMenuPopup({
     <div
       ref={menuRef}
       className="absolute z-50 bg-popover border rounded-lg shadow-lg py-1 min-w-[240px] max-w-[320px] max-h-[280px] overflow-y-auto"
-      style={{ bottom: position.bottom, left: Math.min(position.left, window.innerWidth - 340) }}
+      style={{
+        bottom: position.bottom,
+        left: Math.min(position.left, window.innerWidth - 340),
+      }}
     >
       {loading && (
         <div className="px-3 py-2 text-xs text-muted-foreground">Searching...</div>

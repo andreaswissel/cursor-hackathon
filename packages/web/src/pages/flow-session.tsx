@@ -61,7 +61,13 @@ export function FlowSessionPage({ sessionId, artifacts: sseArtifacts, repoUrl: i
     <div className="flex h-full">
       {/* Chat Thread */}
       <div className="flex-1 flex flex-col min-w-0">
-        <FlowChatThread sessionId={sessionId} repoUrl={repoUrl} onConnectRepo={handleConnectRepo} agents={agents} />
+        <FlowChatThread
+          sessionId={sessionId}
+          repoUrl={repoUrl}
+          onConnectRepo={handleConnectRepo}
+          agents={agents}
+          artifacts={artifacts}
+        />
       </div>
 
       {/* Artifact Panel Toggle (mobile + when hidden) */}

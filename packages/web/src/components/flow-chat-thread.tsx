@@ -3,8 +3,8 @@ import { chatWithAgent, getChatHistory, cancelAgent } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import { CollapsibleThinking } from "./collapsible-thinking";
-import { ContextMenuPopup } from "./context-menu-popup";
-import type { AgentType, AgentState } from "@product-os/shared";
+import { ContextMenuPopup, type ContextMenuItem } from "./context-menu-popup";
+import type { AgentType, AgentState, FlowArtifact } from "@product-os/shared";
 import {
   Send,
   Loader2,
@@ -42,6 +42,7 @@ interface FlowChatThreadProps {
   repoUrl?: string;
   onConnectRepo?: (url: string) => void;
   agents?: Record<AgentType, AgentState>;
+  artifacts?: FlowArtifact[];
 }
 
 const AGENT_COMMANDS = [
@@ -55,7 +56,7 @@ const AGENT_COMMANDS = [
   { prefix: "@Changelog", label: "Changelog", description: "Write changelog entries", icon: ScrollText, requiresRepo: false },
 ];
 
-export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents }: FlowChatThreadProps) {
+export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, artifacts = [] }: FlowChatThreadProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
@@ -366,7 +367,7 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents }: Fl
     // Check for context menu triggers
     const cursorPos = e.target.selectionStart;
     const textBeforeCursor = value.slice(0, cursorPos);
-    const match = textBeforeCursor.match(/([@$#])(\w*)$/);
+    const match = textBeforeCursor.match(/([@$#])([a-zA-Z0-9_-]*)$/);
 
     if (match) {
       const trigger = match[1] as "@" | "$" | "#";
@@ -385,12 +386,12 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents }: Fl
     }
   };
 
-  const handleContextMenuSelect = (item: { id: string; label: string }) => {
+  const handleContextMenuSelect = (item: ContextMenuItem) => {
     if (!contextMenu || !inputRef.current) return;
 
     const cursorPos = inputRef.current.selectionStart;
     const textBeforeCursor = input.slice(0, cursorPos);
-    const match = textBeforeCursor.match(/([@$#])(\w*)$/);
+    const match = textBeforeCursor.match(/([@$#])([a-zA-Z0-9_-]*)$/);
 
     if (!match) return;
 
@@ -399,7 +400,7 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents }: Fl
     let replacement = "";
 
     if (contextMenu.trigger === "@") {
-      replacement = `@${item.label} `;
+      replacement = `${item.insertText ?? `@${item.label}`} `;
     } else if (contextMenu.trigger === "$") {
       replacement = `$${item.id} `;
     } else if (contextMenu.trigger === "#") {
@@ -437,7 +438,7 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents }: Fl
             </div>
             <h3 className="text-lg font-semibold mb-1">Flow Mode</h3>
             <p className="text-sm text-muted-foreground max-w-md">
-              Start a conversation to plan, build, and ship. Use @ to trigger agents, $ to reference sessions, # for skills.
+              Start a conversation to plan, build, and ship. Use @ for agents and artifacts, $ for sessions, # for skills.
             </p>
           </div>
         )}
@@ -585,6 +586,7 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents }: Fl
             query={contextMenu.query}
             position={contextMenu.position}
             sessionId={sessionId}
+            artifacts={artifacts}
             onSelect={handleContextMenuSelect}
             onDismiss={() => setContextMenu(null)}
           />

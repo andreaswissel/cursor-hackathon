@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { v4 as uuid } from "uuid";
-import { sessionStore, SessionContext, SessionEvents, AgentType, DocPieceStatus, VideoMetadata } from "../lib/session-store";
+import { sessionStore, SessionContext, SessionEvents, AgentType, DocPieceStatus, VideoMetadata, FlowArtifactRecord } from "../lib/session-store";
 import { OrchestratorAgent } from "../agents/orchestrator-agent";
 import { DocOrchestratorAgent } from "../agents/doc-orchestrator-agent";
 import { streamCompletion, getUserLLMConfig } from "../lib/claude";
@@ -41,6 +41,10 @@ const AGENT_PREFIX_MAP: Record<string, { agentType: AgentType; requiresRepo: boo
   "@Marketing": { agentType: "product-marketing",  requiresRepo: false, label: "Marketing" },
   "@Changelog": { agentType: "changelog-agent",    requiresRepo: false, label: "Changelog" },
 };
+
+const AGENT_HANDLE_SET = new Set(
+  Object.keys(AGENT_PREFIX_MAP).map((prefix) => prefix.replace("@", "").toLowerCase())
+);
 
 // Generate a short title from the user's first message using Haiku
 async function generateSessionTitle(message: string, userApiKey?: string): Promise<string> {
@@ -705,18 +709,28 @@ router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (
     return;
   }
 
+  const referencedArtifacts =
+    session.mode === "flow"
+      ? await resolveArtifactReferences(sessionId, message)
+      : [];
+
   // Detect @Agent mention anywhere in flow mode
   if (session.mode === "flow") {
     const matchedPrefix = Object.keys(AGENT_PREFIX_MAP).find((prefix) =>
-      message.includes(prefix)
+      new RegExp(`(^|\\s)${escapeRegExp(prefix)}(?![\\w-])`, "i").test(message)
     );
 
     if (matchedPrefix) {
       const { agentType: targetAgentType, requiresRepo, label: agentLabel } = AGENT_PREFIX_MAP[matchedPrefix];
+      const prefixRegex = new RegExp(`(^|\\s)${escapeRegExp(matchedPrefix)}(?![\\w-])`, "i");
       const strippedMessage = message
-        .replace(matchedPrefix, "")
+        .replace(prefixRegex, " ")
         .replace(/https?:\/\/(?:github\.com|gitlab\.com|bitbucket\.org)\/[^\s,)]+/gi, "")
         .trim();
+      const messageWithArtifactContext = withReferencedArtifactContext(
+        strippedMessage,
+        referencedArtifacts
+      );
 
       // Auto-extract repo URL from message if none connected yet
       if (!session.repoUrl) {
@@ -804,7 +818,7 @@ router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (
         codeAgent.run({
           sessionId,
           userId,
-          message: strippedMessage || "Implement the requested changes",
+          message: messageWithArtifactContext || "Implement the requested changes",
           repoUrl: session.repoUrl!,
           apiKey: userApiKey,
         }).catch((err) => console.error("CodeAgent error:", err));
@@ -813,7 +827,7 @@ router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (
         reviewAgent.run({
           sessionId,
           userId,
-          message: strippedMessage || "Review the codebase for issues",
+          message: messageWithArtifactContext || "Review the codebase for issues",
           repoUrl: session.repoUrl!,
           apiKey: userApiKey,
         }).catch((err) => console.error("ReviewAgent error:", err));
@@ -824,7 +838,7 @@ router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (
         changelogAgent.run({
           sessionId,
           userId,
-          message: strippedMessage || "Write a changelog based on recent work",
+          message: messageWithArtifactContext || "Write a changelog based on recent work",
           referencedSessionIds: sessionIdRefs.length > 0 ? sessionIdRefs : undefined,
           apiKey: userApiKey,
         }).catch((err) => console.error("ChangelogAgent error:", err));
@@ -836,7 +850,8 @@ router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (
           userId,
           session,
           strippedMessage,
-          agentLabel
+          agentLabel,
+          referencedArtifacts
         ).catch((err) => console.error(`${agentLabel} agent error:`, err));
       }
 
@@ -873,7 +888,10 @@ router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (
     role: m.role as "user" | "assistant",
     content: m.content,
   }));
-  messageHistory.push({ role: "user", content: message });
+  messageHistory.push({
+    role: "user",
+    content: withReferencedArtifactContext(message, referencedArtifacts),
+  });
 
   // Set up SSE for streaming response
   res.setHeader("Content-Type", "text/event-stream");
@@ -942,7 +960,8 @@ async function runPipelineAgentInFlowMode(
   userId: string,
   session: NonNullable<Awaited<ReturnType<typeof sessionStore.get>>>,
   userMessage: string,
-  agentLabel: string
+  agentLabel: string,
+  referencedArtifacts: ReferencedArtifact[]
 ): Promise<void> {
   // Build context from session + recent chat messages
   const recentMessages = await sessionStore.getMessages(sessionId, "flow-orchestrator");
@@ -957,14 +976,19 @@ async function runPipelineAgentInFlowMode(
     }
   }
 
+  const artifactContext = buildReferencedArtifactContext(referencedArtifacts);
+  const contextSections = [
+    session.context.additionalDocs,
+    chatContext ? `## Recent Flow Chat Context\n\n${chatContext}` : undefined,
+    artifactContext || undefined,
+  ].filter(Boolean);
+
   const agentInput: AgentInput = {
     sessionId,
     idea: userMessage || session.idea,
     context: {
       ...session.context,
-      additionalDocs: chatContext
-        ? `## Recent Flow Chat Context\n\n${chatContext}`
-        : session.context.additionalDocs,
+      additionalDocs: contextSections.length > 0 ? contextSections.join("\n\n") : undefined,
     },
     previousOutputs,
   };
@@ -1199,7 +1223,7 @@ Keep your chat responses conversational and concise. Use artifacts for substanti
     return agentContexts["feedback-forms-agent"]!;
   }
 
-  return agentContexts[agentType] || agentContexts["flow-orchestrator"];
+  return agentContexts[agentType] ?? agentContexts["flow-orchestrator"]!;
 }
 
 // Parse artifacts from assistant response text
@@ -1215,6 +1239,93 @@ function parseArtifacts(text: string): Array<{ type: string; title: string; cont
     });
   }
   return artifacts;
+}
+
+interface ReferencedArtifact {
+  handle: string;
+  artifact: FlowArtifactRecord;
+}
+
+async function resolveArtifactReferences(sessionId: string, message: string): Promise<ReferencedArtifact[]> {
+  const mentionedHandles = [...message.matchAll(/@([a-z0-9][a-z0-9-]*)/gi)]
+    .map((match) => match[1].toLowerCase())
+    .filter((handle) => !AGENT_HANDLE_SET.has(handle));
+
+  if (mentionedHandles.length === 0) return [];
+
+  const uniqueHandles: string[] = [];
+  const seen = new Set<string>();
+  for (const handle of mentionedHandles) {
+    if (seen.has(handle)) continue;
+    seen.add(handle);
+    uniqueHandles.push(handle);
+  }
+
+  const artifacts = await sessionStore.getArtifacts(sessionId);
+  const lookup = buildArtifactHandleLookup(artifacts);
+
+  const references: ReferencedArtifact[] = [];
+  for (const handle of uniqueHandles) {
+    const artifact = lookup.get(handle);
+    if (artifact) {
+      references.push({ handle, artifact });
+    }
+  }
+  return references;
+}
+
+function withReferencedArtifactContext(message: string, references: ReferencedArtifact[]): string {
+  const contextBlock = buildReferencedArtifactContext(references);
+  if (!contextBlock) return message;
+  if (!message.trim()) return contextBlock;
+  return `${message}\n\n${contextBlock}`;
+}
+
+function buildReferencedArtifactContext(references: ReferencedArtifact[]): string {
+  if (references.length === 0) return "";
+
+  const blocks = references.map(({ handle, artifact }) => {
+    return `### @${handle}
+Title: ${artifact.title}
+Type: ${artifact.type}
+
+${artifact.content}`;
+  });
+
+  return `## Referenced Artifacts
+Use these artifact outputs as source context for your response.
+
+${blocks.join("\n\n---\n\n")}`;
+}
+
+function buildArtifactHandleLookup(artifacts: FlowArtifactRecord[]): Map<string, FlowArtifactRecord> {
+  const map = new Map<string, FlowArtifactRecord>();
+  const counts = new Map<string, number>();
+  const sorted = [...artifacts].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  );
+
+  for (const artifact of sorted) {
+    const base = slugifyArtifactHandle(artifact.title) || `artifact-${artifact.id.slice(0, 8)}`;
+    const count = (counts.get(base) ?? 0) + 1;
+    counts.set(base, count);
+    const handle = count === 1 ? base : `${base}-${count}`;
+    map.set(handle, artifact);
+  }
+
+  return map;
+}
+
+function slugifyArtifactHandle(title: string): string {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export default router;
