@@ -213,6 +213,14 @@ export function ChangelogPage() {
               connectors so the public story matches actual handoff
               capabilities.
             </li>
+            <li>
+              <strong>
+                Landing AI/coding integrations now use real brand marks
+              </strong>{" "}
+              &mdash; Replaced temporary fallback glyphs for Anthropic, OpenAI,
+              Cursor, Codex, and Claude Code with official logo-based SVG
+              icons in both landing integration surfaces.
+            </li>
           </ul>
 
           {/* Feb 13 */}

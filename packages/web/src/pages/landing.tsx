@@ -22,10 +22,6 @@ import {
   Folder,
   Hash,
   Wrench,
-  Sparkles,
-  ExternalLink,
-  Terminal,
-  Command,
 } from "lucide-react";
 import {
   JiraIcon,
@@ -36,6 +32,11 @@ import {
   GoogleIcon,
   AirtableIcon,
   LinearIcon,
+  AnthropicIcon,
+  OpenAIIcon,
+  CursorIcon,
+  CodexIcon,
+  ClaudeCodeIcon,
 } from "@/components/provider-icons";
 
 // ── Enhanced fade-in on scroll hook ─────────────────────────────────────────
@@ -651,11 +652,11 @@ const DATA_INTEGRATIONS = [
 ];
 
 const AI_EXECUTION_INTEGRATIONS = [
-  { name: "Anthropic", icon: Bot },
-  { name: "OpenAI", icon: Sparkles },
-  { name: "Cursor", icon: ExternalLink },
-  { name: "Codex", icon: Terminal },
-  { name: "Claude Code", icon: Command },
+  { name: "Anthropic", icon: AnthropicIcon },
+  { name: "OpenAI", icon: OpenAIIcon },
+  { name: "Cursor", icon: CursorIcon },
+  { name: "Codex", icon: CodexIcon },
+  { name: "Claude Code", icon: ClaudeCodeIcon },
 ];
 
 const INTEGRATIONS = [...DATA_INTEGRATIONS, ...AI_EXECUTION_INTEGRATIONS];

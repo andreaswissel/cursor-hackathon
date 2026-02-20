@@ -50,6 +50,8 @@ All notable changes to Product OS are documented here.
 
 - **Landing integrations strip expanded to AI/coding stack** — Updated landing-page integration surfaces to include Anthropic, OpenAI, Cursor, Codex, and Claude Code alongside data connectors so the public story matches actual handoff capabilities.
 
+- **Landing AI/coding integrations now use real brand marks** — Replaced temporary fallback glyphs for Anthropic, OpenAI, Cursor, Codex, and Claude Code with official logo-based SVG icons in both landing integration surfaces.
+
 ## [2026-02-13]
 
 ### Improvements
