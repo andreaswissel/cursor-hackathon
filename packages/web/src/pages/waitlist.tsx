@@ -1,24 +1,14 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Zap, ArrowRight, Loader2, CheckCircle2, ChevronDown } from "lucide-react";
+import { Zap, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV ? "/api" : "https://api.product-os.ai/api");
 
-const ROLES = ["Product Manager", "Developer", "Executive", "Other"] as const;
-const USE_CASES = [
-  "Speed up product management work",
-  "Work on product angles as a developer",
-  "Other",
-] as const;
-
 export function WaitlistPage() {
   const [name, setName] = useState("");
+  const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("");
-  const [roleOther, setRoleOther] = useState("");
-  const [useCase, setUseCase] = useState("");
-  const [useCaseOther, setUseCaseOther] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +16,7 @@ export function WaitlistPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !role || !useCase) return;
+    if (!email.trim()) return;
 
     setIsLoading(true);
     setError(null);
@@ -36,12 +26,9 @@ export function WaitlistPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: name.trim(),
+          name: name.trim() || undefined,
+          company: company.trim() || undefined,
           email: email.trim(),
-          role,
-          roleOther: role === "Other" ? roleOther.trim() : undefined,
-          useCase,
-          useCaseOther: useCase === "Other" ? useCaseOther.trim() : undefined,
         }),
       });
 
@@ -96,7 +83,7 @@ export function WaitlistPage() {
             Join the Waitlist
           </h1>
           <p className="text-muted-foreground">
-            We're in beta &mdash; request early access
+            We&apos;re in beta &mdash; request early access
           </p>
         </div>
 
@@ -105,7 +92,7 @@ export function WaitlistPage() {
           {/* Name */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium mb-1.5">
-              Name
+              Name <span className="text-muted-foreground">(optional)</span>
             </label>
             <input
               id="name"
@@ -113,7 +100,21 @@ export function WaitlistPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Jane Smith"
-              required
+              className="w-full rounded-xl border bg-card px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-muted-foreground/50"
+            />
+          </div>
+
+          {/* Company */}
+          <div>
+            <label htmlFor="company" className="block text-sm font-medium mb-1.5">
+              Company <span className="text-muted-foreground">(optional)</span>
+            </label>
+            <input
+              id="company"
+              type="text"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              placeholder="Acme Inc."
               className="w-full rounded-xl border bg-card px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-muted-foreground/50"
             />
           </div>
@@ -133,90 +134,6 @@ export function WaitlistPage() {
               className="w-full rounded-xl border bg-card px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-muted-foreground/50"
             />
           </div>
-
-          {/* Role */}
-          <div>
-            <label htmlFor="role" className="block text-sm font-medium mb-1.5">
-              Role
-            </label>
-            <div className="relative">
-              <select
-                id="role"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                required
-                className="w-full appearance-none rounded-xl border bg-card px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground"
-              >
-                <option value="" disabled>
-                  Select your role
-                </option>
-                {ROLES.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            </div>
-          </div>
-
-          {role === "Other" && (
-            <div>
-              <label htmlFor="roleOther" className="block text-sm font-medium mb-1.5">
-                Your role
-              </label>
-              <input
-                id="roleOther"
-                type="text"
-                value={roleOther}
-                onChange={(e) => setRoleOther(e.target.value)}
-                placeholder="e.g. Designer, Founder..."
-                className="w-full rounded-xl border bg-card px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-muted-foreground/50"
-              />
-            </div>
-          )}
-
-          {/* Use Case */}
-          <div>
-            <label htmlFor="useCase" className="block text-sm font-medium mb-1.5">
-              What do you want to use Product OS for?
-            </label>
-            <div className="relative">
-              <select
-                id="useCase"
-                value={useCase}
-                onChange={(e) => setUseCase(e.target.value)}
-                required
-                className="w-full appearance-none rounded-xl border bg-card px-4 py-3 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-foreground"
-              >
-                <option value="" disabled>
-                  Select a use case
-                </option>
-                {USE_CASES.map((uc) => (
-                  <option key={uc} value={uc}>
-                    {uc}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            </div>
-          </div>
-
-          {useCase === "Other" && (
-            <div>
-              <label htmlFor="useCaseOther" className="block text-sm font-medium mb-1.5">
-                Tell us more
-              </label>
-              <input
-                id="useCaseOther"
-                type="text"
-                value={useCaseOther}
-                onChange={(e) => setUseCaseOther(e.target.value)}
-                placeholder="What would you use Product OS for?"
-                className="w-full rounded-xl border bg-card px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-muted-foreground/50"
-              />
-            </div>
-          )}
 
           {/* Consent */}
           <div className="flex items-start gap-2.5">
@@ -243,7 +160,7 @@ export function WaitlistPage() {
           {/* Submit */}
           <button
             type="submit"
-            disabled={isLoading || !name.trim() || !email.trim() || !role || !useCase || !agreed}
+            disabled={isLoading || !email.trim() || !agreed}
             className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-foreground px-4 py-3 text-sm font-medium text-background hover:bg-foreground/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isLoading ? (

@@ -6,17 +6,18 @@ import { waitlist } from "../db/schema";
 const router = Router();
 
 router.post("/", async (req: Request, res: Response) => {
-  const { name, email, role, roleOther, useCase, useCaseOther } = req.body as {
+  const { name, email, company, role, roleOther, useCase, useCaseOther } = req.body as {
     name?: string;
     email?: string;
+    company?: string;
     role?: string;
     roleOther?: string;
     useCase?: string;
     useCaseOther?: string;
   };
 
-  if (!name || !email || !role || !useCase) {
-    res.status(400).json({ error: "Name, email, role, and use case are required." });
+  if (!email) {
+    res.status(400).json({ error: "Email is required." });
     return;
   }
 
@@ -42,11 +43,12 @@ router.post("/", async (req: Request, res: Response) => {
     }
 
     await db.insert(waitlist).values({
-      name: name.trim(),
+      name: name?.trim() || null,
       email: normalizedEmail,
-      role,
+      company: company?.trim() || null,
+      role: role?.trim() || null,
       roleOther: role === "Other" ? roleOther?.trim() || null : null,
-      useCase,
+      useCase: useCase?.trim() || null,
       useCaseOther: useCase === "Other" ? useCaseOther?.trim() || null : null,
     });
 

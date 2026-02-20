@@ -28,6 +28,18 @@ export function ChangelogPage() {
           {/* Feb 20 */}
           <h2 className="text-xl font-semibold mt-8 mb-4">2026-02-20</h2>
 
+          <h3 className="text-lg font-medium mt-6 mb-3">Features</h3>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Public demo launch mode</strong> &mdash; Added{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                PUBLIC_DEMO_MODE
+              </code>{" "}
+              controls that lock external integrations server-side for public
+              users while preserving internal/admin bypass access.
+            </li>
+          </ul>
+
           <h3 className="text-lg font-medium mt-6 mb-3">Fixes</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
@@ -75,6 +87,12 @@ export function ChangelogPage() {
               inline embedded look and preventing composer-line visual
               collisions.
             </li>
+            <li>
+              <strong>Integration data access lockdown in demo mode</strong>{" "}
+              &mdash; Discovery and knowledge resolution now ignore live
+              integration data for public-demo users when integrations are
+              disabled, preventing accidental leakage of synced external data.
+            </li>
           </ul>
 
           <h3 className="text-lg font-medium mt-6 mb-3">Improvements</h3>
@@ -89,6 +107,16 @@ export function ChangelogPage() {
               <strong>Dark scrollbar theming</strong> &mdash; Replaced
               bright/system-looking scrollbar rails with explicit app-matched
               dark track/thumb tokens for calmer, consistent contrast.
+            </li>
+            <li>
+              <strong>Waitlist signup minimization</strong> &mdash; Waitlist
+              now requires only email, with optional name and company fields for
+              lower-friction and reduced PII collection.
+            </li>
+            <li>
+              <strong>Discovery realism</strong> &mdash; Removed scripted
+              discovery cluster fallback responses so dashboard insights are
+              always produced by real model runs.
             </li>
           </ul>
 

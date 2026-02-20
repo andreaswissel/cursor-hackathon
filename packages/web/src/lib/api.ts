@@ -310,7 +310,11 @@ export interface IntegrationDataItem {
   provider: string;
 }
 
-export async function getIntegrationData(): Promise<{ data: IntegrationDataItem[] }> {
+export async function getIntegrationData(): Promise<{
+  data: IntegrationDataItem[];
+  liveDataEnabled?: boolean;
+  waitlistUrl?: string;
+}> {
   const res = await fetch(`${API_BASE}/integrations/data/all`, {
     headers: getAuthHeaders(),
   });

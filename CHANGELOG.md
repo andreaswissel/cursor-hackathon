@@ -4,6 +4,10 @@ All notable changes to Product OS are documented here.
 
 ## [2026-02-20]
 
+### Features
+
+- **Public demo launch mode** — Added `PUBLIC_DEMO_MODE` controls that lock external integrations server-side for public users while preserving internal/admin bypass access.
+
 ### Fixes
 
 - **Drafts bootstrap for legacy users** — The projects API now always ensures each user has a personal `Drafts` project and backfills legacy sessions with `NULL project_id` so users no longer get stuck on a perpetual “Loading projects...” state.
@@ -16,11 +20,17 @@ All notable changes to Product OS are documented here.
 
 - **Flow inline `@/$/#` popup rendering** — Converted the context popup to a true floating overlay (`position: fixed`) with higher layering and refined popover styling, removing the “inline embedded” look and preventing composer-line visual collisions.
 
+- **Integration data access lockdown in demo mode** — Discovery and knowledge resolution now ignore live integration data for public-demo users when integrations are disabled, preventing accidental leakage of synced external data.
+
 ### Improvements
 
 - **Outputs handoff panel redesign** — Reworked the “Ready to Build” actions into a clearer two-path handoff (Flow vs coding agent), and toned down the visual treatment to fit dark mode.
 
 - **Dark scrollbar theming** — Replaced bright/system-looking scrollbar rails with explicit app-matched dark track/thumb tokens for a calmer, consistent UI.
+
+- **Waitlist signup minimization** — Waitlist now requires only email, with optional name and company fields for lower-friction and reduced PII collection.
+
+- **Discovery realism** — Removed scripted discovery cluster fallback responses so dashboard insights are always produced by real model runs.
 
 ## [2026-02-13]
 

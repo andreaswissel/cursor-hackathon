@@ -71,6 +71,14 @@ SLACK_REDIRECT_URI=http://localhost:3001/api/integrations/callback/slack
 # URLs
 API_BASE_URL=http://localhost:3001
 FRONTEND_URL=http://localhost:5173
+
+# Public launch mode (optional)
+PUBLIC_DEMO_MODE=true
+# Comma-separated providers allowed in demo mode (default: none)
+PUBLIC_DEMO_ENABLED_INTEGRATIONS=
+# Comma-separated internal bypass accounts
+PUBLIC_DEMO_INTERNAL_EMAILS=founder@company.com
+PUBLIC_DEMO_INTERNAL_USER_IDS=
 ```
 
 ## Project Structure

@@ -5,11 +5,12 @@ import { Loader2, CheckCircle, XCircle } from "lucide-react";
 
 interface WaitlistEntry {
   id: string;
-  name: string;
+  name: string | null;
   email: string;
-  role: string;
+  company: string | null;
+  role: string | null;
   roleOther: string | null;
-  useCase: string;
+  useCase: string | null;
   useCaseOther: string | null;
   status: "pending" | "invited" | "rejected";
   createdAt: string;
@@ -113,9 +114,8 @@ export function AdminPage() {
             <thead>
               <tr className="bg-muted/50 border-b">
                 <th className="text-left p-3 font-medium">Name</th>
+                <th className="text-left p-3 font-medium">Company</th>
                 <th className="text-left p-3 font-medium">Email</th>
-                <th className="text-left p-3 font-medium">Role</th>
-                <th className="text-left p-3 font-medium">Use Case</th>
                 <th className="text-left p-3 font-medium">Status</th>
                 <th className="text-left p-3 font-medium">Date</th>
                 <th className="text-left p-3 font-medium">Actions</th>
@@ -124,17 +124,16 @@ export function AdminPage() {
             <tbody>
               {entries.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={6} className="p-8 text-center text-muted-foreground">
                     No waitlist entries yet.
                   </td>
                 </tr>
               ) : (
                 entries.map((entry) => (
                   <tr key={entry.id} className="border-b last:border-0 hover:bg-muted/30">
-                    <td className="p-3">{entry.name}</td>
+                    <td className="p-3">{entry.name || "—"}</td>
+                    <td className="p-3">{entry.company || "—"}</td>
                     <td className="p-3 text-muted-foreground">{entry.email}</td>
-                    <td className="p-3">{entry.roleOther || entry.role}</td>
-                    <td className="p-3 max-w-xs truncate">{entry.useCaseOther || entry.useCase}</td>
                     <td className="p-3">
                       <StatusBadge status={entry.status} />
                     </td>

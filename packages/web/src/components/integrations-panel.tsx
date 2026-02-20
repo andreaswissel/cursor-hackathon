@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/auth-context";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -41,6 +42,16 @@ interface AvailableProvider {
   name: string;
   description: string;
   color: string;
+  isEnabled: boolean;
+  disabledReason: string | null;
+}
+
+interface LaunchModeState {
+  publicDemoMode: boolean;
+  integrationsLocked: boolean;
+  enabledProviders: string[];
+  waitlistUrl: string;
+  message: string | null;
 }
 
 interface Source {
@@ -65,6 +76,7 @@ export function IntegrationsPanel() {
   const [selectedSources, setSelectedSources] = useState<Set<string>>(new Set());
   const [loadingSources, setLoadingSources] = useState(false);
   const [savingSources, setSavingSources] = useState(false);
+  const [launchMode, setLaunchMode] = useState<LaunchModeState | null>(null);
 
   // Disconnect confirmation state
   const [disconnectConfirm, setDisconnectConfirm] = useState<Integration | null>(null);
@@ -78,6 +90,7 @@ export function IntegrationsPanel() {
       const data = await res.json();
       setConnected(data.connected);
       setAvailable(data.available);
+      setLaunchMode(data.launchMode || null);
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -100,17 +113,30 @@ export function IntegrationsPanel() {
       setTimeout(() => setSuccess(null), 3000);
     }
     if (errorMsg) {
-      setError(decodeURIComponent(errorMsg));
+      if (errorMsg === "integrations_locked") {
+        setError("Integrations are currently unavailable in the public demo.");
+      } else {
+        setError(decodeURIComponent(errorMsg));
+      }
       window.history.replaceState({}, "", "/settings");
     }
   }, [token]);
 
   const handleConnect = async (provider: string) => {
+    const providerState = available.find((item) => item.provider === provider);
+    if (providerState && !providerState.isEnabled) {
+      setError(providerState.disabledReason || "Integration is currently unavailable.");
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE}/integrations/connect/${provider}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Failed to get auth URL");
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "Failed to get auth URL");
+      }
       const data = await res.json();
       window.location.href = data.authUrl;
     } catch (err) {
@@ -240,6 +266,23 @@ export function IntegrationsPanel() {
 
   return (
     <div className="space-y-6">
+      {launchMode?.integrationsLocked && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+          <p className="text-sm font-medium text-amber-600">
+            Integrations are coming soon
+          </p>
+          <p className="mt-1 text-sm text-amber-600/85">
+            Try the demo modes now, then join the waitlist to get notified when integrations open.
+          </p>
+          <Link
+            to={launchMode.waitlistUrl || "/waitlist"}
+            className="mt-3 inline-flex text-sm font-medium text-amber-700 underline"
+          >
+            Join integration waitlist
+          </Link>
+        </div>
+      )}
+
       {/* Source Configuration Modal */}
       {configuringIntegration && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -414,7 +457,13 @@ export function IntegrationsPanel() {
               <button
                 key={provider.provider}
                 onClick={() => handleConnect(provider.provider)}
-                className="w-full rounded-xl border bg-card p-4 hover:bg-secondary/50 transition-colors text-left"
+                disabled={!provider.isEnabled}
+                className={cn(
+                  "w-full rounded-xl border bg-card p-4 text-left transition-colors",
+                  provider.isEnabled
+                    ? "hover:bg-secondary/50"
+                    : "opacity-60 cursor-not-allowed"
+                )}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -430,7 +479,9 @@ export function IntegrationsPanel() {
                     <div>
                       <p className="font-medium text-sm">{provider.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {provider.description}
+                        {provider.isEnabled
+                          ? provider.description
+                          : provider.disabledReason || "Coming soon"}
                       </p>
                     </div>
                   </div>
