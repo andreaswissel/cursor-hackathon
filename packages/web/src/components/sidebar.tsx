@@ -553,8 +553,7 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
 
         {projects.length === 0 && totalSessions === 0 && (
           <div className="px-4 py-8 text-center">
-            <Loader2 className="w-5 h-5 text-muted-foreground/40 mx-auto mb-2 animate-spin" />
-            <p className="text-xs text-muted-foreground">Loading projects...</p>
+            <p className="text-xs text-muted-foreground">No projects yet</p>
           </div>
         )}
       </div>

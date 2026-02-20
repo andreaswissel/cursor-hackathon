@@ -10,7 +10,8 @@ const router = Router();
 // Google OAuth config
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
-const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3000";
+const RAW_API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3001";
+const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, "").replace(/\/api$/, "");
 const GOOGLE_AUTH_REDIRECT_URI = process.env.GOOGLE_AUTH_REDIRECT_URI || `${API_BASE_URL}/api/auth/google/callback`;
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 

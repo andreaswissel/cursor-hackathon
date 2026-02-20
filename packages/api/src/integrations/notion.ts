@@ -2,7 +2,9 @@ import type { IntegrationAdapter, OAuthTokens, IntegrationMetadata, SyncedDataIt
 
 const NOTION_CLIENT_ID = process.env.NOTION_CLIENT_ID || "";
 const NOTION_CLIENT_SECRET = process.env.NOTION_CLIENT_SECRET || "";
-const NOTION_REDIRECT_URI = process.env.NOTION_REDIRECT_URI || "";
+const RAW_API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3001";
+const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, "").replace(/\/api$/, "");
+const NOTION_REDIRECT_URI = process.env.NOTION_REDIRECT_URI || `${API_BASE_URL}/api/integrations/callback/notion`;
 
 export const notionAdapter: IntegrationAdapter = {
   provider: "notion",

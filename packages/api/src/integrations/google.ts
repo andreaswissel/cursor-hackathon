@@ -2,7 +2,9 @@ import type { IntegrationAdapter, OAuthTokens, IntegrationMetadata, SyncedDataIt
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || "";
+const RAW_API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3001";
+const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, "").replace(/\/api$/, "");
+const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${API_BASE_URL}/api/integrations/callback/google`;
 
 export const googleAdapter: IntegrationAdapter = {
   provider: "google",

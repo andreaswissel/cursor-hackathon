@@ -15,6 +15,15 @@ router.get("/", async (req: Request, res: Response) => {
   const userId = req.user!.id;
   const activeTeamId = req.user!.activeTeamId;
 
+  // Ensure every user has a personal default project (legacy-account safeguard)
+  const defaultProjectId = await ensureDefaultProject(userId);
+
+  // Backfill legacy sessions that may not have been assigned to a project
+  await db
+    .update(sessions)
+    .set({ projectId: defaultProjectId })
+    .where(and(eq(sessions.userId, userId), isNull(sessions.projectId)));
+
   // Build project query: personal projects + active team projects
   let dbProjects;
   if (activeTeamId) {
