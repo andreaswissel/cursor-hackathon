@@ -387,7 +387,7 @@ function AppScreenshotMockup() {
 
 function FlowMockup() {
   return (
-    <div className="dark rounded-xl bg-card border border-border/80 p-5 pointer-events-none select-none w-full max-w-md shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
+    <div className="dark rounded-xl bg-card border border-border/80 p-2 pointer-events-none select-none w-full max-w-md shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
       {/* Assistant message */}
       <div className="flex gap-2.5 mb-3">
         <div className="w-7 h-7 rounded-full bg-violet-500/15 border border-violet-400/35 flex items-center justify-center shrink-0 mt-0.5">
@@ -429,7 +429,7 @@ function FlowMockup() {
 
 function ImagineMockup() {
   return (
-    <div className="dark rounded-xl bg-card border border-border/80 p-5 pointer-events-none select-none w-full max-w-md shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
+    <div className="dark rounded-xl bg-card border border-border/80 p-2 pointer-events-none select-none w-full max-w-md shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
       {/* Textarea mockup */}
       <div className="rounded-lg border border-border bg-secondary/70 px-3.5 py-3 mb-3">
         <span className="text-xs text-muted-foreground">
@@ -481,7 +481,7 @@ function ImagineMockup() {
 
 function DiscoverMockup() {
   return (
-    <div className="dark rounded-xl bg-card border border-border/80 p-5 pointer-events-none select-none w-full max-w-md shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
+    <div className="dark rounded-xl bg-card border border-border/80 p-2 pointer-events-none select-none w-full max-w-md shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
       <div className="rounded-lg border border-border bg-secondary/70 p-3 mb-2.5">
         <div className="flex items-center gap-2 mb-2">
           <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-400/35 text-emerald-300">
@@ -534,7 +534,7 @@ function DiscoverMockup() {
 
 function ToolsMockup() {
   return (
-    <div className="dark rounded-xl bg-card border border-border/80 p-5 pointer-events-none select-none w-full max-w-md shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
+    <div className="dark rounded-xl bg-card border border-border/80 p-2 pointer-events-none select-none w-full max-w-md shadow-[0_16px_40px_rgba(0,0,0,0.35)]">
       <div className="grid grid-cols-2 gap-2.5">
         {[
           { icon: Route, label: "Guided Tours" },
@@ -994,7 +994,7 @@ function DiscoverySpotlight() {
           </div>
 
           <div ref={previewFade.ref} style={previewFade.style} className="flex justify-center lg:justify-end">
-            <div className="rounded-2xl border border-gray-800 bg-[#1a1a1a] p-5 md:p-6 shadow-[0_25px_80px_rgba(0,0,0,0.45)]">
+            <div className="rounded-2xl border border-gray-800 bg-[#1a1a1a] p-2 shadow-[0_25px_80px_rgba(0,0,0,0.45)]">
               <DiscoverMockup />
             </div>
           </div>
@@ -1158,7 +1158,7 @@ function FeatureSection({
 
           {/* Preview side */}
           <div ref={previewFade.ref} style={previewFade.style} className="flex-1 flex justify-center">
-            <div className="rounded-2xl bg-[#1a1a1a] p-6 md:p-8">
+            <div className="rounded-2xl bg-[#1a1a1a] p-2">
               <Preview />
             </div>
           </div>

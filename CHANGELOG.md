@@ -58,6 +58,8 @@ All notable changes to Product OS are documented here.
 
 - **Landing feature cards aligned to product theme** — Refined mock screenshot styling to better match in-app dark UI tokens, removed non-functional “Learn more” links from feature deep-dives, and standardized feature subtitle accent color to avoid rainbow category labels.
 
+- **Landing screen frame spacing tightened** — Reduced preview screen shell/wrapper padding to `p-2` across feature surfaces for a tighter, more product-accurate frame treatment.
+
 ## [2026-02-13]
 
 ### Improvements

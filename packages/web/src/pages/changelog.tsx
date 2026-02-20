@@ -241,6 +241,15 @@ export function ChangelogPage() {
               standardized feature subtitle accent color to avoid rainbow
               category labels.
             </li>
+            <li>
+              <strong>Landing screen frame spacing tightened</strong> &mdash;
+              Reduced preview screen shell/wrapper padding to{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                p-2
+              </code>{" "}
+              across feature surfaces for a tighter, more product-accurate
+              frame treatment.
+            </li>
           </ul>
 
           {/* Feb 13 */}
