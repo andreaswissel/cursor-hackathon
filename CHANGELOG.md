@@ -52,6 +52,8 @@ All notable changes to Product OS are documented here.
 
 - **Landing AI/coding integrations now use real brand marks** — Replaced temporary fallback glyphs for Anthropic, OpenAI, Cursor, Codex, and Claude Code with official logo-based SVG icons in both landing integration surfaces.
 
+- **Discovery mode promoted on landing** — Added a dedicated Discovery spotlight section, elevated Discovery to a top-tier feature card, and reordered deep-dive feature sequencing so signal intelligence is positioned as a core product strength.
+
 ## [2026-02-13]
 
 ### Improvements

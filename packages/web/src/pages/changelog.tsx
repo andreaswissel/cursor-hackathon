@@ -221,6 +221,12 @@ export function ChangelogPage() {
               Cursor, Codex, and Claude Code with official logo-based SVG
               icons in both landing integration surfaces.
             </li>
+            <li>
+              <strong>Discovery mode promoted on landing</strong> &mdash; Added
+              a dedicated Discovery spotlight section, elevated Discovery to a
+              top-tier feature card, and reordered deep-dive feature sequencing
+              so signal intelligence is positioned as a core product strength.
+            </li>
           </ul>
 
           {/* Feb 13 */}

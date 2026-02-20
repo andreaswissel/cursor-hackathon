@@ -575,6 +575,18 @@ const FEATURES = [
     accentColor: "text-violet-600",
   },
   {
+    id: "discover",
+    category: "Signal Intelligence",
+    title: "Discovery mode pinpoints what to build next",
+    description:
+      "Turn customer feedback, support threads, and usage signals into ranked opportunities. Discovery scores pain severity, frequency, and commercial upside so prioritization is evidence-based.",
+    accent: "emerald",
+    icon: Compass,
+    preview: DiscoverMockup,
+    gradient: "from-emerald-50 to-teal-50",
+    accentColor: "text-emerald-600",
+  },
+  {
     id: "imagine",
     category: "Ideation Engine",
     title: "From rough idea to shippable spec",
@@ -585,18 +597,6 @@ const FEATURES = [
     preview: ImagineMockup,
     gradient: "from-amber-50 to-orange-50",
     accentColor: "text-amber-600",
-  },
-  {
-    id: "discover",
-    category: "Signal Intelligence",
-    title: "Know exactly what to build next",
-    description:
-      "Surface the highest-impact opportunities from your customer signals. AI ranks them by pain severity, frequency, and revenue potential — so you never waste a sprint.",
-    accent: "emerald",
-    icon: Compass,
-    preview: DiscoverMockup,
-    gradient: "from-emerald-50 to-teal-50",
-    accentColor: "text-emerald-600",
   },
   {
     id: "tools",
@@ -860,6 +860,9 @@ export function LandingPage() {
       {/* ─── Social Proof Bar ─── */}
       <SocialProofBar />
 
+      {/* ─── Discovery Spotlight ─── */}
+      <DiscoverySpotlight />
+
       {/* ─── Bento Feature Grid ─── */}
       <BentoFeatures />
 
@@ -949,6 +952,58 @@ function SocialProofBar() {
   );
 }
 
+function DiscoverySpotlight() {
+  const textFade = useFadeIn<HTMLDivElement>({ direction: "left" });
+  const previewFade = useFadeIn<HTMLDivElement>({ direction: "right", delay: 120 });
+
+  return (
+    <section id="discover-mode" className="py-20 md:py-24 bg-[#0f0f0f] border-b border-gray-800/50">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+          <div ref={textFade.ref} style={textFade.style}>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-[11px] font-semibold uppercase tracking-[0.15em] text-emerald-300 mb-5">
+              <Compass className="w-3.5 h-3.5" />
+              Discovery Mode
+            </span>
+            <h2 className="text-3xl md:text-4xl font-semibold text-white leading-tight mb-4">
+              Find your highest-impact opportunity before writing a spec
+            </h2>
+            <p className="text-gray-400 text-base leading-relaxed mb-6 max-w-xl">
+              Discovery mode ranks product opportunities from real customer
+              signals, so roadmap decisions come from evidence, not opinions.
+              It highlights pain severity, signal volume, and business impact
+              in one view.
+            </p>
+            <div className="flex flex-wrap gap-2 mb-6">
+              {["Pain severity", "Signal volume", "Money quotes", "Recency"].map((chip) => (
+                <span
+                  key={chip}
+                  className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 border border-emerald-500/25 text-emerald-300"
+                >
+                  {chip}
+                </span>
+              ))}
+            </div>
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-2 rounded-full bg-white text-gray-900 px-6 py-3 text-sm font-semibold hover:bg-gray-200 transition-colors shadow-lg shadow-black/30"
+            >
+              Run Discovery Demo
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <div ref={previewFade.ref} style={previewFade.style} className="flex justify-center lg:justify-end">
+            <div className="rounded-2xl border border-gray-800 bg-[#1a1a1a] p-5 md:p-6 shadow-[0_25px_80px_rgba(0,0,0,0.45)]">
+              <DiscoverMockup />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function BentoFeatures() {
   const headingFade = useFadeIn<HTMLDivElement>();
   return (
@@ -963,8 +1018,8 @@ function BentoFeatures() {
             Product work finally goes agentic
           </h2>
           <p className="text-gray-400 max-w-lg mx-auto">
-            Flow mode coordinates specialist product agents in one system, so
-            you spend less time aligning and more time shipping.
+            Discovery identifies what matters, then Flow mode coordinates
+            specialist agents in one system so you can ship faster.
           </p>
         </div>
 
@@ -991,16 +1046,16 @@ function BentoFeatures() {
           <StaggerCard delay={100}>
             <div className="rounded-2xl bg-[#1a1a1a] p-8 md:p-10 h-full flex flex-col">
               <h3 className="text-lg font-semibold text-white mb-4">
-                One prompt, full product package
+                Discovery ranks opportunities with evidence
               </h3>
               <div className="flex-1 flex items-center justify-center py-4">
-                <ImagineMockup />
+                <DiscoverMockup />
               </div>
               <div className="mt-4">
-                <p className="text-sm font-semibold text-white mb-1">Imagine</p>
+                <p className="text-sm font-semibold text-white mb-1">Discover</p>
                 <p className="text-sm text-gray-400 leading-relaxed">
-                  Start from rough context and get structured output for
-                  planning, building, and launch communication.
+                  Pull customer signals into one ranked backlog and focus your
+                  next sprint on the most painful, high-frequency problem.
                 </p>
               </div>
             </div>
@@ -1012,14 +1067,14 @@ function BentoFeatures() {
           <StaggerCard delay={200}>
             <div className="rounded-2xl bg-[#1a1a1a] p-8 md:p-10 h-full">
               <div className="w-10 h-10 rounded-full bg-[#2a2a2a] flex items-center justify-center mb-5">
-                <Compass className="w-5 h-5 text-gray-300" />
+                <Lightbulb className="w-5 h-5 text-gray-300" />
               </div>
               <h3 className="text-base font-semibold text-white mb-2">
-                Prioritize what matters
+                One prompt, full product package
               </h3>
               <p className="text-sm text-gray-400 leading-relaxed">
-                Rank opportunities by severity, frequency, and business impact
-                so roadmap calls are evidence-based.
+                Start from rough context and get structured output for
+                planning, building, and launch communication.
               </p>
             </div>
           </StaggerCard>
