@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Loader2, CheckCircle, XCircle, ChevronRight, Square } from "lucide-react";
 
@@ -7,6 +7,7 @@ interface CollapsibleThinkingProps {
   agentLabel: string;
   logs: string[];
   status: "running" | "completed" | "failed";
+  startedAt?: string;
   onStop?: () => void;
 }
 
@@ -14,9 +15,11 @@ export function CollapsibleThinking({
   agentLabel,
   logs,
   status,
+  startedAt,
   onStop,
 }: CollapsibleThinkingProps) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [now, setNow] = useState(Date.now());
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-collapse when status changes to completed/failed
@@ -32,6 +35,30 @@ export function CollapsibleThinking({
       logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [logs, isExpanded]);
+
+  useEffect(() => {
+    if (status !== "running") return;
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [status]);
+
+  const startedLabel = useMemo(() => {
+    if (!startedAt) return null;
+    const date = new Date(startedAt);
+    if (Number.isNaN(date.getTime())) return null;
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  }, [startedAt]);
+
+  const elapsedLabel = useMemo(() => {
+    if (!startedAt || status !== "running") return null;
+    const started = new Date(startedAt).getTime();
+    if (Number.isNaN(started)) return null;
+    const elapsedSeconds = Math.max(0, Math.floor((now - started) / 1000));
+    const minutes = Math.floor(elapsedSeconds / 60);
+    const seconds = elapsedSeconds % 60;
+    if (minutes > 0) return `${minutes}m ${seconds}s`;
+    return `${seconds}s`;
+  }, [startedAt, status, now]);
 
   const statusIcon =
     status === "running" ? (
@@ -66,17 +93,23 @@ export function CollapsibleThinking({
         <span className="text-xs font-medium text-muted-foreground flex-1">
           {statusText}
         </span>
+        {startedLabel && (
+          <span className="text-[10px] text-muted-foreground/80 tabular-nums">
+            {elapsedLabel ? `${elapsedLabel} • ` : ""}{startedLabel}
+          </span>
+        )}
         {status === "running" && onStop && (
-          <button
+          <span
             onClick={(e) => {
               e.stopPropagation();
               onStop();
             }}
-            className="p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-            title="Stop agent"
+            role="button"
+            className="p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+            title="Stop running agent"
           >
             <Square className="w-3 h-3 fill-current" />
-          </button>
+          </span>
         )}
       </button>
 

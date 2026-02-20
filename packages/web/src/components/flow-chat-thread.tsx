@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { chatWithAgent, getChatHistory, cancelAgent } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
@@ -21,6 +21,7 @@ import {
   Megaphone,
   Newspaper,
   ScrollText,
+  Square,
 } from "lucide-react";
 
 interface AgentThinking {
@@ -55,6 +56,17 @@ const AGENT_COMMANDS = [
   { prefix: "@Marketing", label: "Marketing", description: "Write product update", icon: Newspaper, requiresRepo: false },
   { prefix: "@Changelog", label: "Changelog", description: "Write changelog entries", icon: ScrollText, requiresRepo: false },
 ];
+
+function formatMessageTime(dateStr?: string): string | null {
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
 
 export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, artifacts = [] }: FlowChatThreadProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -286,25 +298,44 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
               },
             ]);
           },
-          onThinking: (content) => {
+          onThinking: (content, agentType) => {
             if (thinkingRef.current) {
-              thinkingRef.current.logs.push(content);
+              if (thinkingRef.current.agentType === agentType) {
+                thinkingRef.current.logs.push(content);
+              }
               setMessages((prev) =>
                 prev.map((m) =>
-                  m.agentThinking
-                    ? { ...m, agentThinking: { ...m.agentThinking, logs: [...thinkingRef.current!.logs] } }
+                  m.agentThinking?.agentType === agentType
+                    ? {
+                        ...m,
+                        agentThinking: {
+                          ...m.agentThinking,
+                          logs:
+                            thinkingRef.current?.agentType === agentType
+                              ? [...thinkingRef.current.logs]
+                              : [...m.agentThinking.logs, content],
+                        },
+                      }
                     : m
                 )
               );
             }
           },
-          onAgentThinkingEnd: (_agentType, status) => {
+          onAgentThinkingEnd: (agentType, status) => {
             if (thinkingRef.current) {
-              thinkingRef.current.status = status as "completed" | "failed";
+              if (thinkingRef.current.agentType === agentType) {
+                thinkingRef.current.status = status as "completed" | "failed";
+              }
               setMessages((prev) =>
                 prev.map((m) =>
-                  m.agentThinking
-                    ? { ...m, agentThinking: { ...m.agentThinking, status: status as "completed" | "failed" } }
+                  m.agentThinking?.agentType === agentType
+                    ? {
+                        ...m,
+                        agentThinking: {
+                          ...m.agentThinking,
+                          status: status as "completed" | "failed",
+                        },
+                      }
                     : m
                 )
               );
@@ -315,6 +346,55 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
     },
     [input, isStreaming, sessionId]
   );
+
+  const stopAgent = useCallback((agentType: string) => {
+    cancelAgent(sessionId, agentType).catch(() => {});
+    abortRef.current?.();
+    abortRef.current = null;
+    setIsStreaming(false);
+    setStreamingContent("");
+    streamingContentRef.current = "";
+    thinkingRef.current = null;
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.agentThinking?.agentType === agentType && m.agentThinking.status === "running"
+          ? {
+              ...m,
+              agentThinking: {
+                ...m.agentThinking,
+                status: "failed",
+              },
+            }
+          : m
+      )
+    );
+  }, [sessionId]);
+
+  const runningAgentTypes = useMemo(() => {
+    const running = new Set<string>();
+
+    for (const message of messages) {
+      if (message.agentThinking?.status === "running") {
+        running.add(message.agentThinking.agentType);
+      }
+    }
+
+    if (agents) {
+      for (const [agentType, agentState] of Object.entries(agents)) {
+        if (agentState.status === "running") {
+          running.add(agentType);
+        }
+      }
+    }
+
+    return Array.from(running);
+  }, [messages, agents]);
+
+  const handleStopAllRunningAgents = useCallback(() => {
+    for (const agentType of runningAgentTypes) {
+      stopAgent(agentType);
+    }
+  }, [runningAgentTypes, stopAgent]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // If context menu is open, let it handle keyboard
@@ -453,13 +533,10 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
                   agentLabel={msg.agentThinking.agentLabel}
                   logs={msg.agentThinking.logs}
                   status={msg.agentThinking.status}
+                  startedAt={msg.createdAt}
                   onStop={
-                    isStreaming && msg.agentThinking.status === "running"
-                      ? () => {
-                          cancelAgent(sessionId, msg.agentThinking!.agentType).catch(() => {});
-                          abortRef.current?.();
-                          setIsStreaming(false);
-                        }
+                    msg.agentThinking.status === "running"
+                      ? () => stopAgent(msg.agentThinking!.agentType)
                       : undefined
                   }
                 />
@@ -469,6 +546,7 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
 
           // Skip empty assistant messages (thinking placeholders with no text content)
           if (msg.role === "assistant" && !msg.content) return null;
+          const messageTime = formatMessageTime(msg.createdAt);
 
           return (
             <div
@@ -507,6 +585,16 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
                 ) : (
                   <p className="whitespace-pre-wrap">{msg.content}</p>
                 )}
+                {messageTime && (
+                  <div
+                    className={cn(
+                      "mt-1 text-[10px] tabular-nums",
+                      msg.role === "user" ? "text-background/70" : "text-muted-foreground"
+                    )}
+                  >
+                    {messageTime}
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -521,6 +609,9 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
             <div className="rounded-xl px-4 py-2.5 text-sm bg-secondary">
               <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-headings:font-semibold prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-code:text-xs prose-code:bg-muted prose-code:text-foreground prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:rounded-lg prose-pre:p-3 [&_pre_code]:bg-transparent [&_pre_code]:p-0">
                 <ReactMarkdown>{stripArtifacts(streamingContent)}</ReactMarkdown>
+              </div>
+              <div className="mt-1 text-[10px] tabular-nums text-muted-foreground">
+                Streaming • {formatMessageTime(new Date().toISOString())}
               </div>
             </div>
           </div>
@@ -542,6 +633,21 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
 
       {/* Input area */}
       <div className="border-t px-4 md:px-6 py-3 bg-background relative">
+        {runningAgentTypes.length > 0 && (
+          <div className="flex items-center justify-between gap-3 mb-2 p-2 rounded-lg border bg-secondary/30">
+            <span className="text-xs text-muted-foreground">
+              {runningAgentTypes.length} running {runningAgentTypes.length === 1 ? "agent" : "agents"}
+            </span>
+            <button
+              onClick={handleStopAllRunningAgents}
+              className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded bg-destructive/10 text-destructive hover:bg-destructive/15 transition-colors"
+            >
+              <Square className="w-3 h-3 fill-current" />
+              Stop
+            </button>
+          </div>
+        )}
+
         {/* Connected repo indicator */}
         {repoUrl && (
           <div className="flex items-center gap-1.5 mb-2">
