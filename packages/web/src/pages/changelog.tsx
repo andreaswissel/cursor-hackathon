@@ -65,6 +65,16 @@ export function ChangelogPage() {
               wrapper and standardizing higher z-index layers for custom
               dropdown anchors/menus.
             </li>
+            <li>
+              <strong>Flow inline @/$/# popup rendering</strong> &mdash;
+              Converted the context popup to a true floating overlay (
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                position: fixed
+              </code>
+              ) with higher layering and refined popover styling, removing the
+              inline embedded look and preventing composer-line visual
+              collisions.
+            </li>
           </ul>
 
           <h3 className="text-lg font-medium mt-6 mb-3">Improvements</h3>

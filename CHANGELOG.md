@@ -14,6 +14,8 @@ All notable changes to Product OS are documented here.
 
 - **Dropdown layering and clipping** — Fixed custom dropdown menus being cut off or rendered behind nearby cards by removing clipping overflow from the outputs handoff wrapper and standardizing higher z-index layers for custom dropdown anchors/menus.
 
+- **Flow inline `@/$/#` popup rendering** — Converted the context popup to a true floating overlay (`position: fixed`) with higher layering and refined popover styling, removing the “inline embedded” look and preventing composer-line visual collisions.
+
 ### Improvements
 
 - **Outputs handoff panel redesign** — Reworked the “Ready to Build” actions into a clearer two-path handoff (Flow vs coding agent), and toned down the visual treatment to fit dark mode.

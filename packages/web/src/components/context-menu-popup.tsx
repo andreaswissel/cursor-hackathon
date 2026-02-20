@@ -221,10 +221,10 @@ export function ContextMenuPopup({
   return (
     <div
       ref={menuRef}
-      className="absolute z-50 bg-popover border rounded-lg shadow-lg py-1 min-w-[240px] max-w-[320px] max-h-[280px] overflow-y-auto"
+      className="fixed z-[220] bg-popover/95 backdrop-blur-md border border-border/80 rounded-xl shadow-2xl py-1.5 min-w-[240px] max-w-[320px] max-h-[280px] overflow-y-auto scrollbar-subtle"
       style={{
-        bottom: position.bottom,
-        left: Math.min(position.left, window.innerWidth - 340),
+        bottom: Math.max(position.bottom, 84),
+        left: Math.max(12, Math.min(position.left, window.innerWidth - 340)),
       }}
     >
       {loading && (
