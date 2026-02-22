@@ -64,7 +64,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <Route path="/restricted-data" element={<RestrictedDataPage />} />
           <Route path="/changelog" element={<ChangelogPage />} />
           <Route path="/waitlist" element={<WaitlistPage />} />
-          <Route path="/imprint" element={<ImprintPage />} />
+          <Route path="/legal-notice" element={<ImprintPage />} />
+          <Route path="/imprint" element={<Navigate to="/legal-notice" replace />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/invite/:token" element={<InvitePage />} />
           <Route

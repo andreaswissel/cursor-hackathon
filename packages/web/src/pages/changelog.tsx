@@ -255,6 +255,20 @@ export function ChangelogPage() {
               &mdash; Removed extra outer preview wrappers so each feature
               screen uses a single frame instead of stacked borders.
             </li>
+            <li>
+              <strong>Legal Notice page updated for launch</strong> &mdash;
+              Renamed the footer/legal label to &quot;Legal Notice&quot;,
+              switched primary routing to{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                /legal-notice
+              </code>{" "}
+              (with{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                /imprint
+              </code>{" "}
+              redirect compatibility), and replaced the legal page body with the
+              new English TMG/disclaimer text for blankk UG.
+            </li>
           </ul>
 
           {/* Feb 13 */}
@@ -329,7 +343,7 @@ export function ChangelogPage() {
               landing page, and onboarding
             </li>
             <li>
-              <strong>Legal Compliance</strong> &mdash; Added Impressum (DDG
+              <strong>Legal Compliance</strong> &mdash; Added Legal Notice (DDG
               &sect;5), Terms of Service, GDPR legal basis mapping in Privacy
               Policy, and privacy/terms consent on waitlist form. Standardized
               contact email.

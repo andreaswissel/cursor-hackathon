@@ -62,6 +62,8 @@ All notable changes to Product OS are documented here.
 
 - **Landing preview border layering simplified** — Removed extra outer preview wrappers so each feature screen uses a single frame instead of stacked borders.
 
+- **Legal Notice page updated for launch** — Renamed the footer/legal label to “Legal Notice”, switched primary routing to `/legal-notice` (with `/imprint` redirect compatibility), and replaced the legal page body with the new English TMG/disclaimer text for blankk UG.
+
 ## [2026-02-13]
 
 ### Improvements
@@ -84,7 +86,7 @@ All notable changes to Product OS are documented here.
 
 - **Full-screen Video Hero** — Landing page opens with a full-viewport typographic animation ("anyone can be a PM.") with scroll indicator to reveal the rest of the page
 - **Real Brand Icons** — Replaced generic Lucide icons with official brand SVGs (Airtable, Jira, Notion, Google, Slack, Intercom, Salesforce, Linear) across integrations panel, landing page, and onboarding
-- **Legal Compliance** — Added Impressum (DDG §5), Terms of Service, GDPR legal basis mapping in Privacy Policy, and privacy/terms consent on waitlist form. Standardized contact email to hello@andreaswissel.com.
+- **Legal Compliance** — Added Legal Notice (DDG §5), Terms of Service, GDPR legal basis mapping in Privacy Policy, and privacy/terms consent on waitlist form. Standardized contact email to hello@andreaswissel.com.
 - **Waitlist** — Beta signup waitlist at `/waitlist` with name, email, role, and use-case collection. Landing page CTAs now point to the waitlist instead of direct signup. Existing users can still sign in via `/login`.
 - **Landing Page** — Public marketing landing page at `/` for unauthenticated visitors with hero, feature showcase, how it works, integrations, and CTA sections. Authenticated users still see the home dashboard.
 - **Salesforce Integration** — New integration adapter to import sales feedback from Cases, Opportunities, Leads, and Contacts via OAuth with refresh token support

@@ -907,10 +907,10 @@ export function LandingPage() {
                 Terms
               </Link>
               <Link
-                to="/imprint"
+                to="/legal-notice"
                 className="hover:text-gray-300 transition-colors"
               >
-                Imprint
+                Legal Notice
               </Link>
               <Link
                 to="/changelog"
