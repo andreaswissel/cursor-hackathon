@@ -20,6 +20,8 @@ All notable changes to Product OS are documented here.
 
 - **Sidebar session mode icons + running indicator split** — Project session rows now always show mode/type icons (Flow/Imagine/Discover/etc.) while active runs show a separate compact rotating progress indicator instead of replacing the mode icon.
 
+- **Flow `@Code` per-user daily budget** — Added a configurable daily run cap for the Flow coding agent (`CODE_AGENT_DAILY_LIMIT`, default `3`) with in-chat limit messaging and UTC reset timestamps.
+
 ### Fixes
 
 - **Flow mobile artifact panel access** — Restored artifact access in mobile flow sessions by adding a dedicated “Open artifacts panel” trigger and a mobile drawer presentation with close controls.

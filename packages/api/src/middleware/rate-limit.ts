@@ -1,10 +1,84 @@
 import { Request, Response, NextFunction } from "express";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, gte, lt, sql } from "drizzle-orm";
 import { db } from "../db";
-import { sessions, users } from "../db/schema";
+import { agentRuns, sessions, users, type AppUserRole } from "../db/schema";
 
 const MAX_SESSIONS_PER_USER = 5;
 const MAX_PROMPTS_PER_SESSION = 5;
+const DEFAULT_CODE_AGENT_DAILY_LIMIT = 3;
+const parsedCodeAgentDailyLimit = Number.parseInt(process.env.CODE_AGENT_DAILY_LIMIT || "", 10);
+const CODE_AGENT_DAILY_LIMIT =
+  Number.isFinite(parsedCodeAgentDailyLimit) && parsedCodeAgentDailyLimit > 0
+    ? parsedCodeAgentDailyLimit
+    : DEFAULT_CODE_AGENT_DAILY_LIMIT;
+
+interface BudgetUser {
+  isAdmin?: boolean;
+  userRole?: AppUserRole;
+}
+
+export interface CodeAgentDailyBudgetStats {
+  enforced: boolean;
+  limit: number | null;
+  used: number;
+  remaining: number | null;
+  canRun: boolean;
+  resetAt: string;
+}
+
+function hasUnlimitedCodeAgentBudget(user?: BudgetUser): boolean {
+  return !!(user?.isAdmin || user?.userRole === "admin" || user?.userRole === "beta_tester");
+}
+
+function getUtcDayBounds(now = new Date()): { startUtc: Date; nextResetUtc: Date } {
+  const startUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const nextResetUtc = new Date(startUtc.getTime() + 24 * 60 * 60 * 1000);
+  return { startUtc, nextResetUtc };
+}
+
+export async function getCodeAgentDailyBudgetStats(
+  userId: string,
+  user?: BudgetUser
+): Promise<CodeAgentDailyBudgetStats> {
+  const { startUtc, nextResetUtc } = getUtcDayBounds();
+  const enforced = !hasUnlimitedCodeAgentBudget(user);
+
+  if (!enforced) {
+    return {
+      enforced: false,
+      limit: null,
+      used: 0,
+      remaining: null,
+      canRun: true,
+      resetAt: nextResetUtc.toISOString(),
+    };
+  }
+
+  const [dailyUsage] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(agentRuns)
+    .innerJoin(sessions, eq(agentRuns.sessionId, sessions.id))
+    .where(
+      and(
+        eq(agentRuns.agentType, "code-agent"),
+        eq(sessions.userId, userId),
+        gte(agentRuns.createdAt, startUtc),
+        lt(agentRuns.createdAt, nextResetUtc)
+      )
+    );
+
+  const used = Number(dailyUsage?.count ?? 0);
+  const remaining = Math.max(CODE_AGENT_DAILY_LIMIT - used, 0);
+
+  return {
+    enforced: true,
+    limit: CODE_AGENT_DAILY_LIMIT,
+    used,
+    remaining,
+    canRun: used < CODE_AGENT_DAILY_LIMIT,
+    resetAt: nextResetUtc.toISOString(),
+  };
+}
 
 // Check if user has any API key configured (bypass limits)
 async function userHasApiKey(userId: string): Promise<boolean> {
@@ -161,19 +235,21 @@ export async function incrementPromptCount(sessionId: string): Promise<void> {
 }
 
 // Get user's usage stats
-export async function getUserUsageStats(userId: string, isAdmin?: boolean): Promise<{
+export async function getUserUsageStats(userId: string, user?: BudgetUser): Promise<{
   sessionCount: number;
   maxSessions: number | null; // null means unlimited
   canCreateSession: boolean;
   hasApiKey: boolean;
   unlimited: boolean;
+  codeAgentDaily: CodeAgentDailyBudgetStats;
 }> {
-  const [userSessions, hasKey] = await Promise.all([
+  const [userSessions, hasKey, codeAgentDaily] = await Promise.all([
     db.select({ id: sessions.id }).from(sessions).where(eq(sessions.userId, userId)),
     userHasApiKey(userId),
+    getCodeAgentDailyBudgetStats(userId, user),
   ]);
 
-  const unlimited = isAdmin || hasKey;
+  const unlimited = !!(user?.isAdmin || user?.userRole === "admin") || hasKey;
 
   return {
     sessionCount: userSessions.length,
@@ -181,6 +257,7 @@ export async function getUserUsageStats(userId: string, isAdmin?: boolean): Prom
     canCreateSession: unlimited || userSessions.length < MAX_SESSIONS_PER_USER,
     hasApiKey: hasKey,
     unlimited,
+    codeAgentDaily,
   };
 }
 
