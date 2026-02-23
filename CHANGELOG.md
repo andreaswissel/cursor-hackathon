@@ -6,11 +6,15 @@ All notable changes to Product OS are documented here.
 
 ### Features
 
+- **System user roles for launch access** — Added persisted user roles (`admin`, `beta_tester`, `public_user`) with launch-gating support so beta testers retain and manage integrations in public demo mode.
+
 - **Self-service account deletion** — Added authenticated `DELETE /auth/me` so users can permanently delete their own account and associated data directly from Settings.
 
 - **Token encryption at rest** — Added application-layer encryption for stored secrets, including BYOK provider keys and OAuth integration access/refresh tokens.
 
 ### Improvements
+
+- **Admin user management role controls** — Settings now supports assigning and updating system roles for users, including promoting existing accounts to Beta Tester without manual database edits.
 
 - **Centralized user data deletion service** — Refactored account removal logic into a shared backend utility used by both admin-driven deletes and self-service deletes for consistency.
 

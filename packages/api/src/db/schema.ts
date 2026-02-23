@@ -1,12 +1,15 @@
 import { pgTable, text, timestamp, jsonb, uuid, integer, real, unique, date } from "drizzle-orm/pg-core";
 import type { UserPreferences, KnowledgeFilter, KnowledgeVisibility, RoadmapItemStatus, RoadmapItemPriority } from "@product-os/shared";
 
+export type AppUserRole = "admin" | "beta_tester" | "public_user";
+
 // Users table for demo auth
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash"),
   isAdmin: integer("is_admin").default(0).notNull(),
+  role: text("role").$type<AppUserRole>().default("public_user").notNull(),
   displayName: text("display_name"),
   avatarUrl: text("avatar_url"),
   // Multi-provider API keys

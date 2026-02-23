@@ -19,7 +19,7 @@ async function seedAdmin() {
     // Update existing user to admin with password
     await db
       .update(users)
-      .set({ passwordHash, isAdmin: 1 })
+      .set({ passwordHash, isAdmin: 1, role: "admin" })
       .where(eq(users.email, ADMIN_EMAIL));
     console.log(`Updated existing user ${ADMIN_EMAIL} to admin`);
   } else {
@@ -28,6 +28,7 @@ async function seedAdmin() {
       email: ADMIN_EMAIL,
       passwordHash,
       isAdmin: 1,
+      role: "admin",
     });
     console.log(`Created admin user ${ADMIN_EMAIL}`);
   }

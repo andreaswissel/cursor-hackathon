@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
-import type { UserPreferences, TeamRole } from "@product-os/shared";
+import type { UserPreferences, TeamRole, SystemUserRole } from "@product-os/shared";
 
 const API_BASE = import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV ? "/api" : "https://api.product-os.ai/api");
@@ -17,6 +17,7 @@ interface User {
   displayName?: string | null;
   avatarUrl?: string | null;
   isAdmin?: boolean;
+  userRole?: SystemUserRole;
   onboardingCompleted?: boolean;
   preferences?: UserPreferences | null;
   teams?: UserTeam[];

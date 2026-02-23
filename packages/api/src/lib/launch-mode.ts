@@ -57,16 +57,17 @@ export interface LaunchModeState {
 }
 
 export function isInternalLaunchUser(
-  user: Pick<AuthUser, "id" | "email" | "isAdmin"> | null | undefined
+  user: Pick<AuthUser, "id" | "email" | "isAdmin" | "userRole"> | null | undefined
 ): boolean {
   if (!user) return false;
+  if (user.userRole === "admin" || user.userRole === "beta_tester") return true;
   if (user.isAdmin) return true;
   if (PUBLIC_DEMO_INTERNAL_USER_IDS.has(user.id)) return true;
   return PUBLIC_DEMO_INTERNAL_EMAILS.has(user.email.toLowerCase());
 }
 
 export function getEnabledIntegrationProvidersForUser(
-  user: Pick<AuthUser, "id" | "email" | "isAdmin"> | null | undefined
+  user: Pick<AuthUser, "id" | "email" | "isAdmin" | "userRole"> | null | undefined
 ): IntegrationProvider[] {
   if (!PUBLIC_DEMO_MODE) return [...ALL_PROVIDERS];
   if (isInternalLaunchUser(user)) return [...ALL_PROVIDERS];
@@ -75,14 +76,14 @@ export function getEnabledIntegrationProvidersForUser(
 
 export function isIntegrationProviderEnabledForUser(
   provider: IntegrationProvider,
-  user: Pick<AuthUser, "id" | "email" | "isAdmin"> | null | undefined
+  user: Pick<AuthUser, "id" | "email" | "isAdmin" | "userRole"> | null | undefined
 ): boolean {
   const enabledProviders = getEnabledIntegrationProvidersForUser(user);
   return enabledProviders.includes(provider);
 }
 
 export function getLaunchModeStateForUser(
-  user: Pick<AuthUser, "id" | "email" | "isAdmin"> | null | undefined
+  user: Pick<AuthUser, "id" | "email" | "isAdmin" | "userRole"> | null | undefined
 ): LaunchModeState {
   const enabledProviders = getEnabledIntegrationProvidersForUser(user);
   const integrationsLocked = PUBLIC_DEMO_MODE && enabledProviders.length === 0;
@@ -93,7 +94,7 @@ export function getLaunchModeStateForUser(
     enabledProviders,
     waitlistUrl: WAITLIST_PATH,
     message: integrationsLocked
-      ? "Integrations are coming soon. Join the waitlist to get notified when access opens."
+      ? "Integrations are only available for full users. Join the waitlist for full access."
       : null,
   };
 }
@@ -105,7 +106,7 @@ export function buildIntegrationLockedError(): {
 } {
   return {
     error:
-      "Integrations are currently unavailable in the public demo. Join the waitlist for early access.",
+      "Integrations are only available for full users. Join the waitlist for full access.",
     code: "INTEGRATIONS_LOCKED",
     waitlistUrl: WAITLIST_PATH,
   };

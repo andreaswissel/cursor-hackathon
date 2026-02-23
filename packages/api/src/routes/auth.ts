@@ -69,6 +69,11 @@ function getGoogleAuthRedirectUri(req: Request): string {
   return `${getRequestApiBaseUrl(req)}/api/auth/google/callback`;
 }
 
+function resolveSystemRole(user: { isAdmin: number; role: "admin" | "beta_tester" | "public_user" }): "admin" | "beta_tester" | "public_user" {
+  if (user.role) return user.role;
+  return user.isAdmin === 1 ? "admin" : "public_user";
+}
+
 // Login - email only for demo users, email+password for admin users
 router.post("/login", async (req: Request, res: Response) => {
   const { email, password } = req.body as { email?: string; password?: string };
@@ -109,9 +114,11 @@ router.post("/login", async (req: Request, res: Response) => {
         .returning();
     }
 
-    const token = signToken({ id: user.id, email: user.email, isAdmin: user.isAdmin === 1 });
+    const userRole = resolveSystemRole(user);
+    const isAdmin = userRole === "admin" || user.isAdmin === 1;
+    const token = signToken({ id: user.id, email: user.email, isAdmin, userRole });
 
-    res.json({ token, user: { id: user.id, email: user.email, isAdmin: user.isAdmin === 1 } });
+    res.json({ token, user: { id: user.id, email: user.email, isAdmin, userRole } });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: "Failed to authenticate" });
@@ -145,7 +152,8 @@ router.get("/me", requireAuth, async (req: Request, res: Response) => {
         email: dbUser.email,
         displayName: dbUser.displayName,
         avatarUrl: dbUser.avatarUrl,
-        isAdmin: dbUser.isAdmin === 1,
+        isAdmin: dbUser.isAdmin === 1 || dbUser.role === "admin",
+        userRole: resolveSystemRole(dbUser),
         onboardingCompleted: dbUser.onboardingCompleted === 1,
         preferences: dbUser.preferences || null,
         teams: userTeams.map((t) => ({
@@ -365,7 +373,9 @@ router.get("/google/callback", async (req: Request, res: Response) => {
     }
 
     // Issue JWT
-    const token = signToken({ id: user.id, email: user.email, isAdmin: user.isAdmin === 1 });
+    const userRole = resolveSystemRole(user);
+    const isAdmin = userRole === "admin" || user.isAdmin === 1;
+    const token = signToken({ id: user.id, email: user.email, isAdmin, userRole });
 
     // Redirect to frontend with token
     res.redirect(`${FRONTEND_URL}/auth/callback?token=${token}`);

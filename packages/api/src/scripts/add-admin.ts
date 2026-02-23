@@ -24,7 +24,7 @@ async function addAdmin() {
     // Update existing user to admin with password
     await db
       .update(users)
-      .set({ passwordHash, isAdmin: 1 })
+      .set({ passwordHash, isAdmin: 1, role: "admin" })
       .where(eq(users.email, email));
     console.log(`Updated existing user ${email} to admin`);
   } else {
@@ -33,6 +33,7 @@ async function addAdmin() {
       email,
       passwordHash,
       isAdmin: 1,
+      role: "admin",
     });
     console.log(`Created admin user ${email}`);
   }

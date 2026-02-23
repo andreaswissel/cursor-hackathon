@@ -127,6 +127,7 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
         id: users.id,
         email: users.email,
         isAdmin: users.isAdmin,
+        role: users.role,
       })
       .from(users)
       .where(eq(users.id, userId))
@@ -142,6 +143,7 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
         id: oauthUser.id,
         email: oauthUser.email,
         isAdmin: oauthUser.isAdmin === 1,
+        userRole: oauthUser.role,
       })
     ) {
       res.redirect(`${FRONTEND_URL}/settings?error=integrations_locked`);

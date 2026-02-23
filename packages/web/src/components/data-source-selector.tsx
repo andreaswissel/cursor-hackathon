@@ -579,9 +579,9 @@ export function DataSourceSelector({ projectId, onContextChange, onUseProjectKno
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground/60">
-                  Integrations are currently waitlist-only in the public demo.{" "}
+                  Integrations are only available for full users.{" "}
                   <Link to={waitlistUrl} className="underline">
-                    Join waitlist
+                    Join waitlist for full access
                   </Link>
                   .
                 </p>

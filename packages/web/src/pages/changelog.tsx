@@ -31,6 +31,23 @@ export function ChangelogPage() {
           <h3 className="text-lg font-medium mt-6 mb-3">Features</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
+              <strong>System user roles for launch access</strong> &mdash; Added
+              persisted user roles (
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                admin
+              </code>
+              ,{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                beta_tester
+              </code>
+              ,{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                public_user
+              </code>
+              ) with launch-gating support so beta testers retain and manage
+              integrations in public demo mode.
+            </li>
+            <li>
               <strong>Self-service account deletion</strong> &mdash; Added an authenticated{" "}
               <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
                 DELETE /auth/me
@@ -47,6 +64,12 @@ export function ChangelogPage() {
 
           <h3 className="text-lg font-medium mt-6 mb-3">Improvements</h3>
           <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Admin user management role controls</strong> &mdash;
+              Settings now supports assigning and updating system roles for
+              users, including promoting existing accounts to Beta Tester
+              without manual database edits.
+            </li>
             <li>
               <strong>Centralized user data deletion service</strong> &mdash;
               Refactored account removal into a shared backend utility used by
