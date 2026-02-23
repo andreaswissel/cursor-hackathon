@@ -87,6 +87,13 @@ export function ChangelogPage() {
               controls.
             </li>
             <li>
+              <strong>Flow mobile artifact drawer alignment + trigger layout</strong>{" "}
+              &mdash; Removed the extra vertical offset so the mobile artifact
+              drawer sits directly under the session header, and fixed the
+              floating artifact trigger to stay on a single row instead of
+              wrapping.
+            </li>
+            <li>
               <strong>Encrypted-secret runtime handling</strong> &mdash; LLM
               and integration token consumers now transparently decrypt stored
               secrets before use, while preserving compatibility with existing

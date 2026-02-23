@@ -95,7 +95,7 @@ export function FlowSessionPage({ sessionId, artifacts: sseArtifacts, repoUrl: i
       {!showArtifacts && (
         <button
           onClick={() => setShowArtifacts(true)}
-          className="fixed right-4 bottom-20 md:bottom-4 md:relative md:right-auto md:flex items-center gap-2 px-3 py-2 rounded-lg border bg-card shadow-lg md:shadow-none md:border-l md:rounded-none md:px-4 md:py-3 hover:bg-secondary transition-colors z-20"
+          className="fixed right-4 bottom-20 inline-flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border bg-card shadow-lg hover:bg-secondary transition-colors z-20 md:bottom-4 md:relative md:right-auto md:shadow-none md:border-l md:rounded-none md:px-4 md:py-3"
           aria-label="Open artifacts panel"
         >
           <Package className="w-4 h-4 text-muted-foreground" />
@@ -118,7 +118,7 @@ export function FlowSessionPage({ sessionId, artifacts: sseArtifacts, repoUrl: i
           />
           <div
             className={cn(
-              "fixed top-14 right-0 bottom-0 z-50 w-[min(92vw,24rem)] border-l bg-card flex flex-col",
+              "fixed top-0 right-0 bottom-0 z-50 w-[min(92vw,24rem)] border-l bg-card flex flex-col",
               "md:static md:top-auto md:right-auto md:bottom-auto md:z-auto md:w-80 lg:w-96",
               "flex-shrink-0 relative"
             )}
