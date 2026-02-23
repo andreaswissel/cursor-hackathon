@@ -184,6 +184,14 @@ async function streamGemini(
   let fullText = "";
 
   try {
+    const systemInstruction =
+      systemPrompt.trim().length > 0
+        ? {
+            role: "system" as const,
+            parts: [{ text: systemPrompt }],
+          }
+        : undefined;
+
     // Convert messages to Gemini format
     const history = messages.slice(0, -1).map((m) => ({
       role: m.role === "assistant" ? "model" : "user",
@@ -192,7 +200,7 @@ async function streamGemini(
 
     const chat = model.startChat({
       history: history as Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>,
-      systemInstruction: systemPrompt,
+      systemInstruction,
     });
 
     const lastMessage = messages[messages.length - 1]?.content || "";
@@ -221,6 +229,13 @@ async function completionGemini(
 ): Promise<string> {
   const client = new GoogleGenerativeAI(apiKey);
   const model = client.getGenerativeModel({ model: MODELS.gemini });
+  const systemInstruction =
+    systemPrompt.trim().length > 0
+      ? {
+          role: "system" as const,
+          parts: [{ text: systemPrompt }],
+        }
+      : undefined;
 
   // Convert messages to Gemini format
   const history = messages.slice(0, -1).map((m) => ({
@@ -230,7 +245,7 @@ async function completionGemini(
 
   const chat = model.startChat({
     history: history as Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>,
-    systemInstruction: systemPrompt,
+    systemInstruction,
   });
 
   const lastMessage = messages[messages.length - 1]?.content || "";

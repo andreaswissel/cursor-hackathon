@@ -102,6 +102,19 @@ export function ChangelogPage() {
               examples instead of launching the coding sandbox on underspecified
               commands.
             </li>
+            <li>
+              <strong>Gemini Flow-mode system_instruction payload fix</strong>{" "}
+              &mdash; Gemini requests now send structured{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                systemInstruction
+              </code>{" "}
+              content (role + parts) instead of raw string passthrough in chat
+              sessions, resolving{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                400 Bad Request
+              </code>{" "}
+              errors for Flow-mode prompts.
+            </li>
           </ul>
 
           <h3 className="text-lg font-medium mt-6 mb-3">Improvements</h3>

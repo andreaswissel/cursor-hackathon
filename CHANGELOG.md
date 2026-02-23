@@ -24,6 +24,8 @@ All notable changes to Product OS are documented here.
 
 - **Flow `@Code` preflight guidance** — `@Code` no longer launches a coding sandbox with an empty or underspecified command. It now returns a guided response that asks for missing repo/task details with concrete examples.
 
+- **Gemini Flow-mode `system_instruction` payload fix** — Gemini requests now send structured `systemInstruction` content (role + parts) instead of raw string passthrough in chat sessions, resolving `400 Bad Request` errors for Flow-mode prompts.
+
 ### Improvements
 
 - **Outputs handoff panel redesign** — Reworked the “Ready to Build” actions into a clearer two-path handoff (Flow vs coding agent), and toned down the visual treatment to fit dark mode.
