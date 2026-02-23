@@ -9,6 +9,7 @@ export type MarketingEventType =
   | "landing_view"
   | "waitlist_view"
   | "scroll_depth"
+  | "landing_engagement"
   | "cta_click"
   | "waitlist_submit_started"
   | "waitlist_submit_succeeded"
@@ -178,6 +179,15 @@ export interface LandingAnalyticsSummary {
     waitlistFormConversionRate: number;
     scroll50Rate: number;
     scroll90Rate: number;
+  };
+  engagement: {
+    samples: number;
+    averageEngagedMs: number;
+    averageEngagedSeconds: number;
+    maxScrollSamples: number;
+    averageMaxScrollPercent: number;
+    topSection: { sectionId: string; totalMs: number; averageMs: number } | null;
+    topSections: Array<{ sectionId: string; totalMs: number; averageMs: number }>;
   };
   topCtas: Array<{ ctaId: string; clicks: number }>;
   topReferrers: Array<{ referrerHost: string; views: number }>;

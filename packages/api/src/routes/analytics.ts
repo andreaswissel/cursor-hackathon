@@ -10,6 +10,7 @@ const ALLOWED_EVENT_TYPES = new Set<LandingEventType>([
   "landing_view",
   "waitlist_view",
   "scroll_depth",
+  "landing_engagement",
   "cta_click",
   "waitlist_submit_started",
   "waitlist_submit_succeeded",
@@ -53,6 +54,14 @@ function sanitizeMetadata(value: unknown): Record<string, unknown> | null {
   }
 
   return Object.keys(sanitized).length > 0 ? sanitized : null;
+}
+
+function readNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
 }
 
 router.post("/events", async (req, res) => {
@@ -141,6 +150,8 @@ router.get("/landing/summary", requireAuth, requireAdmin, async (req, res) => {
         waitlistSubmits: number;
       }
     >();
+    const sectionTotalsMs = new Map<string, number>();
+    const sectionSampleCounts = new Map<string, number>();
 
     let landingViews = 0;
     let waitlistViews = 0;
@@ -150,6 +161,10 @@ router.get("/landing/summary", requireAuth, requireAdmin, async (req, res) => {
     let waitlistSubmitFailures = 0;
     let demoCtaClicks = 0;
     let waitlistCtaClicks = 0;
+    let engagementSamples = 0;
+    let totalEngagedMs = 0;
+    let maxScrollSamples = 0;
+    let totalMaxScrollPercent = 0;
 
     for (const event of events) {
       uniqueVisitors.add(event.anonymousId);
@@ -213,16 +228,55 @@ router.get("/landing/summary", requireAuth, requireAdmin, async (req, res) => {
           break;
         }
         case "scroll_depth": {
-          const depth =
-            typeof event.metadata?.depthPercent === "number"
-              ? event.metadata.depthPercent
-              : null;
+          const depth = readNumber(event.metadata?.depthPercent);
 
           if (depth !== null && depth >= 50) {
             scroll50Visitors.add(event.anonymousId);
           }
           if (depth !== null && depth >= 90) {
             scroll90Visitors.add(event.anonymousId);
+          }
+          break;
+        }
+        case "landing_engagement": {
+          const engagedMs = readNumber(event.metadata?.engagedMs);
+          if (engagedMs !== null && engagedMs > 0) {
+            totalEngagedMs += clampNumber(engagedMs, 0, 24 * 60 * 60 * 1000);
+            engagementSamples += 1;
+          }
+
+          const maxScrollPercent = readNumber(event.metadata?.maxScrollPercent);
+          if (maxScrollPercent !== null) {
+            totalMaxScrollPercent += clampNumber(maxScrollPercent, 0, 100);
+            maxScrollSamples += 1;
+          }
+
+          if (event.metadata) {
+            for (const [key, value] of Object.entries(event.metadata)) {
+              if (!key.startsWith("section_") || !key.endsWith("_ms")) {
+                continue;
+              }
+
+              const sectionMs = readNumber(value);
+              if (sectionMs === null || sectionMs <= 0) {
+                continue;
+              }
+
+              const sectionId = key.slice("section_".length, -"_ms".length).trim();
+              if (!sectionId) {
+                continue;
+              }
+
+              const safeSectionMs = clampNumber(sectionMs, 0, 24 * 60 * 60 * 1000);
+              sectionTotalsMs.set(
+                sectionId,
+                (sectionTotalsMs.get(sectionId) ?? 0) + safeSectionMs,
+              );
+              sectionSampleCounts.set(
+                sectionId,
+                (sectionSampleCounts.get(sectionId) ?? 0) + 1,
+              );
+            }
           }
           break;
         }
@@ -233,6 +287,16 @@ router.get("/landing/summary", requireAuth, requireAdmin, async (req, res) => {
 
     const totalVisitors = uniqueVisitors.size;
     const uniqueSubmitterCount = uniqueSubmitters.size;
+    const topSections = Array.from(sectionTotalsMs.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([sectionId, totalMs]) => ({
+        sectionId,
+        totalMs,
+        averageMs:
+          totalMs / Math.max(1, sectionSampleCounts.get(sectionId) ?? 1),
+      }));
+    const topSection = topSections[0] ?? null;
 
     res.json({
       window: {
@@ -259,6 +323,18 @@ router.get("/landing/summary", requireAuth, requireAdmin, async (req, res) => {
         waitlistFormConversionRate: waitlistStarts > 0 ? waitlistSubmits / waitlistStarts : 0,
         scroll50Rate: totalVisitors > 0 ? scroll50Visitors.size / totalVisitors : 0,
         scroll90Rate: totalVisitors > 0 ? scroll90Visitors.size / totalVisitors : 0,
+      },
+      engagement: {
+        samples: engagementSamples,
+        averageEngagedMs:
+          engagementSamples > 0 ? totalEngagedMs / engagementSamples : 0,
+        averageEngagedSeconds:
+          engagementSamples > 0 ? totalEngagedMs / engagementSamples / 1000 : 0,
+        maxScrollSamples,
+        averageMaxScrollPercent:
+          maxScrollSamples > 0 ? totalMaxScrollPercent / maxScrollSamples : 0,
+        topSection,
+        topSections,
       },
       topCtas: Array.from(ctaClicksById.entries())
         .sort((a, b) => b[1] - a[1])

@@ -16,6 +16,8 @@ All notable changes to Product OS are documented here.
 
 ### Improvements
 
+- **Landing engagement KPIs** — Extended first-party analytics with time-on-page tracking, max-scroll depth percentages, and section-level dwell-time ranking so admins can identify where visitors spend the most attention.
+
 - **Admin user management role controls** — Settings now supports assigning and updating system roles for users, including promoting existing accounts to Beta Tester without manual database edits.
 
 - **Centralized user data deletion service** — Refactored account removal logic into a shared backend utility used by both admin-driven deletes and self-service deletes for consistency.

@@ -152,7 +152,8 @@ export function PrivacyPage() {
             <li>Prompt counts per session</li>
             <li>
               Anonymous first-party landing metrics (page views, CTA clicks,
-              scroll depth, and waitlist conversion events)
+              scroll depth, time on page, section engagement, and waitlist
+              conversion events)
             </li>
           </ul>
           <p>

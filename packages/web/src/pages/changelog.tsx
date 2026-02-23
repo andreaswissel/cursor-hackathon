@@ -72,6 +72,12 @@ export function ChangelogPage() {
           <h3 className="text-lg font-medium mt-6 mb-3">Improvements</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
+              <strong>Landing engagement KPIs</strong> &mdash; Extended
+              first-party analytics with time-on-page tracking, max-scroll
+              depth percentages, and section-level dwell-time ranking in admin
+              so teams can see where visitors spend the most attention.
+            </li>
+            <li>
               <strong>Admin user management role controls</strong> &mdash;
               Settings now supports assigning and updating system roles for
               users, including promoting existing accounts to Beta Tester

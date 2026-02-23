@@ -139,7 +139,7 @@ export function AdminPage() {
 
           {analytics && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3">
                 <MetricCard
                   label="Unique visitors"
                   value={analytics.totals.totalVisitors.toLocaleString()}
@@ -160,9 +160,19 @@ export function AdminPage() {
                   value={formatPercent(analytics.rates.waitlistSubmitRate)}
                   detail={`${formatPercent(analytics.rates.waitlistFormConversionRate)} form conversion`}
                 />
+                <MetricCard
+                  label="Avg time on page"
+                  value={formatDuration(analytics.engagement.averageEngagedSeconds)}
+                  detail={`${analytics.engagement.samples.toLocaleString()} engagement samples`}
+                />
+                <MetricCard
+                  label="Avg max scroll"
+                  value={`${analytics.engagement.averageMaxScrollPercent.toFixed(1)}%`}
+                  detail={`${analytics.engagement.maxScrollSamples.toLocaleString()} scroll samples`}
+                />
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
                 <div className="border rounded-lg p-4">
                   <h2 className="text-sm font-semibold mb-3">Top CTA clicks</h2>
                   {analytics.topCtas.length === 0 ? (
@@ -193,6 +203,53 @@ export function AdminPage() {
                     </div>
                   )}
                 </div>
+                <div className="border rounded-lg p-4">
+                  <h2 className="text-sm font-semibold mb-3">Longest-held section</h2>
+                  {!analytics.engagement.topSection ? (
+                    <p className="text-sm text-muted-foreground">No section dwell data yet.</p>
+                  ) : (
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Section</span>
+                        <span className="font-medium">
+                          {humanizeSectionId(analytics.engagement.topSection.sectionId)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Total dwell</span>
+                        <span className="font-medium">
+                          {formatDurationMs(analytics.engagement.topSection.totalMs)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Average dwell</span>
+                        <span className="font-medium">
+                          {formatDurationMs(analytics.engagement.topSection.averageMs)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="border rounded-lg p-4">
+                <h2 className="text-sm font-semibold mb-3">Section dwell time ranking</h2>
+                {analytics.engagement.topSections.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No section dwell data yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {analytics.engagement.topSections.slice(0, 8).map((row) => (
+                      <div key={row.sectionId} className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          {humanizeSectionId(row.sectionId)}
+                        </span>
+                        <span className="font-medium">
+                          {formatDurationMs(row.totalMs)} total
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -281,6 +338,39 @@ export function AdminPage() {
 
 function formatPercent(value: number): string {
   return `${(value * 100).toFixed(1)}%`;
+}
+
+function formatDuration(seconds: number): string {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "0s";
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.round(seconds % 60);
+  return `${mins}m ${secs}s`;
+}
+
+function formatDurationMs(ms: number): string {
+  return formatDuration(ms / 1000);
+}
+
+function humanizeSectionId(sectionId: string): string {
+  const known: Record<string, string> = {
+    "hero-video": "Hero Video",
+    "second-hero": "Main Hero",
+    "social-proof": "Social Proof",
+    "discover-mode": "Discovery Spotlight",
+    features: "Features Grid",
+    "feature-deep-dives": "Feature Deep Dives",
+    "how-it-works": "How It Works",
+    testimonial: "Testimonial",
+    integrations: "Integrations",
+    "final-cta": "Final CTA",
+  };
+
+  if (known[sectionId]) return known[sectionId];
+  return sectionId
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function MetricCard({ label, value, detail }: { label: string; value: string; detail: string }) {
