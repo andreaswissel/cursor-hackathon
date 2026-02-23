@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Zap, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
+import { trackMarketingEvent, trackMarketingEventOnce } from "@/lib/marketing-analytics";
 
 const API_BASE = import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV ? "/api" : "https://api.product-os.ai/api");
@@ -14,12 +15,24 @@ export function WaitlistPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  useEffect(() => {
+    trackMarketingEventOnce("waitlist_view", {
+      eventType: "waitlist_view",
+      page: "waitlist",
+    });
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
 
     setIsLoading(true);
     setError(null);
+    let failureTracked = false;
+    trackMarketingEvent({
+      eventType: "waitlist_submit_started",
+      page: "waitlist",
+    });
 
     try {
       const res = await fetch(`${API_BASE}/waitlist`, {
@@ -35,11 +48,28 @@ export function WaitlistPage() {
       const data = await res.json();
 
       if (!res.ok) {
+        trackMarketingEvent({
+          eventType: "waitlist_submit_failed",
+          page: "waitlist",
+          metadata: { statusCode: res.status },
+        });
+        failureTracked = true;
         throw new Error(data.error || "Something went wrong.");
       }
 
+      trackMarketingEvent({
+        eventType: "waitlist_submit_succeeded",
+        page: "waitlist",
+        metadata: { statusCode: res.status },
+      });
       setSuccess(data.message);
     } catch (err) {
+      if (!failureTracked) {
+        trackMarketingEvent({
+          eventType: "waitlist_submit_failed",
+          page: "waitlist",
+        });
+      }
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setIsLoading(false);

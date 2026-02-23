@@ -150,6 +150,10 @@ export function PrivacyPage() {
           <ul className="list-disc pl-6 space-y-1">
             <li>Session usage counts (for rate limiting)</li>
             <li>Prompt counts per session</li>
+            <li>
+              Anonymous first-party landing metrics (page views, CTA clicks,
+              scroll depth, and waitlist conversion events)
+            </li>
           </ul>
           <p>
             We do <strong>not</strong> use third-party analytics services (no
