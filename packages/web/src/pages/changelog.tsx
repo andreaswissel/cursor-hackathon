@@ -77,6 +77,13 @@ export function ChangelogPage() {
               consistency.
             </li>
             <li>
+              <strong>Sidebar session mode icons + running indicator split</strong>{" "}
+              &mdash; Project session rows now always show mode and type icons
+              (Flow, Imagine, Discover, etc.), while active runs display a
+              separate compact rotating progress indicator instead of replacing
+              the mode icon.
+            </li>
+            <li>
               <strong>Imagine session project reassignment in-session</strong>{" "}
               &mdash; Added a project selector to the Imagine session header so
               existing sessions can be moved between projects without leaving

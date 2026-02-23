@@ -5,17 +5,13 @@ import { deleteSession, deleteProject, updateProject, createProject, createFlowS
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { TeamSwitcher } from "@/components/team-switcher";
 import { UserAvatar } from "@/components/user-avatar";
-import type { ProjectWithSessions } from "@product-os/shared";
+import type { ProjectWithSessions, SessionMode } from "@product-os/shared";
 import {
   Zap,
   Plus,
-  Clock,
   Loader2,
-  CheckCircle,
-  XCircle,
   LogOut,
   FileText,
-  User,
   Menu,
   X,
   Settings,
@@ -43,38 +39,19 @@ interface SidebarProps {
   onSessionDeleted?: () => void;
 }
 
-const STATUS_CONFIG = {
-  pending: {
-    icon: Clock,
-    color: "text-amber-500",
-    bgColor: "bg-amber-500",
-    label: "Pending",
-  },
-  running: {
-    icon: Loader2,
-    color: "text-blue-500",
-    bgColor: "bg-blue-500",
-    label: "Running",
-  },
-  waiting_input: {
-    icon: Clock,
-    color: "text-purple-500",
-    bgColor: "bg-purple-500",
-    label: "Waiting",
-  },
-  completed: {
-    icon: CheckCircle,
-    color: "text-emerald-500",
-    bgColor: "bg-emerald-500",
-    label: "Completed",
-  },
-  failed: {
-    icon: XCircle,
-    color: "text-red-500",
-    bgColor: "bg-red-500",
-    label: "Failed",
-  },
+const MODE_CONFIG: Record<SessionMode, { icon: typeof FileText; color: string; label: string }> = {
+  flow: { icon: Workflow, color: "text-violet-500", label: "Flow" },
+  discover: { icon: Compass, color: "text-emerald-500", label: "Discover" },
+  "idea-to-spec": { icon: Lightbulb, color: "text-amber-500", label: "Imagine" },
+  documentation: { icon: Video, color: "text-cyan-500", label: "Documentation" },
+  "guided-tours": { icon: Map, color: "text-teal-500", label: "Guided Tours" },
+  "feedback-forms": { icon: Blocks, color: "text-orange-500", label: "Feedback Forms" },
 };
+
+function getSessionModeConfig(mode?: SessionMode) {
+  if (!mode) return { icon: FileText, color: "text-muted-foreground", label: "Session" };
+  return MODE_CONFIG[mode] ?? { icon: FileText, color: "text-muted-foreground", label: "Session" };
+}
 
 export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onSessionDeleted }: SidebarProps) {
   const location = useLocation();
@@ -338,9 +315,10 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
               </div>
             ) : (
               project.sessions.map((session) => {
-                const config = STATUS_CONFIG[session.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG.pending;
-                const Icon = config.icon;
+                const modeConfig = getSessionModeConfig(session.mode as SessionMode | undefined);
+                const ModeIcon = modeConfig.icon;
                 const isActive = location.pathname === `/session/${session.id}`;
+                const isRunning = session.status === "running";
 
                 return (
                   <div key={session.id} className="group/session relative">
@@ -351,14 +329,14 @@ export function Sidebar({ projects = [], onProjectCreated, onProjectDeleted, onS
                         "flex items-center gap-2 pl-6 pr-10 py-1.5 text-sm hover:bg-secondary transition-colors rounded-md mx-1",
                         isActive && "bg-secondary"
                       )}
+                      title={`${modeConfig.label}${isRunning ? " • Running" : ""}`}
                     >
-                      <Icon
-                        className={cn(
-                          "w-3.5 h-3.5 flex-shrink-0",
-                          config.color,
-                          session.status === "running" && "animate-spin-slow"
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <ModeIcon className={cn("w-3.5 h-3.5", modeConfig.color)} />
+                        {isRunning && (
+                          <Loader2 className="w-3 h-3 text-muted-foreground animate-spin" />
                         )}
-                      />
+                      </div>
                       <span className="truncate text-muted-foreground text-xs" title={session.idea}>
                         {session.idea}
                       </span>
