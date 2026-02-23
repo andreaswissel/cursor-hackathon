@@ -94,6 +94,18 @@ export function ChangelogPage() {
               wrapping.
             </li>
             <li>
+              <strong>Flow mobile artifacts sheet redesign</strong> &mdash;
+              Reworked mobile artifacts into a full-width bottom sheet with
+              dark backdrop overlay, fixed 50px top inset, and iOS-style rounded
+              top corners for consistent layering.
+            </li>
+            <li>
+              <strong>Flow desktop artifact panel parity</strong> &mdash;
+              Restored desktop artifacts panel behavior to the original
+              right-column layout while keeping the new sheet behavior strictly
+              mobile-only.
+            </li>
+            <li>
               <strong>Flow mobile artifact drawer top-anchor correction</strong>{" "}
               &mdash; Adjusted mobile drawer and backdrop offsets so the artifact
               panel starts directly beneath the app header instead of leaving a
