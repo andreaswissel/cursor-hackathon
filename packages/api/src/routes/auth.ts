@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { db } from "../db";
 import { users, teamMembers, teams } from "../db/schema";
 import { signToken, requireAuth } from "../middleware/auth";
@@ -12,8 +13,60 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
 const RAW_API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3001";
 const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, "").replace(/\/api$/, "");
-const GOOGLE_AUTH_REDIRECT_URI = process.env.GOOGLE_AUTH_REDIRECT_URI || `${API_BASE_URL}/api/auth/google/callback`;
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const GOOGLE_OAUTH_STATE_SECRET =
+  process.env.GOOGLE_OAUTH_STATE_SECRET ||
+  process.env.JWT_SECRET ||
+  "dev-google-oauth-state-secret-change-in-production";
+
+interface GoogleOAuthState {
+  redirectUri: string;
+  timestamp: number;
+}
+
+function signGoogleOAuthState(payload: string): string {
+  return createHmac("sha256", GOOGLE_OAUTH_STATE_SECRET).update(payload).digest("base64url");
+}
+
+function encodeGoogleOAuthState(state: GoogleOAuthState): string {
+  const payload = JSON.stringify(state);
+  const signature = signGoogleOAuthState(payload);
+  return Buffer.from(JSON.stringify({ payload, signature }), "utf8").toString("base64url");
+}
+
+function decodeGoogleOAuthState(rawState: string): GoogleOAuthState {
+  const decoded = Buffer.from(rawState, "base64url").toString("utf8");
+  const wrapped = JSON.parse(decoded) as { payload?: string; signature?: string };
+
+  if (typeof wrapped.payload !== "string" || typeof wrapped.signature !== "string") {
+    throw new Error("Invalid OAuth state");
+  }
+
+  const expected = createHmac("sha256", GOOGLE_OAUTH_STATE_SECRET).update(wrapped.payload).digest();
+  const actual = Buffer.from(wrapped.signature, "base64url");
+
+  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
+    throw new Error("Invalid OAuth state signature");
+  }
+
+  return JSON.parse(wrapped.payload) as GoogleOAuthState;
+}
+
+function getRequestApiBaseUrl(req: Request): string {
+  const forwardedProto = req.headers["x-forwarded-proto"];
+  const forwardedHost = req.headers["x-forwarded-host"];
+  const hostHeader = req.headers.host;
+
+  const proto = (Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto) || req.protocol || "http";
+  const host = (Array.isArray(forwardedHost) ? forwardedHost[0] : forwardedHost) || hostHeader || "localhost:3001";
+  return `${proto}://${host}`;
+}
+
+function getGoogleAuthRedirectUri(req: Request): string {
+  // Prefer request-aware callback construction so deploy-domain changes
+  // don't require synchronized env updates to avoid redirect_uri_mismatch.
+  return `${getRequestApiBaseUrl(req)}/api/auth/google/callback`;
+}
 
 // Login - email only for demo users, email+password for admin users
 router.post("/login", async (req: Request, res: Response) => {
@@ -171,8 +224,14 @@ router.put("/preferences", requireAuth, async (req: Request, res: Response) => {
 
 // Google OAuth - Initiate login
 router.get("/google", (req: Request, res: Response) => {
+  const redirectUri = getGoogleAuthRedirectUri(req);
+  const state = encodeGoogleOAuthState({
+    redirectUri,
+    timestamp: Date.now(),
+  });
+
   console.log("[Google OAuth] Starting OAuth flow");
-  console.log("[Google OAuth] GOOGLE_AUTH_REDIRECT_URI:", GOOGLE_AUTH_REDIRECT_URI);
+  console.log("[Google OAuth] GOOGLE_AUTH_REDIRECT_URI:", redirectUri);
   console.log("[Google OAuth] API_BASE_URL:", API_BASE_URL);
 
   if (!GOOGLE_CLIENT_ID) {
@@ -183,7 +242,8 @@ router.get("/google", (req: Request, res: Response) => {
 
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
-    redirect_uri: GOOGLE_AUTH_REDIRECT_URI,
+    redirect_uri: redirectUri,
+    state,
     response_type: "code",
     scope: [
       "https://www.googleapis.com/auth/userinfo.email",
@@ -203,7 +263,7 @@ router.get("/google/callback", async (req: Request, res: Response) => {
   console.log("[Google OAuth Callback] Received callback");
   console.log("[Google OAuth Callback] Query params:", req.query);
 
-  const { code, error } = req.query;
+  const { code, error, state } = req.query;
 
   if (error || !code) {
     console.error("[Google OAuth Callback] Error or no code:", error);
@@ -212,6 +272,19 @@ router.get("/google/callback", async (req: Request, res: Response) => {
   }
 
   try {
+    let redirectUri = getGoogleAuthRedirectUri(req);
+
+    if (typeof state === "string") {
+      const stateData = decodeGoogleOAuthState(state);
+      const maxStateAgeMs = 10 * 60 * 1000;
+      if (Date.now() - stateData.timestamp > maxStateAgeMs) {
+        throw new Error("OAuth state expired");
+      }
+      redirectUri = stateData.redirectUri;
+    } else {
+      throw new Error("Missing OAuth state");
+    }
+
     // Exchange code for tokens
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
@@ -221,14 +294,14 @@ router.get("/google/callback", async (req: Request, res: Response) => {
         client_id: GOOGLE_CLIENT_ID,
         client_secret: GOOGLE_CLIENT_SECRET,
         code: code as string,
-        redirect_uri: GOOGLE_AUTH_REDIRECT_URI,
+        redirect_uri: redirectUri,
       }),
     });
 
     if (!tokenRes.ok) {
       const err = await tokenRes.text();
       console.error("[Google OAuth Callback] Token exchange failed:", err);
-      console.error("[Google OAuth Callback] Redirect URI used:", GOOGLE_AUTH_REDIRECT_URI);
+      console.error("[Google OAuth Callback] Redirect URI used:", redirectUri);
       res.redirect(`${FRONTEND_URL}/login?error=${encodeURIComponent("Failed to authenticate with Google")}`);
       return;
     }

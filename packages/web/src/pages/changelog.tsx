@@ -41,6 +41,17 @@ export function ChangelogPage() {
               model-not-found errors, preventing Flow-mode failures from stale
               hardcoded model IDs.
             </li>
+            <li>
+              <strong>Google login redirect mismatch hardening</strong>{" "}
+              &mdash; Google sign-in now derives its OAuth callback URI from
+              the active request host/proxy headers and carries that exact URI
+              in signed OAuth state through callback token exchange, preventing
+              stale environment URL drift from causing{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                redirect_uri_mismatch
+              </code>{" "}
+              during login.
+            </li>
           </ul>
 
           {/* Feb 20 */}
