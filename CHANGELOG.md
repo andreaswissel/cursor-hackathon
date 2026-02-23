@@ -2,6 +2,22 @@
 
 All notable changes to Product OS are documented here.
 
+## [2026-02-23]
+
+### Features
+
+- **Self-service account deletion** — Added authenticated `DELETE /auth/me` so users can permanently delete their own account and associated data directly from Settings.
+
+- **Token encryption at rest** — Added application-layer encryption for stored secrets, including BYOK provider keys and OAuth integration access/refresh tokens.
+
+### Improvements
+
+- **Centralized user data deletion service** — Refactored account removal logic into a shared backend utility used by both admin-driven deletes and self-service deletes for consistency.
+
+### Fixes
+
+- **Encrypted-secret runtime handling** — LLM and integration token consumers now transparently decrypt stored secrets before use, preserving compatibility with existing plaintext records while moving all new writes to encrypted storage.
+
 ## [2026-02-20]
 
 ### Features

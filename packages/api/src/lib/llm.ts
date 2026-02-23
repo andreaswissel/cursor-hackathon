@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import OpenAI from "openai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { decryptSecret } from "./secrets";
 
 export type Provider = "anthropic" | "openai" | "gemini";
 
@@ -277,22 +278,25 @@ export function getUserLLMConfig(user: {
   geminiApiKey?: string | null;
 }): LLMConfig {
   const provider = user.activeProvider || "anthropic";
+  const anthropicApiKey = decryptSecret(user.anthropicApiKey);
+  const openaiApiKey = decryptSecret(user.openaiApiKey);
+  const geminiApiKey = decryptSecret(user.geminiApiKey);
 
   let apiKey: string;
   switch (provider) {
     case "openai": {
-      const userKey = user.openaiApiKey?.trim();
+      const userKey = openaiApiKey?.trim();
       apiKey = isValidApiKey(userKey, "openai") ? userKey! : (process.env.OPENAI_API_KEY || "");
       break;
     }
     case "gemini": {
-      const userKey = user.geminiApiKey?.trim();
+      const userKey = geminiApiKey?.trim();
       apiKey = isValidApiKey(userKey, "gemini") ? userKey! : (process.env.GEMINI_API_KEY || "");
       break;
     }
     case "anthropic":
     default: {
-      const userKey = user.anthropicApiKey?.trim();
+      const userKey = anthropicApiKey?.trim();
       apiKey = isValidApiKey(userKey, "anthropic") ? userKey! : (process.env.ANTHROPIC_API_KEY || "");
       break;
     }

@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { db } from "../db";
 import { users, teamMembers, teams } from "../db/schema";
 import { signToken, requireAuth } from "../middleware/auth";
+import { deleteUserWithAssociatedData } from "../lib/user-deletion";
 
 const router = Router();
 
@@ -166,6 +167,30 @@ router.put("/preferences", requireAuth, async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Failed to update preferences:", error);
     res.status(500).json({ error: "Failed to update preferences" });
+  }
+});
+
+// Delete current user account (self-service)
+router.delete("/me", requireAuth, async (req: Request, res: Response) => {
+  const userId = req.user!.id;
+
+  try {
+    const [existing] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+
+    if (!existing) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    await deleteUserWithAssociatedData(userId);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Failed to delete user account:", error);
+    res.status(500).json({ error: "Failed to delete account" });
   }
 });
 

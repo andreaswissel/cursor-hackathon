@@ -4,6 +4,7 @@ import { db } from "../db";
 import { users } from "../db/schema";
 import { requireAuth } from "../middleware/auth";
 import type { Provider } from "../lib/llm";
+import { decryptSecret, encryptSecret } from "../lib/secrets";
 
 const router = Router();
 
@@ -51,16 +52,16 @@ router.get("/", async (req: Request, res: Response) => {
   const response: SettingsResponse = {
     providers: {
       anthropic: {
-        hasKey: !!user.anthropicApiKey,
-        keyPreview: maskKey(user.anthropicApiKey, "sk-ant-"),
+        hasKey: !!decryptSecret(user.anthropicApiKey),
+        keyPreview: maskKey(decryptSecret(user.anthropicApiKey), "sk-ant-"),
       },
       openai: {
-        hasKey: !!user.openaiApiKey,
-        keyPreview: maskKey(user.openaiApiKey, "sk-"),
+        hasKey: !!decryptSecret(user.openaiApiKey),
+        keyPreview: maskKey(decryptSecret(user.openaiApiKey), "sk-"),
       },
       gemini: {
-        hasKey: !!user.geminiApiKey,
-        keyPreview: maskKey(user.geminiApiKey, "AI"),
+        hasKey: !!decryptSecret(user.geminiApiKey),
+        keyPreview: maskKey(decryptSecret(user.geminiApiKey), "AI"),
       },
     },
     activeProvider: (user.activeProvider as Provider) || "anthropic",
@@ -100,9 +101,9 @@ router.put("/api-key/:provider", async (req: Request, res: Response) => {
 
   // Update the appropriate key
   const updateField = {
-    anthropic: { anthropicApiKey: apiKey || null },
-    openai: { openaiApiKey: apiKey || null },
-    gemini: { geminiApiKey: apiKey || null },
+    anthropic: { anthropicApiKey: encryptSecret(apiKey || null) },
+    openai: { openaiApiKey: encryptSecret(apiKey || null) },
+    gemini: { geminiApiKey: encryptSecret(apiKey || null) },
   }[provider];
 
   await db.update(users).set(updateField).where(eq(users.id, userId));
@@ -165,9 +166,9 @@ router.put("/active-provider", async (req: Request, res: Response) => {
     .where(eq(users.id, userId));
 
   const hasKey = {
-    anthropic: !!user?.anthropicApiKey,
-    openai: !!user?.openaiApiKey,
-    gemini: !!user?.geminiApiKey,
+    anthropic: !!decryptSecret(user?.anthropicApiKey),
+    openai: !!decryptSecret(user?.openaiApiKey),
+    gemini: !!decryptSecret(user?.geminiApiKey),
   }[provider];
 
   if (!hasKey) {
