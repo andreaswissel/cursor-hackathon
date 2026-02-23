@@ -107,6 +107,13 @@ export function ChangelogPage() {
           <h3 className="text-lg font-medium mt-6 mb-3">Fixes</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
+              <strong>Landing mobile hero starts on content (no animation pre-roll)</strong>{" "}
+              &mdash; Hid the full-screen header animation on mobile, start
+              directly on the main hero section, and removed the
+              &quot;Built for Product, Loved by Development&quot; hero pill on
+              small screens for a cleaner first paint.
+            </li>
+            <li>
               <strong>Flow @Code budget role scope correction</strong> &mdash;
               Updated daily budget enforcement so{" "}
               <code className="text-sm bg-muted px-1.5 py-0.5 rounded">

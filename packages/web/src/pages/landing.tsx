@@ -751,7 +751,7 @@ export function LandingPage() {
         className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 flex max-w-[calc(100vw-2rem)] flex-nowrap items-center gap-1 px-2 py-1.5 rounded-full transition-all duration-500 ${
           scrolled
             ? "bg-[#0a0a0a]/90 backdrop-blur-xl shadow-lg shadow-black/20 border border-gray-800/60"
-            : "bg-white/10 backdrop-blur-md border border-white/20"
+            : "bg-[#0a0a0a]/90 backdrop-blur-xl shadow-lg shadow-black/20 border border-gray-800/60 md:bg-white/10 md:backdrop-blur-md md:shadow-none md:border-white/20"
         }`}
       >
         <div className="flex shrink-0 items-center gap-2 px-3">
@@ -797,7 +797,7 @@ export function LandingPage() {
             className={`whitespace-nowrap px-3 py-1.5 rounded-full text-sm transition-colors duration-500 ${
               scrolled
                 ? "text-gray-400 hover:text-white"
-                : "text-white/70 hover:text-white"
+                : "text-gray-400 hover:text-white md:text-white/70 md:hover:text-white"
             }`}
           >
             Sign in
@@ -817,7 +817,7 @@ export function LandingPage() {
       </nav>
 
       {/* ─── Full-screen Video Hero ─── */}
-      <section className="relative h-screen w-full overflow-hidden bg-black">
+      <section className="relative hidden h-screen w-full overflow-hidden bg-black md:block">
         <video
           ref={(el) => {
             if (!el) return;
@@ -852,7 +852,7 @@ export function LandingPage() {
       {/* ─── Second Hero Section ─── */}
       <section
         id="second-hero"
-        className="relative py-20 md:py-28 overflow-hidden"
+        className="relative overflow-hidden pt-28 pb-20 md:py-28"
         style={{
           background:
             "linear-gradient(180deg, #111111 0%, #0e0e0e 50%, #0a0a0a 100%)",
@@ -860,7 +860,7 @@ export function LandingPage() {
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           {/* Category pill */}
-          <div className="flex justify-center mb-6">
+          <div className="hidden md:flex justify-center mb-6">
             <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/10 border border-gray-700 text-xs font-medium text-gray-300 shadow-sm">
               <Zap className="w-3 h-3 text-blue-500" />
               ProductOS — Built for Product, Loved by Development
