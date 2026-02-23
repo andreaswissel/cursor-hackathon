@@ -25,6 +25,24 @@ export function ChangelogPage() {
             All notable changes to Product OS are documented here.
           </p>
 
+          {/* Feb 23 */}
+          <h2 className="text-xl font-semibold mt-8 mb-4">2026-02-23</h2>
+
+          <h3 className="text-lg font-medium mt-6 mb-3">Fixes</h3>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Gemini Flow-mode model retirement resilience</strong>{" "}
+              &mdash; Replaced the retired{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                gemini-1.5-pro
+              </code>{" "}
+              default with current Gemini model candidates and added automatic
+              fallback across supported models when Google returns
+              model-not-found errors, preventing Flow-mode failures from stale
+              hardcoded model IDs.
+            </li>
+          </ul>
+
           {/* Feb 20 */}
           <h2 className="text-xl font-semibold mt-8 mb-4">2026-02-20</h2>
 

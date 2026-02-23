@@ -2,6 +2,12 @@
 
 All notable changes to Product OS are documented here.
 
+## [2026-02-23]
+
+### Fixes
+
+- **Gemini Flow-mode model retirement resilience** — Replaced the retired `gemini-1.5-pro` default with current Gemini model candidates and added automatic fallback across supported Gemini models when Google returns model-not-found errors, preventing Flow-mode failures from hardcoded stale model IDs.
+
 ## [2026-02-20]
 
 ### Features
