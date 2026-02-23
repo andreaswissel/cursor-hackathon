@@ -16,6 +16,8 @@ All notable changes to Product OS are documented here.
 
 ### Improvements
 
+- **Landing testimonial attribution update** — Replaced the previous placeholder testimonial identity on the landing page with Manuel Derra (CTO, Acquirepad) and updated the avatar to a real portrait image.
+
 - **Admin user management role controls** — Settings now supports assigning and updating system roles for users, including promoting existing accounts to Beta Tester without manual database edits.
 
 - **Centralized user data deletion service** — Refactored account removal logic into a shared backend utility used by both admin-driven deletes and self-service deletes for consistency.
