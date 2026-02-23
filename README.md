@@ -79,6 +79,9 @@ PUBLIC_DEMO_ENABLED_INTEGRATIONS=
 # Comma-separated internal bypass accounts
 PUBLIC_DEMO_INTERNAL_EMAILS=founder@company.com
 PUBLIC_DEMO_INTERNAL_USER_IDS=
+
+# Flow @Code daily run limit (default: 3)
+CODE_AGENT_DAILY_LIMIT=3
 ```
 
 ## Project Structure

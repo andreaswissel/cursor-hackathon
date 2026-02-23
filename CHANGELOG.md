@@ -6,6 +6,8 @@ All notable changes to Product OS are documented here.
 
 ### Features
 
+- **First-party landing analytics pipeline** — Added internal event tracking (`/analytics/events`) and admin funnel reporting (`/analytics/landing/summary`) for landing-page views, CTA clicks, scroll depth, and waitlist conversion without third-party providers.
+
 - **System user roles for launch access** — Added persisted user roles (`admin`, `beta_tester`, `public_user`) with launch-gating support so beta testers retain and manage integrations in public demo mode.
 
 - **Self-service account deletion** — Added authenticated `DELETE /auth/me` so users can permanently delete their own account and associated data directly from Settings.
@@ -20,9 +22,12 @@ All notable changes to Product OS are documented here.
 
 - **Sidebar session mode icons + running indicator split** — Project session rows now always show mode/type icons (Flow/Imagine/Discover/etc.) while active runs show a separate compact rotating progress indicator instead of replacing the mode icon.
 
+- **Flow `@Code` per-user daily budget** — Added a configurable daily run cap for the Flow coding agent (`CODE_AGENT_DAILY_LIMIT`, default `3`) with in-chat limit messaging and UTC reset timestamps.
+
 ### Fixes
 
 - **Landing mobile hero starts on content (no animation pre-roll)** — Hid the full-screen header animation on mobile, start directly on the main hero section, and removed the “Built for Product, Loved by Development” hero pill on small screens for cleaner first paint.
+- **Flow `@Code` budget role scope correction** — Updated daily budget enforcement so `beta_tester` users are capped like public users; only admins bypass the `@Code` daily run limit.
 - **Flow mobile artifact panel access** — Restored artifact access in mobile flow sessions by adding a dedicated “Open artifacts panel” trigger and a mobile drawer presentation with close controls.
 - **Flow mobile artifact drawer alignment + trigger layout** — Removed extra vertical offset so the mobile artifact drawer aligns directly under the session header, and fixed the floating artifact trigger to render as a single-row button instead of wrapping/breaking.
 - **Flow mobile artifacts sheet redesign** — Reworked mobile artifacts into a full-width bottom sheet with dark backdrop overlay, fixed 50px top inset, and iOS-style rounded top corners for consistent layering.

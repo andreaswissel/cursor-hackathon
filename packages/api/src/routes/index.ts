@@ -11,10 +11,12 @@ import knowledgeRouter from "./knowledge";
 import flowArtifactsRouter from "./flow-artifacts";
 import roadmapRouter from "./roadmap";
 import waitlistRouter from "./waitlist";
+import analyticsRouter from "./analytics";
 
 const router = Router();
 
 router.use("/waitlist", waitlistRouter);
+router.use("/analytics", analyticsRouter);
 router.use("/auth", authRouter);
 router.use("/sessions", sessionsRouter);
 router.use("/sessions", flowArtifactsRouter);

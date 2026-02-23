@@ -38,6 +38,7 @@ import {
   CodexIcon,
   ClaudeCodeIcon,
 } from "@/components/provider-icons";
+import { trackMarketingEvent, trackMarketingEventOnce } from "@/lib/marketing-analytics";
 
 // ── Enhanced fade-in on scroll hook ─────────────────────────────────────────
 
@@ -661,6 +662,15 @@ const AI_EXECUTION_INTEGRATIONS = [
 
 const INTEGRATIONS = [...DATA_INTEGRATIONS, ...AI_EXECUTION_INTEGRATIONS];
 
+function trackLandingCta(ctaId: string, target: string): void {
+  trackMarketingEvent({
+    eventType: "cta_click",
+    page: "landing",
+    ctaId,
+    metadata: { target },
+  });
+}
+
 // ── Stagger card wrapper ────────────────────────────────────────────────────
 
 function StaggerCard({
@@ -682,6 +692,15 @@ function StaggerCard({
 
 export function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
+  const tracked50Ref = useRef(false);
+  const tracked90Ref = useRef(false);
+
+  useEffect(() => {
+    trackMarketingEventOnce("landing_view", {
+      eventType: "landing_view",
+      page: "landing",
+    });
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -690,6 +709,37 @@ export function LandingPage() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleScrollDepth = () => {
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (maxScroll <= 0) return;
+
+      const depthPercent = Math.round((window.scrollY / maxScroll) * 100);
+
+      if (!tracked50Ref.current && depthPercent >= 50) {
+        tracked50Ref.current = true;
+        trackMarketingEvent({
+          eventType: "scroll_depth",
+          page: "landing",
+          metadata: { depthPercent: 50 },
+        });
+      }
+
+      if (!tracked90Ref.current && depthPercent >= 90) {
+        tracked90Ref.current = true;
+        trackMarketingEvent({
+          eventType: "scroll_depth",
+          page: "landing",
+          metadata: { depthPercent: 90 },
+        });
+      }
+    };
+
+    window.addEventListener("scroll", handleScrollDepth, { passive: true });
+    handleScrollDepth();
+    return () => window.removeEventListener("scroll", handleScrollDepth);
   }, []);
 
   const parallax = useParallax(0.06);
@@ -743,6 +793,7 @@ export function LandingPage() {
         <div className="ml-1 flex shrink-0 items-center gap-1.5">
           <Link
             to="/login"
+            onClick={() => trackLandingCta("nav_sign_in", "/login")}
             className={`whitespace-nowrap px-3 py-1.5 rounded-full text-sm transition-colors duration-500 ${
               scrolled
                 ? "text-gray-400 hover:text-white"
@@ -753,6 +804,7 @@ export function LandingPage() {
           </Link>
           <Link
             to="/waitlist"
+            onClick={() => trackLandingCta("nav_join_waitlist", "/waitlist")}
             className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-500 ${
               scrolled
                 ? "bg-white text-gray-900 hover:bg-gray-200"
@@ -837,6 +889,7 @@ export function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-16 md:mb-20">
             <Link
               to="/login"
+              onClick={() => trackLandingCta("hero_try_demo_modes", "/login")}
               className="inline-flex items-center gap-2 rounded-full bg-white text-gray-900 px-7 py-3 text-sm font-medium hover:bg-gray-200 transition-colors shadow-lg shadow-black/30"
             >
               Try Demo Modes
@@ -844,6 +897,7 @@ export function LandingPage() {
             </Link>
             <Link
               to="/waitlist"
+              onClick={() => trackLandingCta("hero_join_waitlist", "/waitlist")}
               className="inline-flex items-center gap-2 rounded-full border border-gray-600 text-gray-300 px-7 py-3 text-sm font-medium hover:bg-white/10 hover:border-gray-500 transition-colors"
             >
               Join Waitlist
@@ -986,6 +1040,7 @@ function DiscoverySpotlight() {
             </div>
             <Link
               to="/login"
+              onClick={() => trackLandingCta("discovery_run_demo", "/login")}
               className="inline-flex items-center gap-2 rounded-full bg-white text-gray-900 px-6 py-3 text-sm font-semibold hover:bg-gray-200 transition-colors shadow-lg shadow-black/30"
             >
               Run Discovery Demo
@@ -1317,15 +1372,17 @@ function FinalCTA() {
           the waitlist for full integration access.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link
-            to="/login"
-            className="inline-flex items-center gap-2 rounded-full bg-white text-gray-900 px-8 py-3.5 text-sm font-semibold hover:bg-gray-200 transition-colors shadow-lg shadow-black/30"
-          >
+            <Link
+              to="/login"
+              onClick={() => trackLandingCta("final_open_demo", "/login")}
+              className="inline-flex items-center gap-2 rounded-full bg-white text-gray-900 px-8 py-3.5 text-sm font-semibold hover:bg-gray-200 transition-colors shadow-lg shadow-black/30"
+            >
             Open Demo
             <ArrowRight className="w-4 h-4" />
           </Link>
           <Link
             to="/waitlist"
+            onClick={() => trackLandingCta("final_join_waitlist", "/waitlist")}
             className="inline-flex items-center gap-2 rounded-full border border-gray-600 text-gray-300 px-8 py-3.5 text-sm font-semibold hover:bg-white/10 hover:border-gray-500 transition-colors"
           >
             Join Waitlist

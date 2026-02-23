@@ -1,7 +1,15 @@
-import { pgTable, text, timestamp, jsonb, uuid, integer, real, unique, date } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, jsonb, uuid, integer, real, unique, date, index } from "drizzle-orm/pg-core";
 import type { UserPreferences, KnowledgeFilter, KnowledgeVisibility, RoadmapItemStatus, RoadmapItemPriority } from "@product-os/shared";
 
 export type AppUserRole = "admin" | "beta_tester" | "public_user";
+export type LandingEventType =
+  | "landing_view"
+  | "waitlist_view"
+  | "scroll_depth"
+  | "cta_click"
+  | "waitlist_submit_started"
+  | "waitlist_submit_succeeded"
+  | "waitlist_submit_failed";
 
 // Users table for demo auth
 export const users = pgTable("users", {
@@ -290,6 +298,28 @@ export const waitlist = pgTable("waitlist", {
   status: text("status").$type<"pending" | "invited" | "rejected">().default("pending").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// First-party marketing analytics events (anonymous, no third-party trackers)
+export const landingEvents = pgTable("landing_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  anonymousId: text("anonymous_id").notNull(),
+  sessionId: text("session_id"),
+  eventType: text("event_type").$type<LandingEventType>().notNull(),
+  page: text("page").$type<"landing" | "waitlist">().notNull(),
+  path: text("path").notNull(),
+  ctaId: text("cta_id"),
+  referrerHost: text("referrer_host"),
+  utmSource: text("utm_source"),
+  utmMedium: text("utm_medium"),
+  utmCampaign: text("utm_campaign"),
+  metadata: jsonb("metadata").$type<Record<string, unknown>>(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (t) => [
+  index("landing_events_created_at_idx").on(t.createdAt),
+  index("landing_events_event_type_idx").on(t.eventType),
+  index("landing_events_page_idx").on(t.page),
+  index("landing_events_anonymous_id_idx").on(t.anonymousId),
+]);
 
 // Session knowledge overrides — per-session add/remove relative to project
 export const sessionKnowledgeOverrides = pgTable("session_knowledge_overrides", {

@@ -2,6 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/auth-context";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
+import {
+  getLandingAnalyticsSummary,
+  type LandingAnalyticsSummary,
+} from "@/lib/marketing-analytics";
 
 interface WaitlistEntry {
   id: string;
@@ -23,8 +27,10 @@ export function AdminPage() {
   const { user, token, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [entries, setEntries] = useState<WaitlistEntry[]>([]);
+  const [analytics, setAnalytics] = useState<LandingAnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,18 +39,33 @@ export function AdminPage() {
       navigate("/", { replace: true });
       return;
     }
-    fetchEntries();
-  }, [user, authLoading]);
+    void fetchDashboard();
+  }, [user, authLoading, token, navigate]);
 
-  async function fetchEntries() {
+  async function fetchDashboard() {
+    if (!token) {
+      setError("Missing auth token.");
+      setLoading(false);
+      return;
+    }
+
     try {
       setError(null);
+      setAnalyticsError(null);
       const res = await fetch(`${API_BASE}/admin/waitlist`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to fetch waitlist");
       const data = await res.json();
       setEntries(data.entries);
+
+      try {
+        const summary = await getLandingAnalyticsSummary(token, 30);
+        setAnalytics(summary);
+      } catch (analyticsErr: any) {
+        setAnalytics(null);
+        setAnalyticsError(analyticsErr.message || "Failed to fetch analytics.");
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -89,7 +110,7 @@ export function AdminPage() {
         <div className="text-center space-y-2">
           <p className="text-destructive">{error}</p>
           <button
-            onClick={() => { setLoading(true); fetchEntries(); }}
+            onClick={() => { setLoading(true); void fetchDashboard(); }}
             className="text-sm text-muted-foreground hover:text-foreground underline"
           >
             Retry
@@ -102,6 +123,81 @@ export function AdminPage() {
   return (
     <div className="min-h-screen bg-background p-8">
       <div className="max-w-6xl mx-auto space-y-6">
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">Landing Analytics (30d)</h1>
+            <span className="text-sm text-muted-foreground">
+              First-party only
+            </span>
+          </div>
+
+          {analyticsError && (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700">
+              {analyticsError}
+            </div>
+          )}
+
+          {analytics && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+                <MetricCard
+                  label="Unique visitors"
+                  value={analytics.totals.totalVisitors.toLocaleString()}
+                  detail={`${analytics.totals.landingViews.toLocaleString()} landing views`}
+                />
+                <MetricCard
+                  label="CTA clicks"
+                  value={analytics.totals.ctaClicks.toLocaleString()}
+                  detail={`${analytics.totals.waitlistCtaClicks.toLocaleString()} to waitlist`}
+                />
+                <MetricCard
+                  label="Waitlist starts"
+                  value={analytics.totals.waitlistStarts.toLocaleString()}
+                  detail={`${analytics.totals.waitlistSubmits.toLocaleString()} submits`}
+                />
+                <MetricCard
+                  label="Submit rate"
+                  value={formatPercent(analytics.rates.waitlistSubmitRate)}
+                  detail={`${formatPercent(analytics.rates.waitlistFormConversionRate)} form conversion`}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="border rounded-lg p-4">
+                  <h2 className="text-sm font-semibold mb-3">Top CTA clicks</h2>
+                  {analytics.topCtas.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No CTA events yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {analytics.topCtas.slice(0, 6).map((row) => (
+                        <div key={row.ctaId} className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">{row.ctaId}</span>
+                          <span className="font-medium">{row.clicks.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="border rounded-lg p-4">
+                  <h2 className="text-sm font-semibold mb-3">Top referrers</h2>
+                  {analytics.topReferrers.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No referrer data yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {analytics.topReferrers.slice(0, 6).map((row) => (
+                        <div key={row.referrerHost} className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">{row.referrerHost}</span>
+                          <span className="font-medium">{row.views.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </section>
+
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Waitlist Management</h1>
           <span className="text-sm text-muted-foreground">
@@ -179,6 +275,20 @@ export function AdminPage() {
           </table>
         </div>
       </div>
+    </div>
+  );
+}
+
+function formatPercent(value: number): string {
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+function MetricCard({ label, value, detail }: { label: string; value: string; detail: string }) {
+  return (
+    <div className="border rounded-lg p-4 bg-card">
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-2 text-2xl font-semibold">{value}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
     </div>
   );
 }
