@@ -13,6 +13,7 @@ import {
   getLaunchModeStateForUser,
   isIntegrationProviderEnabledForUser,
 } from "../lib/launch-mode";
+import { decryptSecret, encryptSecret } from "../lib/secrets";
 
 const router = Router();
 
@@ -28,6 +29,7 @@ interface IntegrationOAuthState {
   provider: IntegrationProvider;
   timestamp: number;
   codeVerifier?: string;
+  redirectUri?: string;
 }
 
 function signOAuthState(payload: string): string {
@@ -77,6 +79,27 @@ function rejectIfIntegrationLocked(
   return true;
 }
 
+function getRequestApiBaseUrl(req: Request): string {
+  const forwardedProto = req.headers["x-forwarded-proto"];
+  const forwardedHost = req.headers["x-forwarded-host"];
+  const hostHeader = req.headers.host;
+
+  const proto = (Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto) || req.protocol || "http";
+  const host = (Array.isArray(forwardedHost) ? forwardedHost[0] : forwardedHost) || hostHeader || "localhost:3001";
+  return `${proto}://${host}`;
+}
+
+function getIntegrationRedirectUri(req: Request, provider: IntegrationProvider): string | undefined {
+  if (provider === "google") {
+    return (
+      process.env.GOOGLE_REDIRECT_URI ||
+      `${getRequestApiBaseUrl(req)}/api/integrations/callback/google`
+    );
+  }
+
+  return undefined;
+}
+
 // OAuth callback handler - MUST be before requireAuth since it's a browser redirect
 router.get("/callback/:provider", async (req: Request, res: Response) => {
   const { provider } = req.params;
@@ -95,7 +118,7 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
   try {
     // Decode state
     const stateData = decodeOAuthState(state as string);
-    const { userId, codeVerifier } = stateData;
+    const { userId, codeVerifier, redirectUri } = stateData;
     const integrationProvider = provider as IntegrationProvider;
 
     // Re-check policy at callback time to prevent bypassing frontend-only controls.
@@ -130,7 +153,9 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
     const adapter = getAdapter(integrationProvider);
 
     // Exchange code for tokens (pass codeVerifier for PKCE if present)
-    const tokens = await adapter.exchangeCodeForTokens(code as string, codeVerifier);
+    const tokens = await adapter.exchangeCodeForTokens(code as string, codeVerifier, {
+      redirectUri,
+    });
 
     // Get account info
     const metadata = await adapter.getAccountInfo(tokens.accessToken);
@@ -149,8 +174,8 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
       await db
         .update(integrations)
         .set({
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
+          accessToken: encryptSecret(tokens.accessToken)!,
+          refreshToken: encryptSecret(tokens.refreshToken),
           tokenExpiresAt: tokens.expiresAt,
           metadata,
           isActive: 1,
@@ -163,8 +188,8 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
         id: uuid(),
         userId,
         provider: integrationProvider,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
+        accessToken: encryptSecret(tokens.accessToken)!,
+        refreshToken: encryptSecret(tokens.refreshToken),
         tokenExpiresAt: tokens.expiresAt,
         metadata,
         isActive: 1,
@@ -243,13 +268,16 @@ router.get("/connect/:provider", async (req: Request, res: Response) => {
     const adapter = getAdapter(integrationProvider);
 
     // Create state token with user ID
+    const redirectUri = getIntegrationRedirectUri(req, integrationProvider);
+
     const state = encodeOAuthState({
       userId,
       provider: integrationProvider,
       timestamp: Date.now(),
+      redirectUri,
     });
 
-    const authUrl = adapter.getAuthUrl(state);
+    const authUrl = adapter.getAuthUrl(state, { redirectUri });
     res.json({ authUrl });
   } catch (error) {
     res.status(400).json({ error: (error as Error).message });
@@ -315,19 +343,25 @@ router.get("/:integrationId/sources", async (req: Request, res: Response) => {
 
   try {
     const adapter = getAdapter(integration.provider as IntegrationProvider);
-    let accessToken = integration.accessToken;
+    let accessToken = decryptSecret(integration.accessToken);
+    let refreshToken = decryptSecret(integration.refreshToken);
+    if (!accessToken) {
+      res.status(401).json({ error: "Missing integration access token, please reconnect" });
+      return;
+    }
 
     // Check if token needs refresh
     if (integration.tokenExpiresAt && new Date(integration.tokenExpiresAt) < new Date()) {
-      if (integration.refreshToken) {
-        const newTokens = await adapter.refreshTokens(integration.refreshToken);
+      if (refreshToken) {
+        const newTokens = await adapter.refreshTokens(refreshToken);
         accessToken = newTokens.accessToken;
+        refreshToken = newTokens.refreshToken ?? refreshToken;
 
         await db
           .update(integrations)
           .set({
-            accessToken: newTokens.accessToken,
-            refreshToken: newTokens.refreshToken,
+            accessToken: encryptSecret(accessToken)!,
+            refreshToken: encryptSecret(refreshToken),
             tokenExpiresAt: newTokens.expiresAt,
             updatedAt: new Date(),
           })
@@ -434,20 +468,26 @@ router.post("/:integrationId/sync", async (req: Request, res: Response) => {
 
   try {
     const adapter = getAdapter(integration.provider as IntegrationProvider);
-    let accessToken = integration.accessToken;
+    let accessToken = decryptSecret(integration.accessToken);
+    let refreshToken = decryptSecret(integration.refreshToken);
+    if (!accessToken) {
+      res.status(401).json({ error: "Missing integration access token, please reconnect" });
+      return;
+    }
 
     // Check if token needs refresh
     if (integration.tokenExpiresAt && new Date(integration.tokenExpiresAt) < new Date()) {
-      if (integration.refreshToken) {
-        const newTokens = await adapter.refreshTokens(integration.refreshToken);
+      if (refreshToken) {
+        const newTokens = await adapter.refreshTokens(refreshToken);
         accessToken = newTokens.accessToken;
+        refreshToken = newTokens.refreshToken ?? refreshToken;
 
         // Update tokens in DB
         await db
           .update(integrations)
           .set({
-            accessToken: newTokens.accessToken,
-            refreshToken: newTokens.refreshToken,
+            accessToken: encryptSecret(accessToken)!,
+            refreshToken: encryptSecret(refreshToken),
             tokenExpiresAt: newTokens.expiresAt,
             updatedAt: new Date(),
           })

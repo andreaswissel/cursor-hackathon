@@ -8,9 +8,24 @@ All notable changes to Product OS are documented here.
 
 - **System user roles for launch access** — Added persisted user roles (`admin`, `beta_tester`, `public_user`) with launch-gating support so beta testers retain and manage integrations in public demo mode.
 
+- **Self-service account deletion** — Added authenticated `DELETE /auth/me` so users can permanently delete their own account and associated data directly from Settings.
+
+- **Token encryption at rest** — Added application-layer encryption for stored secrets, including BYOK provider keys and OAuth integration access/refresh tokens.
+
 ### Improvements
 
 - **Admin user management role controls** — Settings now supports assigning and updating system roles for users, including promoting existing accounts to Beta Tester without manual database edits.
+
+- **Centralized user data deletion service** — Refactored account removal logic into a shared backend utility used by both admin-driven deletes and self-service deletes for consistency.
+
+### Fixes
+
+- **Encrypted-secret runtime handling** — LLM and integration token consumers now transparently decrypt stored secrets before use, preserving compatibility with existing plaintext records while moving all new writes to encrypted storage.
+- **Gemini Flow-mode model retirement resilience** — Replaced the retired `gemini-1.5-pro` default with current Gemini model candidates and added automatic fallback across supported Gemini models when Google returns model-not-found errors, preventing Flow-mode failures from hardcoded stale model IDs.
+
+- **Google login redirect mismatch hardening** — Google sign-in now derives its OAuth callback URI from the active request host/proxy headers and carries that exact URI in signed OAuth state through callback token exchange, preventing stale environment URL drift from causing `redirect_uri_mismatch` during login.
+
+- **Flow quota error UX upgrade** — Flow assistant messages now detect provider quota/rate-limit failures (including Gemini `429` responses) and render a structured error card with clear remediation actions (`Open Settings`, limits docs, retry hint) plus collapsible technical details instead of raw API dumps.
 
 ## [2026-02-20]
 
@@ -23,6 +38,8 @@ All notable changes to Product OS are documented here.
 - **Drafts bootstrap for legacy users** — The projects API now always ensures each user has a personal `Drafts` project and backfills legacy sessions with `NULL project_id` so users no longer get stuck on a perpetual “Loading projects...” state.
 
 - **OAuth redirect mismatch resilience (Google + Notion)** — Added normalized `API_BASE_URL` fallback redirect URIs for integration OAuth callbacks to prevent `redirect_uri_mismatch` when provider-specific env vars are missing.
+
+- **Google integration OAuth redirect mismatch hardening** — Google integration connect now derives callback URI from the live API host when `GOOGLE_REDIRECT_URI` is missing, persists that URI in signed OAuth state, and reuses the exact same URI for token exchange to avoid `redirect_uri_mismatch` in production.
 
 - **Reconnect warning noise reduction** — Session reconnect banner now appears only after a sustained disconnect (4 seconds), eliminating sub-second flicker notifications during transient SSE hiccups.
 

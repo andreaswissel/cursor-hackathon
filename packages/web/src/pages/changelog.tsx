@@ -47,6 +47,19 @@ export function ChangelogPage() {
               ) with launch-gating support so beta testers retain and manage
               integrations in public demo mode.
             </li>
+            <li>
+              <strong>Self-service account deletion</strong> &mdash; Added an authenticated{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                DELETE /auth/me
+              </code>{" "}
+              endpoint and a Settings danger-zone action so users can
+              permanently delete their own account and associated data.
+            </li>
+            <li>
+              <strong>Token encryption at rest</strong> &mdash; Added
+              application-layer encryption for stored secrets, including BYOK
+              provider keys and OAuth integration access and refresh tokens.
+            </li>
           </ul>
 
           <h3 className="text-lg font-medium mt-6 mb-3">Improvements</h3>
@@ -56,6 +69,55 @@ export function ChangelogPage() {
               Settings now supports assigning and updating system roles for
               users, including promoting existing accounts to Beta Tester
               without manual database edits.
+            </li>
+            <li>
+              <strong>Centralized user data deletion service</strong> &mdash;
+              Refactored account removal into a shared backend utility used by
+              both admin-driven deletes and self-service deletes for
+              consistency.
+            </li>
+          </ul>
+
+          <h3 className="text-lg font-medium mt-6 mb-3">Fixes</h3>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Encrypted-secret runtime handling</strong> &mdash; LLM
+              and integration token consumers now transparently decrypt stored
+              secrets before use, while preserving compatibility with existing
+              plaintext records.
+            </li>
+            <li>
+              <strong>Gemini Flow-mode model retirement resilience</strong>{" "}
+              &mdash; Replaced the retired{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                gemini-1.5-pro
+              </code>{" "}
+              default with current Gemini model candidates and added automatic
+              fallback across supported models when Google returns
+              model-not-found errors, preventing Flow-mode failures from stale
+              hardcoded model IDs.
+            </li>
+            <li>
+              <strong>Google login redirect mismatch hardening</strong>{" "}
+              &mdash; Google sign-in now derives its OAuth callback URI from
+              the active request host/proxy headers and carries that exact URI
+              in signed OAuth state through callback token exchange, preventing
+              stale environment URL drift from causing{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                redirect_uri_mismatch
+              </code>{" "}
+              during login.
+            </li>
+            <li>
+              <strong>Flow quota error UX upgrade</strong> &mdash; Flow
+              assistant messages now detect provider quota and rate-limit
+              failures (including Gemini{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                429
+              </code>{" "}
+              responses) and render a structured error card with clear recovery
+              actions, retry hints, and collapsible technical details instead
+              of dumping raw API payloads inline.
             </li>
           </ul>
 
@@ -97,6 +159,20 @@ export function ChangelogPage() {
                 redirect_uri_mismatch
               </code>{" "}
               errors when provider-specific env vars are missing.
+            </li>
+            <li>
+              <strong>Google integration OAuth redirect mismatch hardening</strong>{" "}
+              &mdash; Google integration connect now derives callback URI from
+              the live API host when{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                GOOGLE_REDIRECT_URI
+              </code>{" "}
+              is missing, stores it in signed OAuth state, and reuses that
+              exact URI for token exchange to avoid{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                redirect_uri_mismatch
+              </code>{" "}
+              in production.
             </li>
             <li>
               <strong>Reconnect warning noise reduction</strong> &mdash; Session

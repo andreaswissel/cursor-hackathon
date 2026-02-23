@@ -7,6 +7,7 @@ import { db } from "../db";
 import { users } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { getUploadPath } from "../lib/upload";
+import { decryptSecret } from "../lib/secrets";
 
 export interface DocOrchestratorInput {
   sessionId: string;
@@ -49,8 +50,8 @@ export class DocOrchestratorAgent {
     return {
       config,
       // These are for video transcription which needs both keys for Whisper + vision
-      openaiApiKey: user?.openaiApiKey?.trim() || process.env.OPENAI_API_KEY || undefined,
-      anthropicApiKey: user?.anthropicApiKey?.trim() || process.env.ANTHROPIC_API_KEY || undefined,
+      openaiApiKey: decryptSecret(user?.openaiApiKey)?.trim() || process.env.OPENAI_API_KEY || undefined,
+      anthropicApiKey: decryptSecret(user?.anthropicApiKey)?.trim() || process.env.ANTHROPIC_API_KEY || undefined,
     };
   }
 

@@ -595,6 +595,18 @@ export async function updateProfile(data: { displayName?: string; avatarUrl?: st
   }
 }
 
+export async function deleteMyAccount(): Promise<void> {
+  const res = await fetch(`${API_BASE}/auth/me`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to delete account" }));
+    throw new Error(error.error || "Failed to delete account");
+  }
+}
+
 // ============================================================
 // Team API
 // ============================================================

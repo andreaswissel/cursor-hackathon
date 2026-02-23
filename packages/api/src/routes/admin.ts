@@ -4,22 +4,10 @@ import { db } from "../db";
 import {
   users,
   type AppUserRole,
-  sessions,
-  projects,
-  integrations,
-  integrationData,
-  agentRuns,
-  outputs,
-  messages,
-  documentationPieces,
-  discoveryRuns,
-  discoveryClusters,
-  teamInvites,
-  sessionKnowledgeOverrides,
-  knowledgeSources,
   waitlist,
 } from "../db/schema";
-import { eq, desc, inArray } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
+import { deleteUserWithAssociatedData } from "../lib/user-deletion";
 
 const router = Router();
 const VALID_USER_ROLES: AppUserRole[] = ["admin", "beta_tester", "public_user"];
@@ -193,46 +181,7 @@ router.delete("/users/:id", async (req, res) => {
       return;
     }
 
-    // Delete all user-related data in FK-safe order
-
-    // 1. Get user's session and integration IDs for cascading deletes
-    const userSessions = await db.select({ id: sessions.id }).from(sessions).where(eq(sessions.userId, id));
-    const sessionIds = userSessions.map((s) => s.id);
-
-    const userIntegrations = await db.select({ id: integrations.id }).from(integrations).where(eq(integrations.userId, id));
-    const integrationIds = userIntegrations.map((i) => i.id);
-
-    // 2. Delete session-related data
-    if (sessionIds.length > 0) {
-      await db.delete(sessionKnowledgeOverrides).where(inArray(sessionKnowledgeOverrides.sessionId, sessionIds));
-      await db.delete(messages).where(inArray(messages.sessionId, sessionIds));
-      await db.delete(documentationPieces).where(inArray(documentationPieces.sessionId, sessionIds));
-      await db.delete(outputs).where(inArray(outputs.sessionId, sessionIds));
-      await db.delete(agentRuns).where(inArray(agentRuns.sessionId, sessionIds));
-    }
-    await db.delete(sessions).where(eq(sessions.userId, id));
-
-    // 3. Delete integration data
-    if (integrationIds.length > 0) {
-      await db.delete(integrationData).where(inArray(integrationData.integrationId, integrationIds));
-    }
-    await db.delete(integrations).where(eq(integrations.userId, id));
-
-    // 4. Delete knowledge sources (must go before projects since they ref users.id)
-    await db.delete(knowledgeSources).where(eq(knowledgeSources.createdByUserId, id));
-
-    // 5. Delete projects
-    await db.delete(projects).where(eq(projects.userId, id));
-
-    // 6. Delete discovery data
-    await db.delete(discoveryClusters).where(eq(discoveryClusters.userId, id));
-    await db.delete(discoveryRuns).where(eq(discoveryRuns.userId, id));
-
-    // 7. Delete team invites created by this user
-    await db.delete(teamInvites).where(eq(teamInvites.invitedByUserId, id));
-
-    // 8. Delete user (team_members auto-cascades)
-    await db.delete(users).where(eq(users.id, id));
+    await deleteUserWithAssociatedData(id);
 
     res.json({ success: true });
   } catch (err) {
