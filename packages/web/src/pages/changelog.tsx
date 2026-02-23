@@ -87,6 +87,18 @@ export function ChangelogPage() {
               plaintext records.
             </li>
             <li>
+              <strong>Flow GTM spec-context formatting</strong> &mdash; Pipeline
+              agents now normalize prior artifact outputs (including spec{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                {"{ markdown }"}
+              </code>{" "}
+              objects) before prompt interpolation, preventing{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                [object Object]
+              </code>{" "}
+              from leaking into GTM and downstream prompts.
+            </li>
+            <li>
               <strong>Gemini Flow-mode model retirement resilience</strong>{" "}
               &mdash; Replaced the retired{" "}
               <code className="text-sm bg-muted px-1.5 py-0.5 rounded">

@@ -79,7 +79,7 @@ Output your analysis in the following format:
       })
       .join("\n\n");
 
-    const discoveryOutput = input.previousOutputs?.discovery as string | undefined;
+    const discoveryOutput = this.outputToPromptText(input.previousOutputs?.discovery);
 
     const metricsList = input.context.metrics
       ? input.context.metrics

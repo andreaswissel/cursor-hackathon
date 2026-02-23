@@ -68,6 +68,68 @@ export abstract class BaseAgent {
     });
   }
 
+  protected outputToPromptText(value: unknown): string | undefined {
+    if (value === null || value === undefined) {
+      return undefined;
+    }
+
+    if (typeof value === "string") {
+      return value;
+    }
+
+    if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") {
+      return String(value);
+    }
+
+    if (typeof value === "object") {
+      const output = value as Record<string, unknown>;
+
+      if (typeof output.markdown === "string") {
+        return output.markdown;
+      }
+
+      if (typeof output.reasoning === "string") {
+        return output.reasoning;
+      }
+
+      const problemValidation = output.problemValidation;
+      if (
+        problemValidation &&
+        typeof problemValidation === "object" &&
+        typeof (problemValidation as Record<string, unknown>).reasoning === "string"
+      ) {
+        return (problemValidation as Record<string, string>).reasoning;
+      }
+
+      const slides = output.slides;
+      if (Array.isArray(slides)) {
+        const formattedSlides = slides
+          .map((slide) => {
+            if (!slide || typeof slide !== "object") {
+              return "";
+            }
+            const slideRecord = slide as Record<string, unknown>;
+            const title = typeof slideRecord.title === "string" ? slideRecord.title : "Slide";
+            const bullets = Array.isArray(slideRecord.bullets)
+              ? slideRecord.bullets.filter((bullet): bullet is string => typeof bullet === "string")
+              : [];
+            return `## ${title}\n${bullets.map((bullet) => `- ${bullet}`).join("\n")}`;
+          })
+          .filter((entry) => entry.length > 0);
+
+        if (formattedSlides.length > 0) {
+          return formattedSlides.join("\n\n");
+        }
+      }
+    }
+
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch {
+      return String(value);
+    }
+  }
+
   protected abstract buildMessages(input: AgentInput): Anthropic.MessageParam[];
 
   protected abstract parseOutput(rawOutput: string): unknown;

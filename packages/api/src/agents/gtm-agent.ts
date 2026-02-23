@@ -62,7 +62,7 @@ Output slide content in JSON format:
 Keep slides concise - max 4-5 bullets per slide, each bullet under 15 words.`;
 
   buildMessages(input: AgentInput): Anthropic.MessageParam[] {
-    const specOutput = input.previousOutputs?.spec as string | undefined;
+    const specOutput = this.outputToPromptText(input.previousOutputs?.spec);
 
     return [
       {
