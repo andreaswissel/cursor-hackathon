@@ -77,8 +77,8 @@ As a [user type], I want to [action] so that [benefit].
 - Any patterns to follow]`;
 
   buildMessages(input: AgentInput): Anthropic.MessageParam[] {
-    const discoveryOutput = input.previousOutputs?.discovery as string | undefined;
-    const strategyOutput = input.previousOutputs?.strategy as string | undefined;
+    const discoveryOutput = this.outputToPromptText(input.previousOutputs?.discovery);
+    const strategyOutput = this.outputToPromptText(input.previousOutputs?.strategy);
 
     return [
       {

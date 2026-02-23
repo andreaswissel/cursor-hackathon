@@ -51,10 +51,10 @@ Output a product update in JSON format:
 Keep it scannable - people will read this in Teams/Slack. Use clear, jargon-free language.`;
 
   buildMessages(input: AgentInput): Anthropic.MessageParam[] {
-    const discoveryOutput = input.previousOutputs?.discovery as string | undefined;
-    const strategyOutput = input.previousOutputs?.strategy as string | undefined;
-    const specOutput = input.previousOutputs?.spec as string | undefined;
-    const gtmOutput = input.previousOutputs?.gtm as string | undefined;
+    const discoveryOutput = this.outputToPromptText(input.previousOutputs?.discovery);
+    const strategyOutput = this.outputToPromptText(input.previousOutputs?.strategy);
+    const specOutput = this.outputToPromptText(input.previousOutputs?.spec);
+    const gtmOutput = this.outputToPromptText(input.previousOutputs?.gtm);
 
     return [
       {
