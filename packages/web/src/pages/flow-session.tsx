@@ -112,13 +112,13 @@ export function FlowSessionPage({ sessionId, artifacts: sseArtifacts, repoUrl: i
       {showArtifacts && (
         <>
           <div
-            className="fixed inset-0 bg-black/40 z-40 md:hidden"
+            className="fixed inset-x-0 bottom-0 -top-[45px] bg-black/40 z-40 md:hidden"
             onClick={() => setShowArtifacts(false)}
             aria-hidden="true"
           />
           <div
             className={cn(
-              "fixed top-0 right-0 bottom-0 z-50 w-[min(92vw,24rem)] border-l bg-card flex flex-col",
+              "fixed -top-[45px] right-0 bottom-0 z-50 w-[min(92vw,24rem)] border-l bg-card flex flex-col",
               "md:static md:top-auto md:right-auto md:bottom-auto md:z-auto md:w-80 lg:w-96",
               "flex-shrink-0 relative"
             )}

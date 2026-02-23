@@ -94,6 +94,18 @@ export function ChangelogPage() {
               wrapping.
             </li>
             <li>
+              <strong>Flow mobile artifact drawer top-anchor correction</strong>{" "}
+              &mdash; Adjusted mobile drawer and backdrop offsets so the artifact
+              panel starts directly beneath the app header instead of leaving a
+              visible gap below the flow title bar.
+            </li>
+            <li>
+              <strong>Flow mobile input focus zoom fix (iOS Safari)</strong>{" "}
+              &mdash; Increased the mobile composer textarea font size to prevent
+              Safari auto-zoom on focus, preserving the expected title bar and
+              empty-state framing while typing.
+            </li>
+            <li>
               <strong>Encrypted-secret runtime handling</strong> &mdash; LLM
               and integration token consumers now transparently decrypt stored
               secrets before use, while preserving compatibility with existing

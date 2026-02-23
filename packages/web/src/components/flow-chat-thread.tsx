@@ -904,7 +904,7 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
             onKeyDown={handleKeyDown}
             placeholder="Describe what you want to build..."
             rows={1}
-            className="flex-1 resize-none bg-transparent py-1 text-sm placeholder:text-muted-foreground focus:outline-none min-h-[28px] max-h-[160px]"
+            className="flex-1 resize-none bg-transparent py-1 text-base md:text-sm placeholder:text-muted-foreground focus:outline-none min-h-[28px] max-h-[160px]"
             style={{ height: "auto", overflow: "hidden" }}
             onInput={(e) => {
               const target = e.target as HTMLTextAreaElement;

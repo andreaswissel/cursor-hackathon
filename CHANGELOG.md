@@ -22,6 +22,8 @@ All notable changes to Product OS are documented here.
 
 - **Flow mobile artifact panel access** — Restored artifact access in mobile flow sessions by adding a dedicated “Open artifacts panel” trigger and a mobile drawer presentation with close controls.
 - **Flow mobile artifact drawer alignment + trigger layout** — Removed extra vertical offset so the mobile artifact drawer aligns directly under the session header, and fixed the floating artifact trigger to render as a single-row button instead of wrapping/breaking.
+- **Flow mobile artifact drawer top-anchor correction** — Adjusted mobile drawer/backdrop offsets so the artifact panel now starts directly beneath the app header instead of leaving a visible gap below the flow title bar.
+- **Flow mobile input focus zoom fix (iOS Safari)** — Increased the mobile composer textarea font size to prevent Safari auto-zoom on focus, preserving the expected title bar and empty-state framing while typing.
 
 - **Encrypted-secret runtime handling** — LLM and integration token consumers now transparently decrypt stored secrets before use, preserving compatibility with existing plaintext records while moving all new writes to encrypted storage.
 - **Gemini Flow-mode model retirement resilience** — Replaced the retired `gemini-1.5-pro` default with current Gemini model candidates and added automatic fallback across supported Gemini models when Google returns model-not-found errors, preventing Flow-mode failures from hardcoded stale model IDs.
