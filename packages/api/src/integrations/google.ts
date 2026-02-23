@@ -4,15 +4,21 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
 const RAW_API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3001";
 const API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, "").replace(/\/api$/, "");
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || `${API_BASE_URL}/api/integrations/callback/google`;
+const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || "";
+const DEFAULT_GOOGLE_REDIRECT_URI = `${API_BASE_URL}/api/integrations/callback/google`;
+
+function resolveGoogleRedirectUri(override?: string): string {
+  return override || GOOGLE_REDIRECT_URI || DEFAULT_GOOGLE_REDIRECT_URI;
+}
 
 export const googleAdapter: IntegrationAdapter = {
   provider: "google",
 
-  getAuthUrl(state: string): string {
+  getAuthUrl(state: string, options?: { redirectUri?: string }): string {
+    const redirectUri = resolveGoogleRedirectUri(options?.redirectUri);
     const params = new URLSearchParams({
       client_id: GOOGLE_CLIENT_ID,
-      redirect_uri: GOOGLE_REDIRECT_URI,
+      redirect_uri: redirectUri,
       response_type: "code",
       state,
       scope: [
@@ -29,7 +35,12 @@ export const googleAdapter: IntegrationAdapter = {
     return `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
   },
 
-  async exchangeCodeForTokens(code: string): Promise<OAuthTokens> {
+  async exchangeCodeForTokens(
+    code: string,
+    _codeVerifier?: string,
+    options?: { redirectUri?: string }
+  ): Promise<OAuthTokens> {
+    const redirectUri = resolveGoogleRedirectUri(options?.redirectUri);
     const res = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -38,7 +49,7 @@ export const googleAdapter: IntegrationAdapter = {
         client_id: GOOGLE_CLIENT_ID,
         client_secret: GOOGLE_CLIENT_SECRET,
         code,
-        redirect_uri: GOOGLE_REDIRECT_URI,
+        redirect_uri: redirectUri,
       }),
     });
 

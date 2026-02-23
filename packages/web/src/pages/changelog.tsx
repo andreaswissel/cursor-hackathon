@@ -65,6 +65,20 @@ export function ChangelogPage() {
               errors when provider-specific env vars are missing.
             </li>
             <li>
+              <strong>Google integration OAuth redirect mismatch hardening</strong>{" "}
+              &mdash; Google integration connect now derives callback URI from
+              the live API host when{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                GOOGLE_REDIRECT_URI
+              </code>{" "}
+              is missing, stores it in signed OAuth state, and reuses that
+              exact URI for token exchange to avoid{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                redirect_uri_mismatch
+              </code>{" "}
+              in production.
+            </li>
+            <li>
               <strong>Reconnect warning noise reduction</strong> &mdash; Session
               reconnect banner now appears only after a sustained disconnect
               (4 seconds), eliminating sub-second flicker notifications during

@@ -28,6 +28,7 @@ interface IntegrationOAuthState {
   provider: IntegrationProvider;
   timestamp: number;
   codeVerifier?: string;
+  redirectUri?: string;
 }
 
 function signOAuthState(payload: string): string {
@@ -77,6 +78,27 @@ function rejectIfIntegrationLocked(
   return true;
 }
 
+function getRequestApiBaseUrl(req: Request): string {
+  const forwardedProto = req.headers["x-forwarded-proto"];
+  const forwardedHost = req.headers["x-forwarded-host"];
+  const hostHeader = req.headers.host;
+
+  const proto = (Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto) || req.protocol || "http";
+  const host = (Array.isArray(forwardedHost) ? forwardedHost[0] : forwardedHost) || hostHeader || "localhost:3001";
+  return `${proto}://${host}`;
+}
+
+function getIntegrationRedirectUri(req: Request, provider: IntegrationProvider): string | undefined {
+  if (provider === "google") {
+    return (
+      process.env.GOOGLE_REDIRECT_URI ||
+      `${getRequestApiBaseUrl(req)}/api/integrations/callback/google`
+    );
+  }
+
+  return undefined;
+}
+
 // OAuth callback handler - MUST be before requireAuth since it's a browser redirect
 router.get("/callback/:provider", async (req: Request, res: Response) => {
   const { provider } = req.params;
@@ -95,7 +117,7 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
   try {
     // Decode state
     const stateData = decodeOAuthState(state as string);
-    const { userId, codeVerifier } = stateData;
+    const { userId, codeVerifier, redirectUri } = stateData;
     const integrationProvider = provider as IntegrationProvider;
 
     // Re-check policy at callback time to prevent bypassing frontend-only controls.
@@ -128,7 +150,9 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
     const adapter = getAdapter(integrationProvider);
 
     // Exchange code for tokens (pass codeVerifier for PKCE if present)
-    const tokens = await adapter.exchangeCodeForTokens(code as string, codeVerifier);
+    const tokens = await adapter.exchangeCodeForTokens(code as string, codeVerifier, {
+      redirectUri,
+    });
 
     // Get account info
     const metadata = await adapter.getAccountInfo(tokens.accessToken);
@@ -241,13 +265,16 @@ router.get("/connect/:provider", async (req: Request, res: Response) => {
     const adapter = getAdapter(integrationProvider);
 
     // Create state token with user ID
+    const redirectUri = getIntegrationRedirectUri(req, integrationProvider);
+
     const state = encodeOAuthState({
       userId,
       provider: integrationProvider,
       timestamp: Date.now(),
+      redirectUri,
     });
 
-    const authUrl = adapter.getAuthUrl(state);
+    const authUrl = adapter.getAuthUrl(state, { redirectUri });
     res.json({ authUrl });
   } catch (error) {
     res.status(400).json({ error: (error as Error).message });

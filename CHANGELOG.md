@@ -14,6 +14,8 @@ All notable changes to Product OS are documented here.
 
 - **OAuth redirect mismatch resilience (Google + Notion)** — Added normalized `API_BASE_URL` fallback redirect URIs for integration OAuth callbacks to prevent `redirect_uri_mismatch` when provider-specific env vars are missing.
 
+- **Google integration OAuth redirect mismatch hardening** — Google integration connect now derives callback URI from the live API host when `GOOGLE_REDIRECT_URI` is missing, persists that URI in signed OAuth state, and reuses the exact same URI for token exchange to avoid `redirect_uri_mismatch` in production.
+
 - **Reconnect warning noise reduction** — Session reconnect banner now appears only after a sustained disconnect (4 seconds), eliminating sub-second flicker notifications during transient SSE hiccups.
 
 - **Dropdown layering and clipping** — Fixed custom dropdown menus being cut off or rendered behind nearby cards by removing clipping overflow from the outputs handoff wrapper and standardizing higher z-index layers for custom dropdown anchors/menus.
