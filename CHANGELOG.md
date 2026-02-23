@@ -20,7 +20,11 @@ All notable changes to Product OS are documented here.
 
 - **Sidebar session mode icons + running indicator split** — Project session rows now always show mode/type icons (Flow/Imagine/Discover/etc.) while active runs show a separate compact rotating progress indicator instead of replacing the mode icon.
 
+- **Imagine session project reassignment in-session** — Added a project selector to the Imagine session header so existing sessions can be moved between projects without leaving the session view.
+
 ### Fixes
+
+- **Missing web favicon** — Added Product OS favicon assets for browser tabs and touch devices, and replaced the default Vite icon metadata in the web app head.
 
 - **Flow mobile artifact panel access** — Restored artifact access in mobile flow sessions by adding a dedicated “Open artifacts panel” trigger and a mobile drawer presentation with close controls.
 - **Flow mobile artifact drawer alignment + trigger layout** — Removed extra vertical offset so the mobile artifact drawer aligns directly under the session header, and fixed the floating artifact trigger to render as a single-row button instead of wrapping/breaking.

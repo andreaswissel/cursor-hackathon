@@ -83,10 +83,21 @@ export function ChangelogPage() {
               separate compact rotating progress indicator instead of replacing
               the mode icon.
             </li>
+            <li>
+              <strong>Imagine session project reassignment in-session</strong>{" "}
+              &mdash; Added a project selector to the Imagine session header so
+              existing sessions can be moved between projects without leaving
+              the session view.
+            </li>
           </ul>
 
           <h3 className="text-lg font-medium mt-6 mb-3">Fixes</h3>
           <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Missing web favicon</strong> &mdash; Added Product OS favicon
+              assets for browser tabs and touch devices, and replaced the
+              default Vite icon metadata in the web app head.
+            </li>
             <li>
               <strong>Flow mobile artifact panel access</strong> &mdash; Restored
               artifact access in mobile flow sessions by adding an explicit{" "}

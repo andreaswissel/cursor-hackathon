@@ -9,6 +9,7 @@ interface FlowBreadcrumbProps {
   projectId?: string;
   projects: ProjectWithSessions[];
   onProjectAssigned: (projectId: string) => void;
+  showTitle?: boolean;
 }
 
 export function FlowBreadcrumb({
@@ -16,6 +17,7 @@ export function FlowBreadcrumb({
   projectId,
   projects,
   onProjectAssigned,
+  showTitle = true,
 }: FlowBreadcrumbProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -72,8 +74,12 @@ export function FlowBreadcrumb({
         )}
       </div>
 
-      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-      <span className="font-semibold text-sm truncate">{title}</span>
+      {showTitle && (
+        <>
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+          <span className="font-semibold text-sm truncate">{title}</span>
+        </>
+      )}
     </div>
   );
 }

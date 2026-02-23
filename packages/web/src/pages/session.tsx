@@ -137,6 +137,7 @@ export function SessionPage() {
   const [terminalCommand, setTerminalCommand] = useState<string | undefined>();
   const [terminalCwd, setTerminalCwd] = useState<string | undefined>();
   const [showReconnectBanner, setShowReconnectBanner] = useState(false);
+  const [assignedProjectId, setAssignedProjectId] = useState<string | undefined>(undefined);
   const reconnectBannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleTerminalOpen = useCallback((command: string, cwd?: string) => {
@@ -150,6 +151,7 @@ export function SessionPage() {
   const isFeedbackFormsMode = session?.mode === "feedback-forms";
   const isFlowLikeMode = isFlowMode || isGuidedToursMode || isFeedbackFormsMode;
   const isDocumentationMode = session?.mode === "documentation";
+  const isImagineSession = session?.mode === "idea-to-spec" || session?.mode === undefined;
 
   const refreshProjects = () => {
     getAllProjects()
@@ -168,6 +170,10 @@ export function SessionPage() {
   useEffect(() => {
     refreshProjects();
   }, []);
+
+  useEffect(() => {
+    setAssignedProjectId(session?.projectId);
+  }, [session?.projectId, session?.id]);
 
   useEffect(() => {
     if (isReconnecting) {
@@ -322,9 +328,10 @@ export function SessionPage() {
             <FlowBreadcrumb
               sessionId={sessionId!}
               title={session.idea}
-              projectId={session.projectId}
+              projectId={assignedProjectId}
               projects={projects}
               onProjectAssigned={async (projectId) => {
+                setAssignedProjectId(projectId);
                 await updateSession(sessionId!, { projectId });
                 refreshProjects();
               }}
@@ -371,6 +378,22 @@ export function SessionPage() {
           <div className="px-4 md:px-6 py-4 border-b border-border/50">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
               <div className="min-w-0">
+                {isImagineSession && (
+                  <div className="mb-1.5">
+                    <FlowBreadcrumb
+                      sessionId={sessionId!}
+                      title={session.idea}
+                      projectId={assignedProjectId}
+                      projects={projects}
+                      showTitle={false}
+                      onProjectAssigned={async (projectId) => {
+                        setAssignedProjectId(projectId);
+                        await updateSession(sessionId!, { projectId });
+                        refreshProjects();
+                      }}
+                    />
+                  </div>
+                )}
                 <h1 className="font-semibold truncate text-sm md:text-base">{session.idea}</h1>
                 <div className="flex items-center gap-2 md:gap-3 mt-1 flex-wrap">
                   <div className="flex items-center gap-1.5">
