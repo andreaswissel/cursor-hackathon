@@ -2,6 +2,16 @@
 
 All notable changes to Product OS are documented here.
 
+## [2026-02-23]
+
+### Features
+
+- **System user roles for launch access** — Added persisted user roles (`admin`, `beta_tester`, `public_user`) with launch-gating support so beta testers retain and manage integrations in public demo mode.
+
+### Improvements
+
+- **Admin user management role controls** — Settings now supports assigning and updating system roles for users, including promoting existing accounts to Beta Tester without manual database edits.
+
 ## [2026-02-20]
 
 ### Features

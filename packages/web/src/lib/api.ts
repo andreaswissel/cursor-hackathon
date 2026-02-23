@@ -1,4 +1,4 @@
-import type { SessionContext, Session, AgentType, DocumentationPiece, DocPieceStatus, SessionMode, DiscoveryDashboard, DiscoveryRun, ProjectWithSessions, UserPreferences, KnowledgeSource, KnowledgeFilter, KnowledgeVisibility, SessionKnowledgeOverride, FlowArtifact, FlowArtifactType, RoadmapItem, RoadmapItemStatus, RoadmapItemPriority } from "@product-os/shared";
+import type { SessionContext, Session, AgentType, DocumentationPiece, DocPieceStatus, SessionMode, DiscoveryDashboard, DiscoveryRun, ProjectWithSessions, UserPreferences, KnowledgeSource, KnowledgeFilter, KnowledgeVisibility, SessionKnowledgeOverride, FlowArtifact, FlowArtifactType, RoadmapItem, RoadmapItemStatus, RoadmapItemPriority, SystemUserRole } from "@product-os/shared";
 
 // In production, use the full API URL; in dev, proxy through Vite
 const API_BASE = import.meta.env.VITE_API_URL ||
@@ -498,6 +498,7 @@ export async function getDiscoveryRunStatus(runId: string): Promise<DiscoveryRun
 export interface AdminUser {
   id: string;
   email: string;
+  role: SystemUserRole;
   isAdmin: boolean;
   onboardingCompleted: boolean;
   createdAt: string;
@@ -517,16 +518,32 @@ export async function getUsers(): Promise<AdminUser[]> {
   return data.users;
 }
 
-export async function createUser(email: string, isAdmin?: boolean): Promise<AdminUser> {
+export async function createUser(email: string, role: SystemUserRole = "public_user"): Promise<AdminUser> {
   const res = await fetch(`${API_BASE}/admin/users`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-    body: JSON.stringify({ email, isAdmin }),
+    body: JSON.stringify({ email, role }),
   });
 
   if (!res.ok) {
     const error = await res.json().catch(() => ({ error: "Failed to create user" }));
     throw new Error(error.error || "Failed to create user");
+  }
+
+  const data = await res.json();
+  return data.user;
+}
+
+export async function updateUserRole(id: string, role: SystemUserRole): Promise<AdminUser> {
+  const res = await fetch(`${API_BASE}/admin/users/${id}/role`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+    body: JSON.stringify({ role }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ error: "Failed to update user role" }));
+    throw new Error(error.error || "Failed to update user role");
   }
 
   const data = await res.json();

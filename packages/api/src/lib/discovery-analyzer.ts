@@ -182,6 +182,7 @@ export async function runDiscoveryAnalysis(userId: string, context?: DiscoveryCo
       id: user.id,
       email: user.email,
       isAdmin: user.isAdmin === 1,
+      userRole: user.role,
     });
 
     let signals: string[];

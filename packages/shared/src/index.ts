@@ -1,4 +1,5 @@
 export type UserRole = "pm_automation" | "engineer_support" | "pm_builder";
+export type SystemUserRole = "admin" | "beta_tester" | "public_user";
 export type AgentMode = "guided" | "balanced" | "autonomous";
 export type TeamRole = "owner" | "admin" | "member";
 export type InviteStatus = "pending" | "accepted" | "declined" | "expired";
@@ -154,6 +155,7 @@ export interface UserProfile {
   displayName?: string | null;
   avatarUrl?: string | null;
   isAdmin?: boolean;
+  userRole?: SystemUserRole;
   onboardingCompleted?: boolean;
   preferences?: UserPreferences | null;
   teams?: Array<{ teamId: string; teamName: string; teamSlug: string; role: TeamRole }>;

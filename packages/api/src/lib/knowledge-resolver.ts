@@ -79,6 +79,7 @@ async function getUserIntegrationData(userId: string): Promise<ResolvedIntegrati
       id: users.id,
       email: users.email,
       isAdmin: users.isAdmin,
+      role: users.role,
     })
     .from(users)
     .where(eq(users.id, userId))
@@ -92,6 +93,7 @@ async function getUserIntegrationData(userId: string): Promise<ResolvedIntegrati
     id: user.id,
     email: user.email,
     isAdmin: user.isAdmin === 1,
+    userRole: user.role,
   });
 
   if (enabledProviders.length === 0) {

@@ -4,9 +4,9 @@ import { Sidebar } from "@/components/sidebar";
 import { useAuth } from "@/contexts/auth-context";
 import { UserAvatar } from "@/components/user-avatar";
 import { Key, Loader2, Check, Trash2, Eye, EyeOff, Sparkles, Link2, Users, Plus, User } from "lucide-react";
-import { getAllProjects, getUsers, createUser, deleteUser, updateProfile, createTeam } from "@/lib/api";
+import { getAllProjects, getUsers, createUser, deleteUser, updateProfile, createTeam, updateUserRole } from "@/lib/api";
 import type { AdminUser } from "@/lib/api";
-import type { ProjectWithSessions } from "@product-os/shared";
+import type { ProjectWithSessions, SystemUserRole } from "@product-os/shared";
 import { cn } from "@/lib/utils";
 import { IntegrationsPanel } from "@/components/integrations-panel";
 
@@ -50,6 +50,12 @@ const PROVIDER_INFO: Record<Provider, { name: string; color: string; placeholder
   },
 };
 
+const USER_ROLE_LABELS: Record<SystemUserRole, string> = {
+  admin: "Admin",
+  beta_tester: "Beta Tester",
+  public_user: "Public User",
+};
+
 export function SettingsPage() {
   const { user, token, refreshUser, setActiveTeam } = useAuth();
   const navigate = useNavigate();
@@ -76,7 +82,7 @@ export function SettingsPage() {
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [adminLoading, setAdminLoading] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState("");
-  const [newUserIsAdmin, setNewUserIsAdmin] = useState(false);
+  const [newUserRole, setNewUserRole] = useState<SystemUserRole>("public_user");
   const [adminSaving, setAdminSaving] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
   const [adminSuccess, setAdminSuccess] = useState<string | null>(null);
@@ -161,16 +167,32 @@ export function SettingsPage() {
     setAdminError(null);
     setAdminSuccess(null);
     try {
-      const created = await createUser(newUserEmail.trim(), newUserIsAdmin);
+      const created = await createUser(newUserEmail.trim(), newUserRole);
       setAdminUsers((prev) => [...prev, created]);
       setNewUserEmail("");
-      setNewUserIsAdmin(false);
+      setNewUserRole("public_user");
       setAdminSuccess(`User ${created.email} created`);
       setTimeout(() => setAdminSuccess(null), 3000);
     } catch (err) {
       setAdminError(err instanceof Error ? err.message : "Failed to create user");
     } finally {
       setAdminSaving(false);
+    }
+  };
+
+  const handleUpdateUserRole = async (id: string, role: SystemUserRole) => {
+    setAdminError(null);
+    setAdminSuccess(null);
+    try {
+      const updated = await updateUserRole(id, role);
+      setAdminUsers((prev) => prev.map((u) => (u.id === id ? updated : u)));
+      setAdminSuccess(`Updated role for ${updated.email}`);
+      setTimeout(() => setAdminSuccess(null), 3000);
+      if (id === user?.id) {
+        await refreshUser();
+      }
+    } catch (err) {
+      setAdminError(err instanceof Error ? err.message : "Failed to update role");
     }
   };
 
@@ -619,13 +641,34 @@ export function SettingsPage() {
                               <span className="text-sm font-medium truncate">
                                 {u.email}
                               </span>
-                              {u.isAdmin && (
-                                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-500 flex-shrink-0">
-                                  Admin
-                                </span>
-                              )}
+                              <span
+                                className={cn(
+                                  "text-xs font-medium px-2 py-0.5 rounded-full flex-shrink-0",
+                                  u.role === "admin"
+                                    ? "bg-violet-500/10 text-violet-500"
+                                    : u.role === "beta_tester"
+                                      ? "bg-blue-500/10 text-blue-500"
+                                      : "bg-amber-500/10 text-amber-600"
+                                )}
+                              >
+                                {USER_ROLE_LABELS[u.role]}
+                              </span>
                             </div>
                             <div className="flex items-center gap-3 flex-shrink-0">
+                              <select
+                                value={u.role}
+                                onChange={(e) =>
+                                  handleUpdateUserRole(
+                                    u.id,
+                                    e.target.value as SystemUserRole
+                                  )
+                                }
+                                className="px-2 py-1.5 rounded-md border bg-background text-xs"
+                              >
+                                <option value="admin">Admin</option>
+                                <option value="beta_tester">Beta Tester</option>
+                                <option value="public_user">Public User</option>
+                              </select>
                               <span className="text-xs text-muted-foreground">
                                 {new Date(u.createdAt).toLocaleDateString()}
                               </span>
@@ -658,6 +701,15 @@ export function SettingsPage() {
                             if (e.key === "Enter") handleAddUser();
                           }}
                         />
+                        <select
+                          value={newUserRole}
+                          onChange={(e) => setNewUserRole(e.target.value as SystemUserRole)}
+                          className="px-3 py-2.5 rounded-lg border bg-background text-sm"
+                        >
+                          <option value="public_user">Public User</option>
+                          <option value="beta_tester">Beta Tester</option>
+                          <option value="admin">Admin</option>
+                        </select>
                         <button
                           onClick={handleAddUser}
                           disabled={adminSaving || !newUserEmail.trim()}
@@ -671,15 +723,6 @@ export function SettingsPage() {
                           Add
                         </button>
                       </div>
-                      <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={newUserIsAdmin}
-                          onChange={(e) => setNewUserIsAdmin(e.target.checked)}
-                          className="rounded border-muted-foreground/30"
-                        />
-                        Grant admin privileges
-                      </label>
                     </div>
 
                     {/* Admin feedback messages */}

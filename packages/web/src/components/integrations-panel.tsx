@@ -151,7 +151,7 @@ export function IntegrationsPanel() {
     }
     if (errorMsg) {
       if (errorMsg === "integrations_locked") {
-        setError("Integrations are currently unavailable in the public demo.");
+        setError("Integrations are only available for full users.");
       } else {
         setError(decodeURIComponent(errorMsg));
       }
@@ -328,16 +328,16 @@ export function IntegrationsPanel() {
       {launchMode?.integrationsLocked && (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
           <p className="text-sm font-medium text-amber-600">
-            Integrations are coming soon
+            Integrations are only available for full users
           </p>
           <p className="mt-1 text-sm text-amber-600/85">
-            Try the demo modes now, then join the waitlist to get notified when integrations open.
+            Try the demo modes now, then join the waitlist for full access.
           </p>
           <Link
             to={launchMode.waitlistUrl || "/waitlist"}
             className="mt-3 inline-flex text-sm font-medium text-amber-700 underline"
           >
-            Join integration waitlist
+            Join waitlist for full access
           </Link>
         </div>
       )}
