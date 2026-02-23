@@ -81,6 +81,12 @@ export function ChangelogPage() {
           <h3 className="text-lg font-medium mt-6 mb-3">Fixes</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
+              <strong>Flow mobile artifact panel access</strong> &mdash; Restored
+              artifact access in mobile flow sessions by adding an explicit{" "}
+              &quot;Open artifacts panel&quot; trigger and a mobile drawer with close
+              controls.
+            </li>
+            <li>
               <strong>Encrypted-secret runtime handling</strong> &mdash; LLM
               and integration token consumers now transparently decrypt stored
               secrets before use, while preserving compatibility with existing

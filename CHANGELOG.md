@@ -20,6 +20,8 @@ All notable changes to Product OS are documented here.
 
 ### Fixes
 
+- **Flow mobile artifact panel access** — Restored artifact access in mobile flow sessions by adding a dedicated “Open artifacts panel” trigger and a mobile drawer presentation with close controls.
+
 - **Encrypted-secret runtime handling** — LLM and integration token consumers now transparently decrypt stored secrets before use, preserving compatibility with existing plaintext records while moving all new writes to encrypted storage.
 - **Gemini Flow-mode model retirement resilience** — Replaced the retired `gemini-1.5-pro` default with current Gemini model candidates and added automatic fallback across supported Gemini models when Google returns model-not-found errors, preventing Flow-mode failures from hardcoded stale model IDs.
 
