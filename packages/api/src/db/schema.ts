@@ -6,6 +6,7 @@ export type LandingEventType =
   | "landing_view"
   | "waitlist_view"
   | "scroll_depth"
+  | "landing_engagement"
   | "cta_click"
   | "waitlist_submit_started"
   | "waitlist_submit_succeeded"
