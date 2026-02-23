@@ -6,6 +6,8 @@ All notable changes to Product OS are documented here.
 
 ### Features
 
+- **First-party landing analytics pipeline** — Added internal event tracking (`/analytics/events`) and admin funnel reporting (`/analytics/landing/summary`) for landing-page views, CTA clicks, scroll depth, and waitlist conversion without third-party providers.
+
 - **System user roles for launch access** — Added persisted user roles (`admin`, `beta_tester`, `public_user`) with launch-gating support so beta testers retain and manage integrations in public demo mode.
 
 - **Self-service account deletion** — Added authenticated `DELETE /auth/me` so users can permanently delete their own account and associated data directly from Settings.

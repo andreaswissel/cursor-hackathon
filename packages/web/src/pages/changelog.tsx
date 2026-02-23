@@ -31,6 +31,13 @@ export function ChangelogPage() {
           <h3 className="text-lg font-medium mt-6 mb-3">Features</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
+              <strong>First-party landing analytics pipeline</strong> &mdash;
+              Added internal event tracking and admin funnel reporting for
+              landing-page views, CTA clicks, scroll depth, and waitlist
+              conversion, without Google Analytics or other third-party
+              trackers.
+            </li>
+            <li>
               <strong>System user roles for launch access</strong> &mdash; Added
               persisted user roles (
               <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
