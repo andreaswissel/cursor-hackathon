@@ -27,7 +27,7 @@ export interface CodeAgentDailyBudgetStats {
 }
 
 function hasUnlimitedCodeAgentBudget(user?: BudgetUser): boolean {
-  return !!(user?.isAdmin || user?.userRole === "admin" || user?.userRole === "beta_tester");
+  return !!(user?.isAdmin || user?.userRole === "admin");
 }
 
 function getUtcDayBounds(now = new Date()): { startUtc: Date; nextResetUtc: Date } {
