@@ -81,6 +81,31 @@ export function ChangelogPage() {
           <h3 className="text-lg font-medium mt-6 mb-3">Fixes</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
+              <strong>Flow mobile artifact panel access</strong> &mdash; Restored
+              artifact access in mobile flow sessions by adding an explicit{" "}
+              &quot;Open artifacts panel&quot; trigger and a mobile drawer with close
+              controls.
+            </li>
+            <li>
+              <strong>Flow mobile artifact drawer alignment + trigger layout</strong>{" "}
+              &mdash; Removed the extra vertical offset so the mobile artifact
+              drawer sits directly under the session header, and fixed the
+              floating artifact trigger to stay on a single row instead of
+              wrapping.
+            </li>
+            <li>
+              <strong>Flow mobile artifact drawer top-anchor correction</strong>{" "}
+              &mdash; Adjusted mobile drawer and backdrop offsets so the artifact
+              panel starts directly beneath the app header instead of leaving a
+              visible gap below the flow title bar.
+            </li>
+            <li>
+              <strong>Flow mobile input focus zoom fix (iOS Safari)</strong>{" "}
+              &mdash; Increased the mobile composer textarea font size to prevent
+              Safari auto-zoom on focus, preserving the expected title bar and
+              empty-state framing while typing.
+            </li>
+            <li>
               <strong>Encrypted-secret runtime handling</strong> &mdash; LLM
               and integration token consumers now transparently decrypt stored
               secrets before use, while preserving compatibility with existing
