@@ -83,10 +83,34 @@ export function ChangelogPage() {
               separate compact rotating progress indicator instead of replacing
               the mode icon.
             </li>
+            <li>
+              <strong>Flow @Code per-user daily budget</strong> &mdash; Added a
+              configurable daily run cap for the Flow coding agent (
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                CODE_AGENT_DAILY_LIMIT
+              </code>
+              , default{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                3
+              </code>
+              ) with in-chat limit messaging and UTC reset timestamps.
+            </li>
           </ul>
 
           <h3 className="text-lg font-medium mt-6 mb-3">Fixes</h3>
           <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Flow @Code budget role scope correction</strong> &mdash;
+              Updated daily budget enforcement so{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                beta_tester
+              </code>{" "}
+              users are capped like public users; only admins bypass the{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                @Code
+              </code>{" "}
+              daily run limit.
+            </li>
             <li>
               <strong>Flow mobile artifact panel access</strong> &mdash; Restored
               artifact access in mobile flow sessions by adding an explicit{" "}

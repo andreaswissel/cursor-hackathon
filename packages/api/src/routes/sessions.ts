@@ -16,6 +16,8 @@ import {
   incrementPromptCount,
   getUserUsageStats,
   getSessionUsageStats,
+  getCodeAgentDailyBudgetStats,
+  type CodeAgentDailyBudgetStats,
 } from "../middleware/rate-limit";
 import { videoUpload, deleteUploadedFile } from "../lib/upload";
 import { ensureDefaultProject } from "../lib/project-helpers";
@@ -86,8 +88,7 @@ router.use(requireAuth);
 // Get user's usage stats
 router.get("/usage", async (req: Request, res: Response) => {
   const userId = req.user!.id;
-  const isAdmin = req.user!.isAdmin;
-  const stats = await getUserUsageStats(userId, isAdmin);
+  const stats = await getUserUsageStats(userId, req.user);
   res.json(stats);
 });
 
@@ -838,6 +839,14 @@ router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (
           continue;
         }
 
+        if (targetAgentType === "code-agent") {
+          const budget = await getCodeAgentDailyBudgetStats(userId, req.user);
+          if (!budget.canRun) {
+            await writeAssistantText(buildCodeAgentDailyBudgetMessage(budget));
+            continue;
+          }
+        }
+
         pendingAgentRuns += 1;
         if (!streamClosed) {
           res.write(
@@ -1401,6 +1410,17 @@ ${prefix} https://github.com/your-org/your-repo implement OAuth callback retries
 
 Example:
 ${prefix} add launch-mode checks to /integrations routes, update tests, and run bun run build.`;
+}
+
+function buildCodeAgentDailyBudgetMessage(stats: CodeAgentDailyBudgetStats): string {
+  const resetUtc = new Date(stats.resetAt);
+  const resetLabel = Number.isNaN(resetUtc.getTime())
+    ? stats.resetAt
+    : `${resetUtc.toISOString().slice(0, 16).replace("T", " ")} UTC`;
+
+  return `You've reached today's @Code budget (${stats.used}/${stats.limit} runs).
+
+The limit resets at ${resetLabel}. You can keep using Flow with @Discovery, @Strategy, @Spec, @GTM, and @Marketing in the meantime.`;
 }
 
 interface ReferencedArtifact {
