@@ -13,6 +13,7 @@ import {
   getLaunchModeStateForUser,
   isIntegrationProviderEnabledForUser,
 } from "../lib/launch-mode";
+import { decryptSecret, encryptSecret } from "../lib/secrets";
 
 const router = Router();
 
@@ -171,8 +172,8 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
       await db
         .update(integrations)
         .set({
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
+          accessToken: encryptSecret(tokens.accessToken)!,
+          refreshToken: encryptSecret(tokens.refreshToken),
           tokenExpiresAt: tokens.expiresAt,
           metadata,
           isActive: 1,
@@ -185,8 +186,8 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
         id: uuid(),
         userId,
         provider: integrationProvider,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
+        accessToken: encryptSecret(tokens.accessToken)!,
+        refreshToken: encryptSecret(tokens.refreshToken),
         tokenExpiresAt: tokens.expiresAt,
         metadata,
         isActive: 1,
@@ -340,19 +341,25 @@ router.get("/:integrationId/sources", async (req: Request, res: Response) => {
 
   try {
     const adapter = getAdapter(integration.provider as IntegrationProvider);
-    let accessToken = integration.accessToken;
+    let accessToken = decryptSecret(integration.accessToken);
+    let refreshToken = decryptSecret(integration.refreshToken);
+    if (!accessToken) {
+      res.status(401).json({ error: "Missing integration access token, please reconnect" });
+      return;
+    }
 
     // Check if token needs refresh
     if (integration.tokenExpiresAt && new Date(integration.tokenExpiresAt) < new Date()) {
-      if (integration.refreshToken) {
-        const newTokens = await adapter.refreshTokens(integration.refreshToken);
+      if (refreshToken) {
+        const newTokens = await adapter.refreshTokens(refreshToken);
         accessToken = newTokens.accessToken;
+        refreshToken = newTokens.refreshToken ?? refreshToken;
 
         await db
           .update(integrations)
           .set({
-            accessToken: newTokens.accessToken,
-            refreshToken: newTokens.refreshToken,
+            accessToken: encryptSecret(accessToken)!,
+            refreshToken: encryptSecret(refreshToken),
             tokenExpiresAt: newTokens.expiresAt,
             updatedAt: new Date(),
           })
@@ -459,20 +466,26 @@ router.post("/:integrationId/sync", async (req: Request, res: Response) => {
 
   try {
     const adapter = getAdapter(integration.provider as IntegrationProvider);
-    let accessToken = integration.accessToken;
+    let accessToken = decryptSecret(integration.accessToken);
+    let refreshToken = decryptSecret(integration.refreshToken);
+    if (!accessToken) {
+      res.status(401).json({ error: "Missing integration access token, please reconnect" });
+      return;
+    }
 
     // Check if token needs refresh
     if (integration.tokenExpiresAt && new Date(integration.tokenExpiresAt) < new Date()) {
-      if (integration.refreshToken) {
-        const newTokens = await adapter.refreshTokens(integration.refreshToken);
+      if (refreshToken) {
+        const newTokens = await adapter.refreshTokens(refreshToken);
         accessToken = newTokens.accessToken;
+        refreshToken = newTokens.refreshToken ?? refreshToken;
 
         // Update tokens in DB
         await db
           .update(integrations)
           .set({
-            accessToken: newTokens.accessToken,
-            refreshToken: newTokens.refreshToken,
+            accessToken: encryptSecret(accessToken)!,
+            refreshToken: encryptSecret(refreshToken),
             tokenExpiresAt: newTokens.expiresAt,
             updatedAt: new Date(),
           })

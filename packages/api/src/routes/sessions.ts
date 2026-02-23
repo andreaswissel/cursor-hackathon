@@ -29,6 +29,7 @@ import { FeedbackFormsAgent } from "../agents/feedback-forms-agent";
 import { resolveKnowledge, toSessionContext } from "../lib/knowledge-resolver";
 import { knowledgeSources } from "../db/schema";
 import type { AgentInput } from "../agents/base-agent";
+import { decryptSecret } from "../lib/secrets";
 
 // Agent prefix map for flow mode triggers
 const AGENT_PREFIX_MAP: Record<string, { agentType: AgentType; requiresRepo: boolean; label: string }> = {
@@ -234,7 +235,9 @@ router.post("/flow", checkSessionLimit, async (req: Request, res: Response) => {
 
   // Look up user's API key for title generation
   const [userRow] = await db.select({ anthropicApiKey: users.anthropicApiKey }).from(users).where(eq(users.id, userId));
-  const generatedTitle = message ? await generateSessionTitle(message, userRow?.anthropicApiKey || undefined) : userMessage;
+  const generatedTitle = message
+    ? await generateSessionTitle(message, decryptSecret(userRow?.anthropicApiKey) || undefined)
+    : userMessage;
 
   // Fall back to project's repoUrl if none provided
   let resolvedRepoUrl = repoUrl;
@@ -272,7 +275,10 @@ router.post("/guided-tours", checkSessionLimit, async (req: Request, res: Respon
   const userId = req.user!.id;
   const resolvedProjectId = projectId || await ensureDefaultProject(userId);
   const [gtUser] = await db.select({ anthropicApiKey: users.anthropicApiKey }).from(users).where(eq(users.id, userId));
-  const generatedTitle = await generateSessionTitle(message, gtUser?.anthropicApiKey || undefined);
+  const generatedTitle = await generateSessionTitle(
+    message,
+    decryptSecret(gtUser?.anthropicApiKey) || undefined
+  );
 
   const sessionId = uuid();
   const context: SessionContext = { okrs: [], customerFeedback: [] };
@@ -298,7 +304,10 @@ router.post("/feedback-forms", checkSessionLimit, async (req: Request, res: Resp
   const userId = req.user!.id;
   const resolvedProjectId = projectId || await ensureDefaultProject(userId);
   const [ffUser] = await db.select({ anthropicApiKey: users.anthropicApiKey }).from(users).where(eq(users.id, userId));
-  const generatedTitle = await generateSessionTitle(message, ffUser?.anthropicApiKey || undefined);
+  const generatedTitle = await generateSessionTitle(
+    message,
+    decryptSecret(ffUser?.anthropicApiKey) || undefined
+  );
 
   const sessionId = uuid();
   const context: SessionContext = { okrs: [], customerFeedback: [] };
@@ -758,7 +767,7 @@ router.post("/:sessionId/chat", checkSessionOwnership, checkPromptLimit, async (
           .select({ anthropicApiKey: users.anthropicApiKey })
           .from(users)
           .where(eq(users.id, userId));
-        userApiKey = userRow?.anthropicApiKey || undefined;
+        userApiKey = decryptSecret(userRow?.anthropicApiKey) || undefined;
         userApiKeyLoaded = true;
         return userApiKey;
       };

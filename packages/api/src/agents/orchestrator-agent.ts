@@ -10,6 +10,7 @@ import { generateProductUpdateSlides } from "../lib/slides-generator";
 import { db } from "../db";
 import { integrations } from "../db/schema";
 import { googleAdapter } from "../integrations/google";
+import { decryptSecret, encryptSecret } from "../lib/secrets";
 
 const STRATEGY_REJECTION_QUESTION_ID = "strategy-rejection-proceed";
 
@@ -406,19 +407,24 @@ RULES:
       throw new Error("Connect Google in Settings to generate slides");
     }
 
-    let accessToken = googleIntegration.accessToken;
+    let accessToken = decryptSecret(googleIntegration.accessToken);
+    let refreshToken = decryptSecret(googleIntegration.refreshToken);
+    if (!accessToken) {
+      throw new Error("Google token missing - reconnect Google in Settings");
+    }
 
     // Refresh token if expired
     if (googleIntegration.tokenExpiresAt && new Date(googleIntegration.tokenExpiresAt) < new Date()) {
-      if (googleIntegration.refreshToken) {
-        const newTokens = await googleAdapter.refreshTokens(googleIntegration.refreshToken);
+      if (refreshToken) {
+        const newTokens = await googleAdapter.refreshTokens(refreshToken);
         accessToken = newTokens.accessToken;
+        refreshToken = newTokens.refreshToken ?? refreshToken;
 
         await db
           .update(integrations)
           .set({
-            accessToken: newTokens.accessToken,
-            refreshToken: newTokens.refreshToken,
+            accessToken: encryptSecret(accessToken)!,
+            refreshToken: encryptSecret(refreshToken),
             tokenExpiresAt: newTokens.expiresAt,
             updatedAt: new Date(),
           })

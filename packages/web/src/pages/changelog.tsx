@@ -28,8 +28,41 @@ export function ChangelogPage() {
           {/* Feb 23 */}
           <h2 className="text-xl font-semibold mt-8 mb-4">2026-02-23</h2>
 
+          <h3 className="text-lg font-medium mt-6 mb-3">Features</h3>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Self-service account deletion</strong> &mdash; Added an authenticated{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                DELETE /auth/me
+              </code>{" "}
+              endpoint and a Settings danger-zone action so users can
+              permanently delete their own account and associated data.
+            </li>
+            <li>
+              <strong>Token encryption at rest</strong> &mdash; Added
+              application-layer encryption for stored secrets, including BYOK
+              provider keys and OAuth integration access and refresh tokens.
+            </li>
+          </ul>
+
+          <h3 className="text-lg font-medium mt-6 mb-3">Improvements</h3>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Centralized user data deletion service</strong> &mdash;
+              Refactored account removal into a shared backend utility used by
+              both admin-driven deletes and self-service deletes for
+              consistency.
+            </li>
+          </ul>
+
           <h3 className="text-lg font-medium mt-6 mb-3">Fixes</h3>
           <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Encrypted-secret runtime handling</strong> &mdash; LLM
+              and integration token consumers now transparently decrypt stored
+              secrets before use, while preserving compatibility with existing
+              plaintext records.
+            </li>
             <li>
               <strong>Gemini Flow-mode model retirement resilience</strong>{" "}
               &mdash; Replaced the retired{" "}

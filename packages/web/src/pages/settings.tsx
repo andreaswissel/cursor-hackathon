@@ -4,11 +4,12 @@ import { Sidebar } from "@/components/sidebar";
 import { useAuth } from "@/contexts/auth-context";
 import { UserAvatar } from "@/components/user-avatar";
 import { Key, Loader2, Check, Trash2, Eye, EyeOff, Sparkles, Link2, Users, Plus, User } from "lucide-react";
-import { getAllProjects, getUsers, createUser, deleteUser, updateProfile, createTeam } from "@/lib/api";
+import { getAllProjects, getUsers, createUser, deleteUser, updateProfile, createTeam, deleteMyAccount } from "@/lib/api";
 import type { AdminUser } from "@/lib/api";
 import type { ProjectWithSessions } from "@product-os/shared";
 import { cn } from "@/lib/utils";
 import { IntegrationsPanel } from "@/components/integrations-panel";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 const API_BASE = import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV ? "/api" : "https://api.product-os.ai/api");
@@ -51,7 +52,7 @@ const PROVIDER_INFO: Record<Provider, { name: string; color: string; placeholder
 };
 
 export function SettingsPage() {
-  const { user, token, refreshUser, setActiveTeam } = useAuth();
+  const { user, token, refreshUser, setActiveTeam, logout } = useAuth();
   const navigate = useNavigate();
   const [projects, setProjects] = useState<ProjectWithSessions[]>([]);
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -89,6 +90,8 @@ export function SettingsPage() {
   // Team creation state
   const [newTeamName, setNewTeamName] = useState("");
   const [teamCreating, setTeamCreating] = useState(false);
+  const [deleteAccountConfirm, setDeleteAccountConfirm] = useState(false);
+  const [deleteAccountLoading, setDeleteAccountLoading] = useState(false);
 
   useEffect(() => {
     if (user) setProfileName(user.displayName || "");
@@ -184,6 +187,21 @@ export function SettingsPage() {
       setTimeout(() => setAdminSuccess(null), 3000);
     } catch (err) {
       setAdminError(err instanceof Error ? err.message : "Failed to delete user");
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteAccountLoading(true);
+    setError(null);
+    try {
+      await deleteMyAccount();
+      logout();
+      navigate("/login");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete account");
+    } finally {
+      setDeleteAccountLoading(false);
+      setDeleteAccountConfirm(false);
     }
   };
 
@@ -583,6 +601,24 @@ export function SettingsPage() {
                 <IntegrationsPanel />
               </div>
 
+              {/* Danger Zone */}
+              <div className="pt-8 border-t">
+                <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-6">
+                  <h2 className="font-semibold text-red-500">Danger Zone</h2>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Deleting your account removes your sessions, projects, integrations, and generated artifacts.
+                    This action cannot be undone.
+                  </p>
+                  <button
+                    onClick={() => setDeleteAccountConfirm(true)}
+                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-red-600 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Delete My Account
+                  </button>
+                </div>
+              </div>
+
               {/* User Management — Admin Only */}
               {user?.isAdmin && (
                 <div className="pt-8 border-t">
@@ -700,6 +736,18 @@ export function SettingsPage() {
           )}
         </div>
       </main>
+      <ConfirmDialog
+        isOpen={deleteAccountConfirm}
+        onClose={() => {
+          if (!deleteAccountLoading) setDeleteAccountConfirm(false);
+        }}
+        onConfirm={handleDeleteAccount}
+        isLoading={deleteAccountLoading}
+        variant="destructive"
+        title="Delete your account?"
+        description="This permanently deletes your account and all associated data. This cannot be undone."
+        confirmLabel="Delete account"
+      />
     </div>
   );
 }
