@@ -76,6 +76,13 @@ export function ChangelogPage() {
               both admin-driven deletes and self-service deletes for
               consistency.
             </li>
+            <li>
+              <strong>Sidebar session mode icons + running indicator split</strong>{" "}
+              &mdash; Project session rows now always show mode and type icons
+              (Flow, Imagine, Discover, etc.), while active runs display a
+              separate compact rotating progress indicator instead of replacing
+              the mode icon.
+            </li>
           </ul>
 
           <h3 className="text-lg font-medium mt-6 mb-3">Fixes</h3>
