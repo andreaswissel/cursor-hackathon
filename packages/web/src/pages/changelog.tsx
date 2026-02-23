@@ -88,6 +88,13 @@ export function ChangelogPage() {
           <h3 className="text-lg font-medium mt-6 mb-3">Fixes</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
+              <strong>Landing mobile hero starts on content (no animation pre-roll)</strong>{" "}
+              &mdash; Hid the full-screen header animation on mobile, start
+              directly on the main hero section, and removed the
+              &quot;Built for Product, Loved by Development&quot; hero pill on
+              small screens for a cleaner first paint.
+            </li>
+            <li>
               <strong>Flow mobile artifact panel access</strong> &mdash; Restored
               artifact access in mobile flow sessions by adding an explicit{" "}
               &quot;Open artifacts panel&quot; trigger and a mobile drawer with close

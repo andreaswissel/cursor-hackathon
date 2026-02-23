@@ -22,6 +22,7 @@ All notable changes to Product OS are documented here.
 
 ### Fixes
 
+- **Landing mobile hero starts on content (no animation pre-roll)** — Hid the full-screen header animation on mobile, start directly on the main hero section, and removed the “Built for Product, Loved by Development” hero pill on small screens for cleaner first paint.
 - **Flow mobile artifact panel access** — Restored artifact access in mobile flow sessions by adding a dedicated “Open artifacts panel” trigger and a mobile drawer presentation with close controls.
 - **Flow mobile artifact drawer alignment + trigger layout** — Removed extra vertical offset so the mobile artifact drawer aligns directly under the session header, and fixed the floating artifact trigger to render as a single-row button instead of wrapping/breaking.
 - **Flow mobile artifacts sheet redesign** — Reworked mobile artifacts into a full-width bottom sheet with dark backdrop overlay, fixed 50px top inset, and iOS-style rounded top corners for consistent layering.
