@@ -30,8 +30,25 @@ const defaultConfig: LLMConfig = {
 const MODELS = {
   anthropic: "claude-sonnet-4-20250514",
   openai: "gpt-4o",
-  gemini: "gemini-1.5-pro",
 };
+
+const DEFAULT_GEMINI_MODELS = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+
+function getGeminiModelCandidates(): string[] {
+  const configured = process.env.GEMINI_MODEL?.trim();
+  const candidates = configured ? [configured, ...DEFAULT_GEMINI_MODELS] : DEFAULT_GEMINI_MODELS;
+  return [...new Set(candidates)];
+}
+
+function isGeminiModelNotFoundError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("404") ||
+    message.includes("is not found for api version") ||
+    message.includes("not supported for generatecontent")
+  );
+}
 
 export async function streamCompletion(
   systemPrompt: string,
@@ -181,46 +198,61 @@ async function streamGemini(
   apiKey: string
 ): Promise<string> {
   const client = new GoogleGenerativeAI(apiKey);
-  const model = client.getGenerativeModel({ model: MODELS.gemini });
-  let fullText = "";
+  const systemInstruction =
+    systemPrompt.trim().length > 0
+      ? {
+          role: "system" as const,
+          parts: [{ text: systemPrompt }],
+        }
+      : undefined;
 
-  try {
-    const systemInstruction =
-      systemPrompt.trim().length > 0
-        ? {
-            role: "system" as const,
-            parts: [{ text: systemPrompt }],
-          }
-        : undefined;
+  // Convert messages to Gemini format
+  const history = messages.slice(0, -1).map((m) => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: m.content }],
+  }));
+  const lastMessage = messages[messages.length - 1]?.content || "";
 
-    // Convert messages to Gemini format
-    const history = messages.slice(0, -1).map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: m.content }],
-    }));
+  let lastError: unknown;
+  for (const modelName of getGeminiModelCandidates()) {
+    const model = client.getGenerativeModel({ model: modelName });
+    let fullText = "";
 
-    const chat = model.startChat({
-      history: history as Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>,
-      systemInstruction,
-    });
+    try {
+      const chat = model.startChat({
+        history: history as Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>,
+        systemInstruction,
+      });
+      const result = await chat.sendMessageStream(lastMessage);
 
-    const lastMessage = messages[messages.length - 1]?.content || "";
-    const result = await chat.sendMessageStream(lastMessage);
-
-    for await (const chunk of result.stream) {
-      const text = chunk.text();
-      if (text) {
-        fullText += text;
-        callbacks.onText(text);
+      for await (const chunk of result.stream) {
+        const text = chunk.text();
+        if (text) {
+          fullText += text;
+          callbacks.onText(text);
+        }
       }
-    }
 
-    callbacks.onComplete(fullText);
-    return fullText;
-  } catch (error) {
-    callbacks.onError(error as Error);
-    throw error;
+      callbacks.onComplete(fullText);
+      return fullText;
+    } catch (error) {
+      lastError = error;
+      if (isGeminiModelNotFoundError(error)) {
+        continue;
+      }
+      callbacks.onError(error as Error);
+      throw error;
+    }
   }
+
+  const fallbackError =
+    lastError instanceof Error
+      ? new Error(`No supported Gemini model available from candidates: ${getGeminiModelCandidates().join(", ")}`, {
+          cause: lastError,
+        })
+      : new Error("No supported Gemini model available");
+  callbacks.onError(fallbackError);
+  throw fallbackError;
 }
 
 async function completionGemini(
@@ -229,7 +261,6 @@ async function completionGemini(
   apiKey: string
 ): Promise<string> {
   const client = new GoogleGenerativeAI(apiKey);
-  const model = client.getGenerativeModel({ model: MODELS.gemini });
   const systemInstruction =
     systemPrompt.trim().length > 0
       ? {
@@ -244,14 +275,33 @@ async function completionGemini(
     parts: [{ text: m.content }],
   }));
 
-  const chat = model.startChat({
-    history: history as Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>,
-    systemInstruction,
-  });
-
   const lastMessage = messages[messages.length - 1]?.content || "";
-  const result = await chat.sendMessage(lastMessage);
-  return result.response.text();
+
+  let lastError: unknown;
+  for (const modelName of getGeminiModelCandidates()) {
+    const model = client.getGenerativeModel({ model: modelName });
+    try {
+      const chat = model.startChat({
+        history: history as Array<{ role: "user" | "model"; parts: Array<{ text: string }> }>,
+        systemInstruction,
+      });
+      const result = await chat.sendMessage(lastMessage);
+      return result.response.text();
+    } catch (error) {
+      lastError = error;
+      if (isGeminiModelNotFoundError(error)) {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  if (lastError instanceof Error) {
+    throw new Error(`No supported Gemini model available from candidates: ${getGeminiModelCandidates().join(", ")}`, {
+      cause: lastError,
+    });
+  }
+  throw new Error("No supported Gemini model available");
 }
 
 // Validate API key format

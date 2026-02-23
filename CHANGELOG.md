@@ -17,6 +17,11 @@ All notable changes to Product OS are documented here.
 ### Fixes
 
 - **Encrypted-secret runtime handling** — LLM and integration token consumers now transparently decrypt stored secrets before use, preserving compatibility with existing plaintext records while moving all new writes to encrypted storage.
+- **Gemini Flow-mode model retirement resilience** — Replaced the retired `gemini-1.5-pro` default with current Gemini model candidates and added automatic fallback across supported Gemini models when Google returns model-not-found errors, preventing Flow-mode failures from hardcoded stale model IDs.
+
+- **Google login redirect mismatch hardening** — Google sign-in now derives its OAuth callback URI from the active request host/proxy headers and carries that exact URI in signed OAuth state through callback token exchange, preventing stale environment URL drift from causing `redirect_uri_mismatch` during login.
+
+- **Flow quota error UX upgrade** — Flow assistant messages now detect provider quota/rate-limit failures (including Gemini `429` responses) and render a structured error card with clear remediation actions (`Open Settings`, limits docs, retry hint) plus collapsible technical details instead of raw API dumps.
 
 ## [2026-02-20]
 

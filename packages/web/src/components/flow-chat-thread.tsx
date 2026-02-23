@@ -22,6 +22,9 @@ import {
   Newspaper,
   ScrollText,
   Square,
+  AlertTriangle,
+  ExternalLink,
+  Settings,
 } from "lucide-react";
 
 interface AgentThinking {
@@ -36,6 +39,16 @@ interface ChatMessage {
   content: string;
   createdAt?: string;
   agentThinking?: AgentThinking;
+}
+
+interface ParsedAssistantError {
+  kind: "quota" | "generic";
+  provider: "gemini" | "openai" | "anthropic" | null;
+  model: string | null;
+  retryAfterSeconds: number | null;
+  helpUrl: string | null;
+  summary: string;
+  raw: string;
 }
 
 interface FlowChatThreadProps {
@@ -83,6 +96,131 @@ function getInitials(displayName?: string | null, email?: string | null): string
   if (words.length === 1) return first.slice(0, 2).toUpperCase() || "U";
   const second = words[1] ?? "";
   return `${first[0] ?? ""}${second[0] ?? ""}`.toUpperCase() || "U";
+}
+
+function parseAssistantError(content: string): ParsedAssistantError | null {
+  if (!/^error:\s*/i.test(content.trim())) return null;
+
+  const raw = content.replace(/^error:\s*/i, "").trim();
+  const lower = raw.toLowerCase();
+  const provider: ParsedAssistantError["provider"] = lower.includes("googlegenerativeai") || lower.includes("gemini")
+    ? "gemini"
+    : lower.includes("openai")
+    ? "openai"
+    : lower.includes("anthropic") || lower.includes("claude")
+    ? "anthropic"
+    : null;
+
+  const modelMatch =
+    raw.match(/models\/([a-z0-9.-]+)(?::|[?]|$)/i) ||
+    raw.match(/model[:=]\s*([a-z0-9.-]+)/i);
+  const model = modelMatch?.[1] ?? null;
+
+  const retryMatch =
+    raw.match(/retry(?: in)?\s+(\d+(?:\.\d+)?)s/i) ||
+    raw.match(/"retrydelay":"?(\d+(?:\.\d+)?)s"?/i);
+  const retryAfterSeconds = retryMatch ? Math.max(1, Math.round(Number(retryMatch[1]))) : null;
+
+  const helpUrlMatch = raw.match(/https?:\/\/[^\s)]+/i);
+  const helpUrl = helpUrlMatch?.[0] ?? null;
+
+  const isQuotaError =
+    /\b429\b/.test(lower) ||
+    lower.includes("quota") ||
+    lower.includes("rate limit") ||
+    lower.includes("too many requests") ||
+    lower.includes("resource_exhausted");
+
+  if (isQuotaError) {
+    return {
+      kind: "quota",
+      provider,
+      model,
+      retryAfterSeconds,
+      helpUrl,
+      summary:
+        provider === "gemini"
+          ? "Gemini API quota was exceeded for this workspace key."
+          : "Provider quota or rate limit was exceeded for this request.",
+      raw,
+    };
+  }
+
+  return {
+    kind: "generic",
+    provider,
+    model,
+    retryAfterSeconds,
+    helpUrl,
+    summary: "The model provider returned an error for this request.",
+    raw,
+  };
+}
+
+function AssistantErrorCard({ error }: { error: ParsedAssistantError }) {
+  const providerLabel =
+    error.provider === "gemini" ? "Gemini" : error.provider === "openai" ? "OpenAI" : error.provider === "anthropic" ? "Anthropic" : "Provider";
+  const title = error.kind === "quota" ? `${providerLabel} quota reached` : `${providerLabel} request failed`;
+
+  return (
+    <div className="rounded-xl border border-amber-500/30 bg-amber-500/[0.08] px-3.5 py-3">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 h-6 w-6 rounded-lg bg-amber-500/15 border border-amber-400/30 flex items-center justify-center shrink-0">
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-300" />
+        </div>
+
+        <div className="min-w-0 space-y-2">
+          <div>
+            <p className="text-sm font-semibold text-amber-100">{title}</p>
+            <p className="text-xs text-amber-100/80">{error.summary}</p>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {error.model && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-300/25 text-amber-100/90">
+                Model: {error.model}
+              </span>
+            )}
+            {error.retryAfterSeconds && (
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-300/25 text-amber-100/90">
+                Retry in ~{error.retryAfterSeconds}s
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <a
+              href="/settings"
+              className="inline-flex items-center gap-1.5 rounded-md border border-amber-300/25 bg-amber-500/10 px-2.5 py-1 text-xs text-amber-100 hover:bg-amber-500/20 transition-colors"
+            >
+              <Settings className="w-3 h-3" />
+              Open Settings
+            </a>
+            {(error.helpUrl || error.provider === "gemini") && (
+              <a
+                href={error.helpUrl || "https://ai.google.dev/gemini-api/docs/rate-limits"}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-md border border-amber-300/25 bg-transparent px-2.5 py-1 text-xs text-amber-100/90 hover:bg-amber-500/15 transition-colors"
+              >
+                View limits
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
+          </div>
+
+          <details className="group">
+            <summary className="cursor-pointer text-[11px] text-amber-100/70 hover:text-amber-100/90 transition-colors">
+              Technical details
+            </summary>
+            <pre className="mt-2 text-[11px] leading-relaxed whitespace-pre-wrap rounded-md border border-amber-300/20 bg-black/20 p-2 text-amber-100/80 max-h-44 overflow-y-auto scrollbar-subtle">
+              {error.raw}
+            </pre>
+          </details>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, artifacts = [] }: FlowChatThreadProps) {
@@ -561,6 +699,7 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
 
           // Skip empty assistant messages (thinking placeholders with no text content)
           if (msg.role === "assistant" && !msg.content) return null;
+          const parsedError = msg.role === "assistant" ? parseAssistantError(msg.content) : null;
           const messageTime = formatMessageTime(msg.createdAt);
 
           return (
@@ -594,9 +733,13 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
                 )}
               >
                 {msg.role === "assistant" ? (
-                  <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-headings:font-semibold prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-code:text-xs prose-code:bg-muted prose-code:text-foreground prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:rounded-lg prose-pre:p-3 [&_pre_code]:bg-transparent [&_pre_code]:p-0">
-                    <ReactMarkdown>{stripArtifacts(msg.content)}</ReactMarkdown>
-                  </div>
+                  parsedError ? (
+                    <AssistantErrorCard error={parsedError} />
+                  ) : (
+                    <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-headings:font-semibold prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-code:text-xs prose-code:bg-muted prose-code:text-foreground prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:rounded-lg prose-pre:p-3 [&_pre_code]:bg-transparent [&_pre_code]:p-0">
+                      <ReactMarkdown>{stripArtifacts(msg.content)}</ReactMarkdown>
+                    </div>
+                  )
                 ) : (
                   <p className="whitespace-pre-wrap">{msg.content}</p>
                 )}
