@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { FlowChatThread } from "@/components/flow-chat-thread";
 import { FlowArtifactPanel } from "@/components/flow-artifact-panel";
-import { cn } from "@/lib/utils";
 import type { FlowArtifact, AgentType, AgentState } from "@product-os/shared";
 import { getFlowArtifacts, connectRepo, updateProject } from "@/lib/api";
 import { Package, X } from "lucide-react";
@@ -43,6 +42,18 @@ export function FlowSessionPage({ sessionId, artifacts: sseArtifacts, repoUrl: i
     mediaQuery.addEventListener("change", handleDesktopChange);
     return () => mediaQuery.removeEventListener("change", handleDesktopChange);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const isMobileViewport = !window.matchMedia("(min-width: 768px)").matches;
+    if (!isMobileViewport || !showArtifacts) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [showArtifacts]);
 
   const handleConnectRepo = useCallback(async (url: string) => {
     try {
@@ -112,25 +123,29 @@ export function FlowSessionPage({ sessionId, artifacts: sseArtifacts, repoUrl: i
       {showArtifacts && (
         <>
           <div
-            className="fixed inset-x-0 bottom-0 -top-[45px] bg-black/40 z-40 md:hidden"
+            className="fixed inset-0 bg-black/65 z-[80] md:hidden"
             onClick={() => setShowArtifacts(false)}
             aria-hidden="true"
           />
-          <div
-            className={cn(
-              "fixed -top-[45px] right-0 bottom-0 z-50 w-[min(92vw,24rem)] border-l bg-card flex flex-col",
-              "md:static md:top-auto md:right-auto md:bottom-auto md:z-auto md:w-80 lg:w-96",
-              "flex-shrink-0 relative"
-            )}
-          >
-          <button
-            onClick={() => setShowArtifacts(false)}
-            className="absolute top-3 right-3 z-10 p-1 rounded hover:bg-secondary transition-colors"
-            aria-label="Close artifacts panel"
-          >
-            <X className="w-4 h-4 text-muted-foreground" />
-          </button>
-          <FlowArtifactPanel artifacts={artifacts} className="w-full" />
+
+          {/* Mobile sheet */}
+          <div className="fixed inset-x-0 bottom-0 top-[50px] z-[90] flex flex-col md:hidden">
+            <button
+              onClick={() => setShowArtifacts(false)}
+              className="absolute top-3 right-3 z-10 p-1 rounded hover:bg-secondary transition-colors"
+              aria-label="Close artifacts panel"
+            >
+              <X className="w-4 h-4 text-muted-foreground" />
+            </button>
+            <FlowArtifactPanel
+              artifacts={artifacts}
+              className="w-full h-full border-l-0 border-t rounded-t-[20px] overflow-hidden"
+            />
+          </div>
+
+          {/* Desktop panel (unchanged behavior) */}
+          <div className="hidden md:flex w-80 lg:w-96 flex-shrink-0 relative">
+            <FlowArtifactPanel artifacts={artifacts} className="w-full" />
           </div>
         </>
       )}
