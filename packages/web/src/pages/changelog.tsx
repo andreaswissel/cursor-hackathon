@@ -52,6 +52,17 @@ export function ChangelogPage() {
               </code>{" "}
               during login.
             </li>
+            <li>
+              <strong>Flow quota error UX upgrade</strong> &mdash; Flow
+              assistant messages now detect provider quota and rate-limit
+              failures (including Gemini{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                429
+              </code>{" "}
+              responses) and render a structured error card with clear recovery
+              actions, retry hints, and collapsible technical details instead
+              of dumping raw API payloads inline.
+            </li>
           </ul>
 
           {/* Feb 20 */}

@@ -10,6 +10,8 @@ All notable changes to Product OS are documented here.
 
 - **Google login redirect mismatch hardening** — Google sign-in now derives its OAuth callback URI from the active request host/proxy headers and carries that exact URI in signed OAuth state through callback token exchange, preventing stale environment URL drift from causing `redirect_uri_mismatch` during login.
 
+- **Flow quota error UX upgrade** — Flow assistant messages now detect provider quota/rate-limit failures (including Gemini `429` responses) and render a structured error card with clear remediation actions (`Open Settings`, limits docs, retry hint) plus collapsible technical details instead of raw API dumps.
+
 ## [2026-02-20]
 
 ### Features
