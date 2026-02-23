@@ -18,6 +18,8 @@ All notable changes to Product OS are documented here.
 
 - **Centralized user data deletion service** — Refactored account removal logic into a shared backend utility used by both admin-driven deletes and self-service deletes for consistency.
 
+- **Sidebar session mode icons + running indicator split** — Project session rows now always show mode/type icons (Flow/Imagine/Discover/etc.) while active runs show a separate compact rotating progress indicator instead of replacing the mode icon.
+
 ### Fixes
 
 - **Flow mobile artifact panel access** — Restored artifact access in mobile flow sessions by adding a dedicated “Open artifacts panel” trigger and a mobile drawer presentation with close controls.
