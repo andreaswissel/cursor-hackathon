@@ -661,6 +661,18 @@ const AI_EXECUTION_INTEGRATIONS = [
 ];
 
 const INTEGRATIONS = [...DATA_INTEGRATIONS, ...AI_EXECUTION_INTEGRATIONS];
+const LANDING_ENGAGEMENT_SECTION_IDS = [
+  "hero-video",
+  "second-hero",
+  "social-proof",
+  "discover-mode",
+  "features",
+  "feature-deep-dives",
+  "how-it-works",
+  "testimonial",
+  "integrations",
+  "final-cta",
+] as const;
 
 function trackLandingCta(ctaId: string, target: string): void {
   trackMarketingEvent({
@@ -694,6 +706,13 @@ export function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const tracked50Ref = useRef(false);
   const tracked90Ref = useRef(false);
+  const engagementSentRef = useRef(false);
+  const engagedMsRef = useRef(0);
+  const visibleSinceRef = useRef<number | null>(null);
+  const activeSectionRef = useRef<string | null>(null);
+  const activeSectionStartedAtRef = useRef(Date.now());
+  const sectionDurationsRef = useRef<Record<string, number>>({});
+  const maxScrollPercentRef = useRef(0);
 
   useEffect(() => {
     trackMarketingEventOnce("landing_view", {
@@ -740,6 +759,154 @@ export function LandingPage() {
     window.addEventListener("scroll", handleScrollDepth, { passive: true });
     handleScrollDepth();
     return () => window.removeEventListener("scroll", handleScrollDepth);
+  }, []);
+
+  useEffect(() => {
+    const findFocusedSection = (): string | null => {
+      const viewportCenter = window.innerHeight / 2;
+      let focusedSection: string | null = null;
+      let bestDistance = Number.POSITIVE_INFINITY;
+
+      for (const sectionId of LANDING_ENGAGEMENT_SECTION_IDS) {
+        const el = document.getElementById(sectionId);
+        if (!el) continue;
+
+        const rect = el.getBoundingClientRect();
+        if (rect.height < 24) continue;
+        if (rect.bottom <= 0 || rect.top >= window.innerHeight) continue;
+
+        const center = rect.top + rect.height / 2;
+        const distance = Math.abs(center - viewportCenter);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          focusedSection = sectionId;
+        }
+      }
+
+      return focusedSection;
+    };
+
+    const commitActiveSection = (timestamp: number) => {
+      const sectionId = activeSectionRef.current;
+      if (!sectionId) return;
+
+      const delta = Math.max(0, timestamp - activeSectionStartedAtRef.current);
+      if (delta === 0) return;
+
+      sectionDurationsRef.current[sectionId] =
+        (sectionDurationsRef.current[sectionId] ?? 0) + delta;
+      activeSectionStartedAtRef.current = timestamp;
+    };
+
+    const updateFocusedSection = (timestamp: number) => {
+      const next = findFocusedSection();
+      if (next === activeSectionRef.current) return;
+
+      commitActiveSection(timestamp);
+      activeSectionRef.current = next;
+      activeSectionStartedAtRef.current = timestamp;
+    };
+
+    const updateMaxScroll = () => {
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (maxScroll <= 0) return;
+
+      const depth = Math.round((window.scrollY / maxScroll) * 100);
+      maxScrollPercentRef.current = Math.max(
+        maxScrollPercentRef.current,
+        Math.min(100, Math.max(0, depth)),
+      );
+    };
+
+    const handleScroll = () => {
+      const now = Date.now();
+      updateMaxScroll();
+      updateFocusedSection(now);
+    };
+
+    const handleVisibilityChange = () => {
+      const now = Date.now();
+
+      if (document.hidden) {
+        if (visibleSinceRef.current !== null) {
+          engagedMsRef.current += now - visibleSinceRef.current;
+          visibleSinceRef.current = null;
+        }
+        commitActiveSection(now);
+        return;
+      }
+
+      visibleSinceRef.current = now;
+      activeSectionStartedAtRef.current = now;
+      updateFocusedSection(now);
+    };
+
+    const flushEngagement = () => {
+      if (engagementSentRef.current) return;
+
+      const now = Date.now();
+      if (visibleSinceRef.current !== null) {
+        engagedMsRef.current += now - visibleSinceRef.current;
+        visibleSinceRef.current = now;
+      }
+      commitActiveSection(now);
+      updateMaxScroll();
+
+      const sectionEntries = Object.entries(sectionDurationsRef.current)
+        .filter(([, duration]) => duration > 0)
+        .sort((a, b) => b[1] - a[1]);
+      const engagedMs = Math.round(engagedMsRef.current);
+
+      // Ignore no-op dev-only StrictMode unmount payloads.
+      if (
+        engagedMs < 250 &&
+        maxScrollPercentRef.current <= 0 &&
+        sectionEntries.length === 0
+      ) {
+        return;
+      }
+
+      engagementSentRef.current = true;
+
+      const metadata: Record<string, unknown> = {
+        engagedMs,
+        maxScrollPercent: maxScrollPercentRef.current,
+      };
+
+      if (sectionEntries[0]) {
+        metadata.topSectionId = sectionEntries[0][0];
+        metadata.topSectionMs = Math.round(sectionEntries[0][1]);
+      }
+
+      for (const [sectionId, duration] of sectionEntries.slice(0, 10)) {
+        metadata[`section_${sectionId}_ms`] = Math.round(duration);
+      }
+
+      trackMarketingEvent({
+        eventType: "landing_engagement",
+        page: "landing",
+        metadata,
+      });
+    };
+
+    const now = Date.now();
+    visibleSinceRef.current = document.hidden ? null : now;
+    activeSectionRef.current = findFocusedSection();
+    activeSectionStartedAtRef.current = now;
+    updateMaxScroll();
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", flushEngagement);
+    window.addEventListener("beforeunload", flushEngagement);
+
+    return () => {
+      flushEngagement();
+      window.removeEventListener("scroll", handleScroll);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", flushEngagement);
+      window.removeEventListener("beforeunload", flushEngagement);
+    };
   }, []);
 
   const parallax = useParallax(0.06);
@@ -817,7 +984,10 @@ export function LandingPage() {
       </nav>
 
       {/* ─── Full-screen Video Hero ─── */}
-      <section className="relative hidden h-screen w-full overflow-hidden bg-black md:block">
+      <section
+        id="hero-video"
+        className="relative hidden h-screen w-full overflow-hidden bg-black md:block"
+      >
         <video
           ref={(el) => {
             if (!el) return;
@@ -921,7 +1091,7 @@ export function LandingPage() {
       <BentoFeatures />
 
       {/* ─── Feature Deep Dives ─── */}
-      <section>
+      <section id="feature-deep-dives">
         {FEATURES.map((feature, idx) => (
           <FeatureSection key={feature.id} feature={feature} index={idx} />
         ))}
@@ -985,7 +1155,7 @@ export function LandingPage() {
 function SocialProofBar() {
   const fade = useFadeIn<HTMLDivElement>({ direction: "up" });
   return (
-    <section className="py-14 bg-[#0a0a0a] border-b border-gray-800/50">
+    <section id="social-proof" className="py-14 bg-[#0a0a0a] border-b border-gray-800/50">
       <div ref={fade.ref} style={fade.style} className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
         <p className="text-xs font-medium uppercase tracking-widest text-gray-400 mb-8">
           Built to integrate with your existing stack
@@ -1276,7 +1446,7 @@ function HowItWorks() {
 function TestimonialSection() {
   const fade = useFadeIn<HTMLDivElement>({ direction: "scale" });
   return (
-    <section className="py-20 md:py-28 bg-[#0a0a0a]">
+    <section id="testimonial" className="py-20 md:py-28 bg-[#0a0a0a]">
       <div
         ref={fade.ref}
         style={fade.style}
@@ -1362,6 +1532,7 @@ function FinalCTA() {
   const fade = useFadeIn<HTMLDivElement>({ direction: "scale" });
   return (
     <section
+      id="final-cta"
       className="py-20 md:py-28 bg-[#111111]"
     >
       <div
