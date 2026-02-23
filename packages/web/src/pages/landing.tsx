@@ -1457,10 +1457,15 @@ function TestimonialSection() {
           I focus on decisions that actually move the needle."
         </blockquote>
         <div className="flex items-center justify-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-violet-500" />
+          <img
+            src="/manuel-derra.png"
+            alt="Portrait of Manuel Derra"
+            className="w-10 h-10 rounded-full object-cover border border-gray-700"
+            loading="lazy"
+          />
           <div className="text-left">
-            <p className="text-sm font-semibold text-white">Sarah Chen</p>
-            <p className="text-xs text-gray-400">VP Product, TechCorp</p>
+            <p className="text-sm font-semibold text-white">Manuel Derra</p>
+            <p className="text-xs text-gray-400">CTO, Acquirepad</p>
           </div>
         </div>
       </div>

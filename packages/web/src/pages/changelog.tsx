@@ -72,6 +72,12 @@ export function ChangelogPage() {
           <h3 className="text-lg font-medium mt-6 mb-3">Improvements</h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
+              <strong>Landing testimonial attribution update</strong> &mdash;
+              Replaced the previous placeholder testimonial identity on the
+              landing page with Manuel Derra (CTO, Acquirepad) and updated the
+              avatar to a real portrait image.
+            </li>
+            <li>
               <strong>Landing engagement KPIs</strong> &mdash; Extended
               first-party analytics with time-on-page tracking, max-scroll
               depth percentages, and section-level dwell-time ranking in admin
