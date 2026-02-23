@@ -76,6 +76,12 @@ export function ChangelogPage() {
               both admin-driven deletes and self-service deletes for
               consistency.
             </li>
+            <li>
+              <strong>Imagine session project reassignment in-session</strong>{" "}
+              &mdash; Added a project selector to the Imagine session header so
+              existing sessions can be moved between projects without leaving
+              the session view.
+            </li>
           </ul>
 
           <h3 className="text-lg font-medium mt-6 mb-3">Fixes</h3>

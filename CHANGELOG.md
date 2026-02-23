@@ -18,6 +18,8 @@ All notable changes to Product OS are documented here.
 
 - **Centralized user data deletion service** — Refactored account removal logic into a shared backend utility used by both admin-driven deletes and self-service deletes for consistency.
 
+- **Imagine session project reassignment in-session** — Added a project selector to the Imagine session header so existing sessions can be moved between projects without leaving the session view.
+
 ### Fixes
 
 - **Missing web favicon** — Added Product OS favicon assets for browser tabs and touch devices, and replaced the default Vite icon metadata in the web app head.
