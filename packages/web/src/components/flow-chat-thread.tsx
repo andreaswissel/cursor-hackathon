@@ -3,6 +3,7 @@ import { chatWithAgent, getChatHistory, cancelAgent } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/auth-context";
 import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 import { CollapsibleThinking } from "./collapsible-thinking";
 import { ContextMenuPopup, type ContextMenuItem } from "./context-menu-popup";
 import type { AgentType, AgentState, FlowArtifact } from "@product-os/shared";
@@ -737,7 +738,7 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
                     <AssistantErrorCard error={parsedError} />
                   ) : (
                     <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-headings:font-semibold prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-code:text-xs prose-code:bg-muted prose-code:text-foreground prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:rounded-lg prose-pre:p-3 [&_pre_code]:bg-transparent [&_pre_code]:p-0">
-                      <ReactMarkdown>{stripArtifacts(msg.content)}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkBreaks]}>{stripArtifacts(msg.content)}</ReactMarkdown>
                     </div>
                   )
                 ) : (
@@ -766,7 +767,7 @@ export function FlowChatThread({ sessionId, repoUrl, onConnectRepo, agents, arti
             </div>
             <div className="rounded-xl px-4 py-2.5 text-sm bg-secondary border border-border/60">
               <div className="prose prose-sm max-w-none prose-headings:text-foreground prose-headings:font-semibold prose-p:text-foreground prose-li:text-foreground prose-strong:text-foreground prose-code:text-xs prose-code:bg-muted prose-code:text-foreground prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:font-mono prose-code:before:content-none prose-code:after:content-none prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:rounded-lg prose-pre:p-3 [&_pre_code]:bg-transparent [&_pre_code]:p-0">
-                <ReactMarkdown>{stripArtifacts(streamingContent)}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkBreaks]}>{stripArtifacts(streamingContent)}</ReactMarkdown>
               </div>
               <div className="mt-1 text-[10px] tabular-nums text-muted-foreground">
                 Streaming • {formatMessageTime(new Date().toISOString())}

@@ -25,6 +25,60 @@ export function ChangelogPage() {
             All notable changes to Product OS are documented here.
           </p>
 
+          {/* Feb 27 */}
+          <h2 className="text-xl font-semibold mt-8 mb-4">2026-02-27</h2>
+
+          <h3 className="text-lg font-medium mt-6 mb-3">Fixes</h3>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Coding agent line breaks now render correctly</strong>{" "}
+              &mdash; Agent chat responses now preserve single-line breaks in
+              markdown rendering, so multi-line coding outputs no longer
+              collapse into a single paragraph in Flow chat and agent detail
+              views.
+            </li>
+          </ul>
+
+          {/* Feb 26 */}
+          <h2 className="text-xl font-semibold mt-8 mb-4">2026-02-26</h2>
+
+          <h3 className="text-lg font-medium mt-6 mb-3">Improvements</h3>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Onboarding preferences now influence agent outputs</strong>{" "}
+              &mdash; Idea-to-spec pipeline agents now receive saved onboarding
+              preferences and adapt behavior using role profile, execution mode
+              (
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                guided
+              </code>
+              /
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                balanced
+              </code>
+              /
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                autonomous
+              </code>
+              ), and framework toggles such as Jira taxonomy and Definition of
+              Done guidance.
+            </li>
+          </ul>
+
+          <h3 className="text-lg font-medium mt-6 mb-3">Fixes</h3>
+          <ul className="list-disc pl-6 space-y-1">
+            <li>
+              <strong>Onboarding no longer reappears after returning login</strong>{" "}
+              &mdash; Email login responses now include{" "}
+              <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                onboardingCompleted
+              </code>{" "}
+              and saved preferences (plus team payload), preventing already
+              onboarded users from being redirected back to onboarding on every
+              sign-in.
+            </li>
+          </ul>
+
           {/* Feb 23 */}
           <h2 className="text-xl font-semibold mt-8 mb-4">2026-02-23</h2>
 

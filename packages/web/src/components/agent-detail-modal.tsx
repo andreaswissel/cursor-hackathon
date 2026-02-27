@@ -3,6 +3,7 @@ import type { AgentState, AgentType } from "@product-os/shared";
 import { cn } from "@/lib/utils";
 import { chatWithAgent, getChatHistory } from "@/lib/api";
 import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 import {
   X,
   Loader2,
@@ -407,7 +408,7 @@ export function AgentDetailModal({
                   !formattedOutput && "font-mono text-xs whitespace-pre-wrap text-muted-foreground"
                 )}>
                   {formattedOutput ? (
-                    <ReactMarkdown>{displayContent}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkBreaks]}>{displayContent}</ReactMarkdown>
                   ) : (
                     <div>{displayContent}</div>
                   )}
@@ -488,7 +489,7 @@ export function AgentDetailModal({
                       >
                         {message.role === "assistant" ? (
                           <div className="prose prose-sm max-w-none prose-p:text-foreground prose-p:my-1 prose-li:text-foreground prose-strong:text-foreground">
-                            <ReactMarkdown>{message.content}</ReactMarkdown>
+                            <ReactMarkdown remarkPlugins={[remarkBreaks]}>{message.content}</ReactMarkdown>
                           </div>
                         ) : (
                           <p className="text-sm">{message.content}</p>
@@ -502,7 +503,7 @@ export function AgentDetailModal({
                     <div className="flex justify-start">
                       <div className="max-w-[90%] rounded-2xl rounded-bl-md bg-card border px-4 py-2.5">
                         <div className="prose prose-sm max-w-none prose-p:text-foreground prose-p:my-1">
-                          <ReactMarkdown>{streamingContent}</ReactMarkdown>
+                          <ReactMarkdown remarkPlugins={[remarkBreaks]}>{streamingContent}</ReactMarkdown>
                         </div>
                       </div>
                     </div>
