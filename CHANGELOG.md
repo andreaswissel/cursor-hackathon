@@ -2,6 +2,22 @@
 
 All notable changes to Product OS are documented here.
 
+## [2026-02-27]
+
+### Fixes
+
+- **Coding agent line breaks now render correctly** — Agent chat responses now preserve single-line breaks in markdown rendering, so multi-line coding outputs no longer collapse into a single paragraph in Flow chat and agent detail views.
+
+## [2026-02-26]
+
+### Improvements
+
+- **Onboarding preferences now influence agent outputs** — Idea-to-spec pipeline agents now receive saved onboarding preferences and adapt behavior using role profile, execution mode (guided/balanced/autonomous), and framework toggles (including Jira taxonomy and Definition of Done guidance).
+
+### Fixes
+
+- **Onboarding no longer reappears after returning login** — The email login response now includes `onboardingCompleted` and saved preferences (plus team payload), preventing already-onboarded users from being redirected back to onboarding on each new sign-in.
+
 ## [2026-02-23]
 
 ### Features
