@@ -117,8 +117,36 @@ router.post("/login", async (req: Request, res: Response) => {
     const userRole = resolveSystemRole(user);
     const isAdmin = userRole === "admin" || user.isAdmin === 1;
     const token = signToken({ id: user.id, email: user.email, isAdmin, userRole });
+    const userTeams = await db
+      .select({
+        teamId: teams.id,
+        teamName: teams.name,
+        teamSlug: teams.slug,
+        role: teamMembers.role,
+      })
+      .from(teamMembers)
+      .innerJoin(teams, eq(teamMembers.teamId, teams.id))
+      .where(eq(teamMembers.userId, user.id));
 
-    res.json({ token, user: { id: user.id, email: user.email, isAdmin, userRole } });
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        displayName: user.displayName,
+        avatarUrl: user.avatarUrl,
+        isAdmin,
+        userRole,
+        onboardingCompleted: user.onboardingCompleted === 1,
+        preferences: user.preferences || null,
+        teams: userTeams.map((t) => ({
+          teamId: t.teamId,
+          teamName: t.teamName,
+          teamSlug: t.teamSlug,
+          role: t.role,
+        })),
+      },
+    });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ error: "Failed to authenticate" });

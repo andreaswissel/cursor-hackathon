@@ -2,12 +2,23 @@ import { v4 as uuid } from "uuid";
 import { streamCompletion } from "../lib/claude";
 import { sessionStore, AgentType, SessionContext } from "../lib/session-store";
 import Anthropic from "@anthropic-ai/sdk";
+import type { AgentMode, UserPreferences, UserRole } from "@product-os/shared";
+import {
+  getAgentModePromptModifier,
+  getFrameworkPromptModifier,
+  getRolePromptModifier,
+} from "./prompt-utils";
 
 export interface AgentInput {
   sessionId: string;
   idea: string;
   context: SessionContext;
   previousOutputs?: Record<string, unknown>;
+  preferences?: {
+    role?: UserRole;
+    agentMode?: AgentMode;
+    frameworks?: UserPreferences["frameworks"];
+  };
 }
 
 export interface AgentResult {
@@ -134,6 +145,20 @@ export abstract class BaseAgent {
 
   protected abstract parseOutput(rawOutput: string): unknown;
 
+  protected getEffectiveSystemPrompt(input: AgentInput): string {
+    const roleModifier = getRolePromptModifier(input.preferences?.role);
+    const modeModifier = getAgentModePromptModifier(input.preferences?.agentMode);
+    const frameworkModifier = this.type === "strategy" || this.type === "spec"
+      ? getFrameworkPromptModifier(input.preferences?.frameworks)
+      : "";
+
+    const sections = [this.systemPrompt, roleModifier, modeModifier, frameworkModifier]
+      .map((section) => section.trim())
+      .filter((section) => section.length > 0);
+
+    return sections.join("\n\n");
+  }
+
   async run(input: AgentInput): Promise<AgentResult> {
     this.sessionId = input.sessionId;
     await sessionStore.initAgent(this.sessionId, this.type, this.id);
@@ -145,7 +170,7 @@ export abstract class BaseAgent {
       const messages = this.buildMessages(input);
 
       const rawOutput = await streamCompletion(
-        this.systemPrompt,
+        this.getEffectiveSystemPrompt(input),
         messages,
         {
           onText: (text) => this.log(text),
