@@ -1,16 +1,20 @@
 /**
  * Jira Seeder Script - Creates OKRs (Epics) and Feedback (Stories)
- * for Devils Advocate PDF Export demo
+ * for a sample product feedback demo
  */
 
 const JIRA_EMAIL = process.env.JIRA_EMAIL || "";
 const JIRA_TOKEN = process.env.JIRA_TOKEN || "";
-const JIRA_BASE = "https://andreaswissel.atlassian.net";
-const PROJECT_KEY = "KAN";
+const JIRA_BASE = process.env.JIRA_BASE_URL || "";
+const PROJECT_KEY = process.env.JIRA_PROJECT_KEY || "KAN";
+const JIRA_BOARD_URL = process.env.JIRA_BOARD_URL || "";
 
-if (!JIRA_EMAIL || !JIRA_TOKEN) {
-  console.error("Error: JIRA_EMAIL and JIRA_TOKEN environment variables required");
+if (!JIRA_EMAIL || !JIRA_TOKEN || !JIRA_BASE) {
+  console.error("Error: JIRA_EMAIL, JIRA_TOKEN, and JIRA_BASE_URL environment variables are required");
   console.log("\nUsage: JIRA_EMAIL=you@example.com JIRA_TOKEN=... bun run packages/api/scripts/seed-jira.ts");
+  console.log(
+    "Example: JIRA_EMAIL=you@example.com JIRA_TOKEN=... JIRA_BASE_URL=https://your-domain.atlassian.net JIRA_PROJECT_KEY=KAN bun run packages/api/scripts/seed-jira.ts"
+  );
   process.exit(1);
 }
 
@@ -130,7 +134,7 @@ const stories = [
 ];
 
 async function main() {
-  console.log("🚀 Seeding Jira with Devils Advocate OKRs and Feedback...\n");
+  console.log(`🚀 Seeding Jira project ${PROJECT_KEY} with sample OKRs and feedback...\n`);
 
   try {
     const types = await getIssueTypes();
@@ -159,10 +163,13 @@ async function main() {
       console.log(`  ✓ ${key}: ${shortSummary}...`);
     }
 
-    console.log("\n✅ Done! Check your Jira board at:");
-    console.log(
-      "   https://andreaswissel.atlassian.net/jira/software/projects/KAN/boards/2"
-    );
+    console.log("\n✅ Done!");
+    if (JIRA_BOARD_URL) {
+      console.log("Check your Jira board at:");
+      console.log(`   ${JIRA_BOARD_URL}`);
+    } else {
+      console.log(`Open ${JIRA_BASE}/jira/software/projects/${PROJECT_KEY} to review the imported issues.`);
+    }
   } catch (err) {
     console.error("Error:", (err as Error).message);
   }

@@ -1,5 +1,7 @@
 # ANNEX IV - CERTIFIED SUB-PROCESSORS
 
+This is a public compliance reference document. It is not required for standard local setup or contribution work.
+
 This document lists all sub-processors engaged by ProductOS for processing personal data pursuant to the Data Processing Agreement.
 
 ## Sub-Processor List

@@ -1,55 +1,39 @@
-# AGENTS.md — Product OS Vision
+# AGENTS.md — Product OS Contributor Context
 
-## What is Product OS?
+This repository hosts Product OS, an agent-native product management workbench built as a Bun monorepo.
 
-Product OS is an **agent-native product management workbench**. It is the single place where product managers scope, execute, and track product work — powered by a pipeline of specialized AI agents.
+## Product Overview
 
-## Core Concept: Projects as the Organizational Unit
+Product OS helps teams turn ideas into validated product work through a coordinated agent pipeline:
 
-A **Project** groups related sessions (idea-to-spec chats, documentation, discovery research) into a cohesive body of work. Projects are the primary navigation and grouping layer in the sidebar.
+1. Discovery
+2. Strategy
+3. Spec
+4. GTM
+5. Product Marketing
 
-- Every user gets an automatic "Drafts" project for ungrouped work
-- Sessions are always nested under a project
-- Projects can be renamed, deleted (sessions reassign to Drafts), and created freely
+Projects are the top-level organizing unit. Sessions, docs, and follow-up work live inside a project, with an automatic Drafts project for ungrouped work.
 
-## Multi-Agent Pipeline
+## Repo Shape
 
-Each session runs through a pipeline of specialized agents:
+- `packages/api` — Express API, agents, integrations, database access
+- `packages/web` — React + Vite frontend
+- `packages/shared` — shared types/constants
+- `packages/desktop` — optional Tauri desktop shell
 
-1. **Discovery Agent** — Validates the idea against customer feedback, market signals, and pain points
-2. **Strategy Agent** — Evaluates OKR alignment, strategic fit, and priority trade-offs
-3. **Spec Agent** — Generates a detailed product specification with acceptance criteria
-4. **GTM Agent** — Creates go-to-market communications and launch materials
-5. **Product Marketing Agent** — Drafts internal product updates for Teams/Slack
+## Contributor Workflow
 
-The **Orchestrator Agent** coordinates the pipeline, passing outputs between agents and handling user interactions (e.g., proceeding despite strategy rejection).
+- Use Bun workspace commands from [README.md](README.md) and [docs/setup.md](docs/setup.md).
+- Run `bun run check` before you consider a change complete.
+- Keep `packages/api/.env.example` in sync with any new or changed runtime configuration.
+- Treat third-party connectors and E2B as optional features: the app should still boot locally without them.
+- If you change user-facing UI, validate it in a browser before wrapping up.
+- Never commit secrets, private credentials, or personal service defaults.
 
-## Integration Strategy
+## Docs To Trust First
 
-Product OS is designed to be the central hub that connects to existing tools:
-
-| Category | Tools | Purpose |
-|----------|-------|---------|
-| Project Tracking | Jira, Linear | Sync specs to tickets, track implementation |
-| Communication | Slack, Teams | Push product updates, collect feedback signals |
-| Documentation | Google Workspace, Notion | Export specs, import context docs |
-| Data | Airtable | Import structured feedback, OKRs |
-
-The goal: **never leave Product OS** for product scoping work. All context flows in, all outputs flow out.
-
-## Architecture
-
-- **Monorepo**: Bun workspaces (api + web + shared)
-- **Real-time**: SSE streaming from agents to frontend
-- **Persistence**: PostgreSQL (Neon) with Drizzle ORM
-- **Session Store**: In-memory cache backed by PostgreSQL, with event emission for SSE
-
-## Workflow Rules
-
-- **Commit & push on completion**: When a feature is fully implemented and verified, commit and push **all** related changes (not just files from the current task). Check `git status` to ensure nothing is left unstaged. The app deploys from `main` via Railway — unpushed changes mean production stays stale.
-- **Open PRs directly (don't hand off PR creation)**: After pushing a feature branch, create/update the GitHub PR yourself using `gh pr create` / `gh pr edit` whenever CLI auth is available. Only ask the user to open the PR if direct PR creation is blocked (missing auth/permissions).
-- **Check PR state before new commits**: Before committing follow-up work on an existing branch, verify the branch PR is still open (`gh pr view <number> --json state` or `gh pr status`). If it is merged/closed, branch from latest `main` and open a new follow-up PR instead of adding commits to the closed PR branch.
-- **Always include screenshots in PRs**: Every PR must include visual proof in the PR description. For UI changes, include before/after screenshots covering the affected states and breakpoints (desktop/mobile as relevant). For non-UI changes, include at least one screenshot of validation evidence (tests, logs, CLI output, or rendered result) when possible.
-- **Always update changelog**: For shipped work, add entries to both `CHANGELOG.md` and `packages/web/src/pages/changelog.tsx`, grouped under the current date and categorized as Features, Improvements, or Fixes.
-- **UI work must use frontend-design skill**: For any frontend UI/styling/layout work, apply the `frontend-design` skill before implementation.
-- **Validate user-facing changes in browser**: After frontend/user-facing changes, validate behavior end-to-end with the `agent-browser` skill before considering the task done.
+- [README.md](README.md) — quickstart
+- [docs/setup.md](docs/setup.md) — full local setup
+- [docs/integrations.md](docs/integrations.md) — connector setup
+- [docs/e2b.md](docs/e2b.md) — E2B and sandbox behavior
+- [docs/troubleshooting.md](docs/troubleshooting.md) — common setup failures

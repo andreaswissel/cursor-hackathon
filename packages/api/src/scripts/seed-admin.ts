@@ -4,8 +4,16 @@ import { db } from "../db";
 import { users } from "../db/schema";
 import { eq } from "drizzle-orm";
 
-const ADMIN_EMAIL = "hello@andreaswissel.com";
-const ADMIN_PASSWORD = "3YnPBotkPGzUpfkF@HKkJo.";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL?.trim();
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.error("Error: ADMIN_EMAIL and ADMIN_PASSWORD environment variables are required");
+  console.log(
+    "\nUsage: ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD='change-me' bun run --filter @product-os/api db:seed-admin"
+  );
+  process.exit(1);
+}
 
 async function seedAdmin() {
   console.log("Seeding admin user...");

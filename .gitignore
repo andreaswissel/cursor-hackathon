@@ -7,6 +7,7 @@ dist
 .DS_Store
 .turbo
 .cursor
+.claude/settings.local.json
 
 # Video uploads (keep directory, ignore contents)
 packages/api/uploads/*

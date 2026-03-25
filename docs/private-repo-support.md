@@ -1,5 +1,7 @@
 # Private Repository Support
 
+This is a maintainer/reference note for future sandbox auth work. It is not required for standard local setup.
+
 ## Current State
 
 The code-agent and review-agent clone repos via `git clone` inside E2B cloud sandboxes (or local sandbox). No authentication is passed, so only **public repos** work today.

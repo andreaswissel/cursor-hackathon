@@ -6,6 +6,7 @@
     "dev": "concurrently -n api,web -c blue,green \"bun run dev:api\" \"bun run dev:web\"",
     "dev:api": "bun run --filter @product-os/api dev",
     "dev:web": "bun run --filter @product-os/web dev",
+    "check": "bun run build",
     "build": "bun run --filter '@product-os/shared' build && bun run --filter '@product-os/api' build && bun run --filter '@product-os/web' build",
     "build:api": "cd packages/shared && bun run build && cd ../api && bun run build",
     "build:web": "cd packages/shared && bun run build && cd ../web && bun run build",
