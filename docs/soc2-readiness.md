@@ -1,5 +1,7 @@
 # SOC2 Readiness — Flow Mode / Coding Agents
 
+This is a public reference document for enterprise/security planning. It is not part of the standard contributor setup path.
+
 This document captures the security controls needed for SOC2 Type II compliance when handling customer code via AI coding agents. These are not implemented yet — this is a roadmap for enterprise readiness.
 
 ## Current State (Standard SaaS)

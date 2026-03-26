@@ -264,7 +264,7 @@ router.get("/google", (req: Request, res: Response) => {
   });
 
   console.log("[Google OAuth] Starting OAuth flow");
-  console.log("[Google OAuth] GOOGLE_AUTH_REDIRECT_URI:", redirectUri);
+  console.log("[Google OAuth] redirect URI:", redirectUri);
   console.log("[Google OAuth] API_BASE_URL:", API_BASE_URL);
 
   if (!GOOGLE_CLIENT_ID) {

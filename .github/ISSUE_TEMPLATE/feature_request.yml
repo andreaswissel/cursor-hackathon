@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest a concrete improvement for Product OS
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or opportunity
+      description: What user need or workflow gap are you trying to solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would you like to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What else did you consider?
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Include screenshots, examples, or workflow details if helpful.

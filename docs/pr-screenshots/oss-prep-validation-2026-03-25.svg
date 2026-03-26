@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="860" viewBox="0 0 1280 860" role="img" aria-labelledby="title desc">
+  <title id="title">Product OS OSS prep validation evidence</title>
+  <desc id="desc">A terminal-style validation summary showing clean install and check results for the OSS prep branch.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#111827" />
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="860" fill="url(#bg)" rx="28" />
+  <rect x="42" y="36" width="1196" height="788" rx="24" fill="#020617" stroke="#1e293b" stroke-width="2" />
+  <circle cx="86" cy="74" r="10" fill="#ef4444" />
+  <circle cx="116" cy="74" r="10" fill="#f59e0b" />
+  <circle cx="146" cy="74" r="10" fill="#22c55e" />
+  <text x="182" y="81" fill="#cbd5e1" font-family="SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="28">oss-prep-validation — 2026-03-25</text>
+
+  <text x="78" y="144" fill="#93c5fd" font-family="SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="28">$ bun run check</text>
+  <text x="78" y="186" fill="#e2e8f0" font-family="SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="24">@product-os/shared build: Exited with code 0</text>
+  <text x="78" y="222" fill="#e2e8f0" font-family="SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="24">@product-os/api build: Exited with code 0</text>
+  <text x="78" y="258" fill="#22c55e" font-family="SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="24">@product-os/web build: built successfully</text>
+
+  <text x="78" y="336" fill="#93c5fd" font-family="SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="28">$ fresh temp copy verification</text>
+  <text x="78" y="378" fill="#e2e8f0" font-family="SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="24">/tmp/product-os-oss-check</text>
+  <text x="78" y="414" fill="#22c55e" font-family="SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="24">bun install: 568 packages installed</text>
+  <text x="78" y="450" fill="#22c55e" font-family="SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="24">bun run check: passed from clean copy</text>
+
+  <text x="78" y="528" fill="#93c5fd" font-family="SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="28">$ safety audit</text>
+  <text x="78" y="570" fill="#22c55e" font-family="SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="24">git diff --check: clean</text>
+  <text x="78" y="606" fill="#22c55e" font-family="SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="24">stale repo-name / callback scan: clean</text>
+  <text x="78" y="642" fill="#22c55e" font-family="SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="24">secret-pattern scan: clean</text>
+
+  <text x="78" y="720" fill="#fbbf24" font-family="SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="28">$ docker compose up -d</text>
+  <text x="78" y="762" fill="#f8fafc" font-family="SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="24">Blocked in this session: Docker daemon was not running, so full local DB boot</text>
+  <text x="78" y="798" fill="#f8fafc" font-family="SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="24">could not be completed from the documented Docker path during automation.</text>
+</svg>
