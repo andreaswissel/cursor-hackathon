@@ -11,6 +11,7 @@ import { db } from "../db";
 import { integrations } from "../db/schema";
 import { googleAdapter } from "../integrations/google";
 import { decryptSecret, encryptSecret } from "../lib/secrets";
+import type { UserPreferences } from "@product-os/shared";
 
 const STRATEGY_REJECTION_QUESTION_ID = "strategy-rejection-proceed";
 
@@ -19,6 +20,7 @@ export interface OrchestratorInput {
   userId?: string;
   idea: string;
   context: SessionContext;
+  preferences?: UserPreferences | null;
 }
 
 export class OrchestratorAgent {
@@ -29,7 +31,7 @@ export class OrchestratorAgent {
   private productMarketingAgent = new ProductMarketingAgent();
 
   async run(input: OrchestratorInput): Promise<void> {
-    const { sessionId, idea, context } = input;
+    const { sessionId, idea, context, preferences } = input;
 
     // Initialize orchestrator in session store
     await sessionStore.initAgent(sessionId, "orchestrator", uuid());
@@ -47,6 +49,7 @@ export class OrchestratorAgent {
       sessionId,
       idea,
       context,
+      preferences: preferences ?? undefined,
     });
 
     if (!discoveryResult.success) {
@@ -65,6 +68,7 @@ export class OrchestratorAgent {
       idea,
       context,
       previousOutputs,
+      preferences: preferences ?? undefined,
     });
 
     if (!strategyResult.success) {
@@ -108,6 +112,7 @@ export class OrchestratorAgent {
       idea,
       context,
       previousOutputs,
+      preferences: preferences ?? undefined,
     });
 
     if (!specResult.success) {
@@ -137,6 +142,7 @@ export class OrchestratorAgent {
       idea,
       context,
       previousOutputs,
+      preferences: preferences ?? undefined,
     });
 
     if (!gtmResult.success) {
@@ -162,6 +168,7 @@ export class OrchestratorAgent {
       idea,
       context,
       previousOutputs,
+      preferences: preferences ?? undefined,
     });
 
     if (!productMarketingResult.success) {
@@ -214,7 +221,7 @@ export class OrchestratorAgent {
   }
 
   async resumeFromRejection(input: OrchestratorInput, proceed: boolean): Promise<void> {
-    const { sessionId, idea, context } = input;
+    const { sessionId, idea, context, preferences } = input;
 
     // Clear the question and continuation
     sessionStore.clearAgentQuestion(sessionId, "orchestrator");
@@ -249,6 +256,7 @@ export class OrchestratorAgent {
       idea,
       context,
       previousOutputs,
+      preferences: preferences ?? undefined,
     });
 
     if (!specResult.success) {
@@ -278,6 +286,7 @@ export class OrchestratorAgent {
       idea,
       context,
       previousOutputs,
+      preferences: preferences ?? undefined,
     });
 
     if (!gtmResult.success) {
@@ -303,6 +312,7 @@ export class OrchestratorAgent {
       idea,
       context,
       previousOutputs,
+      preferences: preferences ?? undefined,
     });
 
     if (!productMarketingResult.success) {

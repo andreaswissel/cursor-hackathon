@@ -114,6 +114,11 @@ router.post("/", checkSessionLimit, async (req: Request, res: Response) => {
 
   const userId = req.user!.id;
   const resolvedProjectId = projectId || await ensureDefaultProject(userId);
+  const [userRecord] = await db
+    .select({ preferences: users.preferences })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
 
   // If no context provided, try to auto-resolve from project knowledge
   let resolvedContext: SessionContext;
@@ -146,7 +151,13 @@ router.post("/", checkSessionLimit, async (req: Request, res: Response) => {
 
   // Start orchestrator in background (pass userId for slides generation)
   const orchestrator = new OrchestratorAgent();
-  orchestrator.run({ sessionId, userId, idea, context: resolvedContext }).catch((error) => {
+  orchestrator.run({
+    sessionId,
+    userId,
+    idea,
+    context: resolvedContext,
+    preferences: userRecord?.preferences ?? null,
+  }).catch((error) => {
     console.error("Orchestrator error:", error);
     sessionStore.setSessionStatus(sessionId, "failed");
   });
@@ -513,6 +524,11 @@ router.post("/:sessionId/answer", checkSessionOwnership, async (req: Request, re
   // Handle strategy rejection question
   if (questionId === "strategy-rejection-proceed" && agentType === "orchestrator") {
     const proceed = answer.toLowerCase() === "yes" || answer.toLowerCase() === "true" || answer === "proceed";
+    const [userRecord] = await db
+      .select({ preferences: users.preferences })
+      .from(users)
+      .where(eq(users.id, req.user!.id))
+      .limit(1);
 
     // Resume orchestrator in background
     const orchestrator = new OrchestratorAgent();
@@ -521,6 +537,7 @@ router.post("/:sessionId/answer", checkSessionOwnership, async (req: Request, re
       userId: req.user!.id,
       idea: session.idea,
       context: session.context,
+      preferences: userRecord?.preferences ?? null,
     }, proceed).catch((error) => {
       console.error("Orchestrator resume error:", error);
       sessionStore.setSessionStatus(sessionId, "failed");
